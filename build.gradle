@@ -9,14 +9,27 @@ repositories {
     mavenCentral()
 }
 
+configurations {
+    releaseJars
+}
+
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
 
     compile 'com.sparkjava:spark-core:2.5.4'
     compile 'org.slf4j:slf4j-simple:1.7.22'
+
+    releaseJars 'com.sparkjava:spark-core:2.5.4'
+    releaseJars 'org.slf4j:slf4j-simple:1.7.22'
+}
+
+task copyToLib( type: Copy ) {
+    into "$buildDir/libs/lib"
+    from configurations.releaseJars
 }
 
 jar {
+    dependsOn copyToLib
     manifest {
         attributes('Main-Class': 'de.axxepta.converterservices.App')
     }

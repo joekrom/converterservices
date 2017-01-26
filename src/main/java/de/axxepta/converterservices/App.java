@@ -1,4 +1,4 @@
-package de.axxepta.sparkservices;
+package de.axxepta.converterservices;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,7 +24,7 @@ public class App {
 
     private static Logger logger;
 
-    private static String TEMP_FILE_PATH = System.getProperty("user.home") + "/.sparkservices";
+    private static String TEMP_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
 
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
     private static final String THUMBS_UPLOAD_FORM      = "static/form_thumbs.html";

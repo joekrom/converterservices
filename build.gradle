@@ -21,6 +21,7 @@ dependencies {
 
     releaseJars 'com.sparkjava:spark-core:2.5.4'
     releaseJars 'org.slf4j:slf4j-simple:1.7.22'
+    releaseJars 'javax.servlet:javax.servlet-api:3.0.1'
 }
 
 task copyToLib( type: Copy ) {
@@ -33,5 +34,16 @@ jar {
     manifest {
         attributes('Main-Class': 'de.axxepta.converterservices.App')
     }
+}
+
+task fatJar(type: Jar) {
+    baseName = project.name + '-all'
+    manifest {
+        attributes('Main-Class': 'de.axxepta.converterservices.App')
+    }
+    doFirst {
+        from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    }
+    with jar
 }
 

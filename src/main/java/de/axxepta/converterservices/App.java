@@ -2,6 +2,7 @@ package de.axxepta.converterservices;
 
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemHeaders;
+import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.disk.DiskFileItemFactory;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
@@ -35,7 +36,6 @@ public class App {
     private static final String PATH_THUMB              = "/file/thumb";
     private static final String PATH_THUMBS             = "/file/thumbs";
     private static final String PATH_META               = "/file/meta";
-    private static final String PATH_META64             = "/file/meta64";
     private static final String PATH_SPLIT              = "/pdfsplit";
     private static final String PATH_DOWNLOAD           = "/static";
     private static final String PATH_UPLOAD             = "/files/upload";
@@ -52,6 +52,7 @@ public class App {
     private static final String PDFSPLIT_UPLOAD_FORM    = "static/form_pdfsplit.html";
 
     private static final String TYPE_JPEG               = "image/jpeg";
+    private static final String TYPE_PNG                = "image/png";
     private static final String TYPE_PDF                = "application/pdf";
 
     private static final String FILE_PART               = "FILE";
@@ -199,7 +200,7 @@ public class App {
         });
 
         post(PATH_META, (request, response) -> {
-            List<String> files = storeFilesTemporary(request);
+            List<String> files = parseMultipartRequest(request, FILE_PART, new ArrayList<>());
             try {
                 if (files.size() > 0) {
                     ByteArrayOutputStream out =
@@ -213,27 +214,14 @@ public class App {
             }
         });
 
-        post(PATH_META64, (request, response) -> {
-            List<String> files = storeFilesTemporary(request);
-            try {
-                if (files.size() > 0) {
-                    ByteArrayOutputStream out =
-                            runExternal("exiftool", "-e", "-json", STATIC_FILE_PATH + "/" + files.get(0));
-                    cleanTemp(files);
-                    return new String(out.toByteArray(), "UTF-8");
-                } else return NO_FILES_JSON;
-            } catch (Exception e) {
-                return EXCEPTION_OPEN_JSON + e.getMessage() + EXCEPTION_CLOSE_JSON;
-            }
-        });
-
         post(PATH_SPLIT, MULTIPART_FORM_DATA, (request, response) -> {
             List<String> files;
             List<String> outputFiles;
             boolean toImage;
             try {
-                files = storeFilesTemporary(request);
-                toImage = readImagePart(request);
+                List<String> partNames = new ArrayList<>();
+                files = parseMultipartRequest(request, FILE_PART, partNames);
+                toImage = partNames.contains(TO_IMAGE);
                 outputFiles = PDFUtils.splitPDF(files.get(0), toImage, TEMP_FILE_PATH);
             } catch (IOException | InterruptedException ex) {
                 return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
@@ -247,7 +235,7 @@ public class App {
                         if (file.exists()) {
                             files.add(fileName);
                             try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                addMultiPartFile(raw.getOutputStream(), TYPE_PDF, is, fileName);
+                                addMultiPartFile(raw.getOutputStream(), toImage ? TYPE_PNG : TYPE_PDF, is, fileName);
                             }
                         }
                     }
@@ -273,7 +261,7 @@ public class App {
 //########################################################
 
     private static List<String> thumbifyFiles(Request request) throws IOException, InterruptedException {
-        List<String> files = storeFilesTemporary(request);
+        List<String> files = parseMultipartRequest(request, FILE_PART, new ArrayList<>());
         try {
             for (String file : files) {
                 runExternal("mogrify", "-flatten", "-strip", "-format", "jpg", "-quality",
@@ -324,70 +312,64 @@ public class App {
         return name.substring(0, (pos == -1) ? name.length() : pos) + ".jpg";
     }
 
-    private static boolean readImagePart(Request request) {
-        MultipartConfigElement multipartConfigElement = new MultipartConfigElement(STATIC_FILE_PATH);
-        request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
-        Collection<Part> parts;
-        try {
-            parts = request.raw().getParts();
-            if (parts != null) {
-                for (Part part : parts) {
-                    if (part.getName().equals(TO_IMAGE)) {
-                        return true;
-                    }
-                }
-            }
-        } catch (IOException | ServletException ex) {
-            if (logger != null) logger.error(ex.getMessage());
-        }
-        return false;
-    }
-
-    private static List<String> storeFilesTemporary(Request request) {
+    /**
+     * Extract names of all request parts, store contained files to disk
+     * @param request request of type multipart
+     * @param filePart name of parts from which files shall be extracted
+     * @param partNames will contain the names of all request parts
+     * @return list of filenames of files contained in parts named like filePart
+     */
+    private static List<String> parseMultipartRequest(Request request, String filePart, List<String> partNames) {
         MultipartConfigElement multipartConfigElement = new MultipartConfigElement(TEMP_FILE_PATH);
         request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
 
-        List<String> files = new ArrayList<>();
         File upload = new File(TEMP_FILE_PATH);
         DiskFileItemFactory factory = new DiskFileItemFactory();
         factory.setRepository(upload);
         ServletFileUpload fileUpload = new ServletFileUpload(factory);
         try {
             List<FileItem> items = fileUpload.parseRequest(request.raw());
-            items.stream()
-                    .filter(e -> FILE_PART.equals(e.getFieldName()))
-                    .forEach(item -> {
-                        try {
-                            String fileName = item.getName();
-                            FileItemHeaders headers = item.getHeaders();
-                            if ((headers.getHeader(CONTENT_TRANSFER_ENCODING) != null)
-                                    && headers.getHeader(CONTENT_TRANSFER_ENCODING).toLowerCase().equals("base64")) {
-                                InputStream is = item.getInputStream();
-                                byte[] bytesFromBase64 = org.apache.commons.codec.binary.Base64.decodeBase64(IOUtils.toByteArray(is));
-                                try (FileOutputStream os = new FileOutputStream(TEMP_FILE_PATH + "/" + fileName)) {
-                                    os.write(bytesFromBase64);
-                                }
-                            } else {
-                                item.write(new File(TEMP_FILE_PATH, fileName));
-                            }
-                            files.add(fileName);
-                        } catch (Exception ex) {
-                            if (logger != null) logger.error(ex.getMessage());
-                        }
-            });
-        } catch (Exception fu) {
+            items.forEach(item -> partNames.add(item.getFieldName()));
+            return storeFilesTemporary(items, filePart);
+        } catch (FileUploadException fu) {
             if (logger != null) logger.error(fu.getMessage());
+            return new ArrayList<>();
         }
+    }
+
+    private static List<String> storeFilesTemporary(List<FileItem> items, String filePart) {
+        List<String> files = new ArrayList<>();
+        items.stream()
+                .filter(e -> e.getFieldName().equals(filePart))
+                .forEach(item -> {
+                    try {
+                        String fileName = item.getName();
+                        FileItemHeaders headers = item.getHeaders();
+                        if ((headers.getHeader(CONTENT_TRANSFER_ENCODING) != null)
+                                && headers.getHeader(CONTENT_TRANSFER_ENCODING).toLowerCase().equals("base64")) {
+                            InputStream is = item.getInputStream();
+                            byte[] bytesFromBase64 = org.apache.commons.codec.binary.Base64.decodeBase64(IOUtils.toByteArray(is));
+                            try (FileOutputStream os = new FileOutputStream(TEMP_FILE_PATH + "/" + fileName)) {
+                                os.write(bytesFromBase64);
+                            }
+                        } else {
+                            item.write(new File(TEMP_FILE_PATH, fileName));
+                        }
+                        files.add(fileName);
+                    } catch (Exception ex) {
+                        if (logger != null) logger.error(ex.getMessage());
+                    }
+                });
         return files;
     }
 
     private static void cleanTemp(List<String> files) {
-        try {
-            for (String file : files) {
+        for (String file : files) {
+            try {
                 Files.delete(Paths.get(TEMP_FILE_PATH + "/" + file));
+            } catch (IOException ex) {
+                if (logger != null) logger.error(ex.getMessage());
             }
-        } catch (IOException ex) {
-            if (logger != null) logger.error(ex.getMessage());
         }
     }
 
@@ -395,20 +377,20 @@ public class App {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             byte[] buffer = new byte[1024];
-            Process p = Runtime.getRuntime().exec(command);
-            try (InputStream is = p.getInputStream()) {
+            Process process = Runtime.getRuntime().exec(command);
+            try (InputStream is = process.getInputStream()) {
                 int n;
                 while ((n = is.read(buffer)) > -1) {
                     stream.write(buffer, 0, n);
                 }
             }
-            try (BufferedReader bre = new BufferedReader(new InputStreamReader(p.getErrorStream()))) {
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
                 String line;
-                while ((line = bre.readLine()) != null) {
+                while ((line = br.readLine()) != null) {
                     if (logger != null) logger.error(line);
                 }
             }
-            int code = p.waitFor();
+            int code = process.waitFor();
             if (logger != null) logger.debug("External program returned with code " + code);
         } catch (IOException | InterruptedException err) {
             if (logger != null) logger.error(err.getMessage());

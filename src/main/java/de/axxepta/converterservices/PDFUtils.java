@@ -54,8 +54,9 @@ public class PDFUtils {
                         newDocument.save(newFile);
                         newDocument.close();
                     }
-                    pdfOutputList.add(pathName);
+                    pdfOutputList.add(IOUtils.filenameFromPath(pathName));
                 }
+                document.close();
             } else {
                 logger.error("Input file for splitting not found: " + sourcePath);
             }

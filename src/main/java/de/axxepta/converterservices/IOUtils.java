@@ -38,4 +38,9 @@ class IOUtils {
         int sepPos = path.lastIndexOf("/");
         return path.substring(0, Math.max(0, sepPos));
     }
+
+    static String filenameFromPath(String path) {
+        int sepPos = path.lastIndexOf("/");
+        return path.substring(Math.max(-1, sepPos) + 1);
+    }
 }

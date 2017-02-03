@@ -46,6 +46,7 @@ public class App {
 
     private static final String PARAM_NAME              = ":name";
 
+    private static final String HELLO_PAGE              = "static/hello.html";
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
     private static final String THUMBS_UPLOAD_FORM      = "static/form_thumbs.html";
     private static final String META_UPLOAD_FORM        = "static/form_meta.html";
@@ -78,7 +79,10 @@ public class App {
             logger.error("Couldn't create directory for temporary files!");
         }
 
-        get(PATH_HELLO, (request, response) -> "hello");
+        get(PATH_HELLO, (request, response) ->
+                String.format(de.axxepta.converterservices.IOUtils.getResource(HELLO_PAGE), PATH_THUMB, PATH_THUMBS,
+                        PATH_META, PATH_SPLIT, PATH_UPLOAD_THUMB, PATH_UPLOAD_THUMBS, PATH_UPLOAD_META, PATH_UPLOAD_SPLIT, PATH_STOP)
+        );
 
         post(PATH_THUMB, MULTIPART_FORM_DATA, (request, response) -> {
             List<String> files;

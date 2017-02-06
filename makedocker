@@ -1,2 +1,2 @@
 #!/bin/bash
-docker build -t converterimage build/docker/
+docker build -t converterimage build/libs/

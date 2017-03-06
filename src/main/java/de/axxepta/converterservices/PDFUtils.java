@@ -15,13 +15,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class PDFUtils {
+class PDFUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(App.class);
+    private static Logger logger = LoggerFactory.getLogger(PDFUtils.class);
 
     private PDFUtils() {}
 
-    static List<String> splitPDF(String sourcePath, String targetPath, boolean imageOutput, List<Integer> widthList, List<Integer> heightList) {
+    private static List<String> splitPDF(String sourcePath, String targetPath, boolean imageOutput, List<Integer> widthList, List<Integer> heightList) {
         List<String> pdfOutputList = new ArrayList<>();
         Integer pageNumber = 0;
         try {

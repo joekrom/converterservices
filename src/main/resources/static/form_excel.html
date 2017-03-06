@@ -1,0 +1,65 @@
+<html>
+<head>
+    <title>Upload form for Excel conversion</title>
+    <script>
+            function submitCheck()
+            {
+                var submitAction = "%s?";
+                if (document.getElementById("AS").checked) {
+                    submitAction += "as=xml&";
+                }
+                if (!document.getElementById("INDENT").checked) {
+                    submitAction += "indent=false&";
+                }
+                if (!document.getElementById("FIRST_ROW").checked) {
+                    submitAction += "firstRowName=false&";
+                }
+                if (document.getElementById("FIRST_COL").checked) {
+                    submitAction += "firstColId=true&";
+                }
+                if (document.getElementById("COL_FIRST").checked) {
+                    submitAction += "columnFirst=true&";
+                }
+                if (!(document.getElementById("SHEET").value === "")) {
+                    submitAction += "sheet="+ document.getElementById("SHEET").value + "&";
+                }
+                if (!(document.getElementById("ROW").value === "")) {
+                    submitAction += "row="+ document.getElementById("ROW").value + "&";
+                }
+                if (!(document.getElementById("COLUMN").value === "")) {
+                    submitAction += "column="+ document.getElementById("COLUMN").value + "&";
+                }
+                if (!(document.getElementById("SHEET_NAME").value === "")) {
+                    submitAction += "sheetName="+ document.getElementById("SHEET_NAME").value + "&";
+                }
+                if (!(document.getElementById("ATT_SHEET").value === "")) {
+                    submitAction += "attSheetName="+ document.getElementById("ATT_SHEET").value + "&";
+                }
+                if (!(document.getElementById("SEPARATOR").value === "")) {
+                    submitAction += "separator="+ document.getElementById("SEPARATOR").value + "&";
+                }
+                var form = document.getElementById("form4");
+                form.action = submitAction;
+                form.submit();
+            }
+        </script>
+</head>
+<body>
+    <h1>Upload XSLX or CSV/XML files for conversion from/to XLSX</h1>
+    <form id="form4" method="post" enctype="multipart/form-data">
+        <label><input type="file" name="%s" multiple="multiple"/>Choose XSLX or CSV/XML file</label><br>
+        <label><input type="checkbox" id="AS">Convert XSLX to XML (default: CSV). Will be ignored for XML/CSV input.</label><br>
+        <label><input type="checkbox" id="INDENT" checked>Indent XML output. Will be ignored for XML/CSV input or CSV output.</label><br>
+        <label><input type="checkbox" id="FIRST_ROW" checked>First row as element names. Will be ignored for XML/CSV input or CSV output.</label><br>
+        <label><input type="checkbox" id="FIRST_COL">First column as ID attributes. Will be ignored for XML/CSV input or CSV output.</label><br>
+        <label><input type="checkbox" id="COL_FIRST">Treat columns as outer XML elements. Will be ignored for XML/CSV input or CSV output.</label><br>
+        <label><input type="text" id="SHEET">Name for XML elements corresponding to a sheet. Will be ignored for XML input or CSV output. Default: <i>sheet</i></label><br>
+        <label><input type="text" id="ROW">Name for XML elements corresponding to a row. Will be ignored for XML input or CSV output. Default: <i>row</i></label><br>
+        <label><input type="text" id="COLUMN">Name for XML elements corresponding to a column. Will be ignored for XML input or CSV output. Default: <i>column</i></label><br>
+        <label><input type="text" id="SHEET_NAME">Sheet name for import to XSLX. Default: <i>sheet0</i>, <i>sheet1</i>, ...</label><br>
+        <label><input type="text" id="ATT_SHEET">Attribute of sheet elements containing sheet name for import to XSLX. Default: <i>name</i></label><br>
+        <label><input type="text" id="SEPARATOR">Separator for CSV import/export. Note that <i>;</i> and <i>&amp;</i> are reserved characters in a query string. Default: <i>;</i></label><br>
+        <input type=button name="button1" onclick="submitCheck();">
+    </form>
+</body>
+</html>

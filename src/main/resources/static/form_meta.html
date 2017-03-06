@@ -1,10 +1,27 @@
 <html>
-<head><title>Upload form for Exiftool meta information</title></head>
+<head>
+    <title>Upload form for Exiftool meta information</title>
+    <script>
+            function submitCheck()
+            {
+                var type;
+                if (document.getElementById("COMPACT").checked) {
+                    type = "true";
+                } else {
+                    type = "false";
+                }
+                var form = document.getElementById("form3");
+                form.action = "%s?%s=" + type;
+                form.submit();
+            }
+        </script>
+</head>
 <body>
 <h1>Upload files for meta information check with Exiftool</h1>
-<form action="%s" method="post" enctype="multipart/form-data">
+<form id="form3"  method="post" enctype="multipart/form-data">
     <input type="file" name="%s" />
-    <input type="submit" />
+    <label><input type="checkbox" id="COMPACT" value="checkbox">Compact meta information</label><br>
+    <input type=button name="button1" onclick="submitCheck();">
 </form>
 </body>
 </html>

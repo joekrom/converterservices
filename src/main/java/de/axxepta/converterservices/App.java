@@ -29,35 +29,58 @@ public class App {
     private static Logger logger;
 
     private static final String STATIC_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
-    private static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
+    static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
 
     private static final String PATH_HELLO              = "/hello";
     private static final String PATH_STOP               = "/stop";
-    private static final String PATH_THUMB              = "/file/thumb";
-    private static final String PATH_THUMBS             = "/file/thumbs";
-    private static final String PATH_META               = "/file/meta";
-    private static final String PATH_SPLIT              = "/pdfsplit";
+    private static final String PATH_THUMB              = "/image/singlethumbnail";
+    private static final String PATH_THUMBS             = "/image/thumbnail";
+    private static final String PATH_META               = "/file/metadata";
+    private static final String PATH_SPLIT              = "/pdf/split";
+    private static final String PATH_EXCEL              = "/excel";
     private static final String PATH_DOWNLOAD           = "/static";
-    private static final String PATH_UPLOAD             = "/files/upload";
-    private static final String PATH_UPLOAD_THUMB       = "/file/thumbupload";
-    private static final String PATH_UPLOAD_THUMBS      = "/files/thumbupload";
-    private static final String PATH_UPLOAD_META        = "/file/metaupload";
-    private static final String PATH_UPLOAD_SPLIT       = "/file/pdfsplitupload";
+    private static final String PATH_UPLOAD             = "/upload";
+    private static final String PATH_UPLOAD_THUMB       = "/form/thumb";
+    private static final String PATH_UPLOAD_THUMBS      = "/form/thumbs";
+    private static final String PATH_UPLOAD_META        = "/form/meta";
+    private static final String PATH_UPLOAD_SPLIT       = "/form/pdfsplit";
+    private static final String PATH_UPLOAD_EXCEL       = "/form/excel";
 
     private static final String PARAM_NAME              = ":name";
+    private static final String PARAM_COMPACT           = "compact";
+    private static final String PARAM_AS                = "as";
+    private static final String PARAM_SHEET_NAME        = "sheetName";
+    private static final String PARAM_ATT_SHEET_NAME    = "attSheetName";
+    private static final String PARAM_INDENT            = "indent";
+    private static final String PARAM_FIRST_ROW_NAME    = "firstRowName";
+    private static final String PARAM_FIRST_COL_ID      = "firstColId";
+    private static final String PARAM_COLUMN_FIRST      = "columnFirst";
+    private static final String PARAM_SHEET_TAG         = "sheet";
+    private static final String PARAM_ROW_TAG           = "row";
+    private static final String PARAM_COLUMN_TAG        = "column";
+    private static final String PARAM_SEPARATOR         = "separator";
+    private static final String PARAM_PWD               = "pwd";
+    private static final String PARAM_VAL_SCALE         = "scale";
+    private static final String PARAM_VAL_CROP          = "crop";
+    private static final String PARAM_VAL_PDF           = "pdf";
+    private static final String PARAM_VAL_PNG           = "png";
 
     private static final String HELLO_PAGE              = "static/hello.html";
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
     private static final String THUMBS_UPLOAD_FORM      = "static/form_thumbs.html";
     private static final String META_UPLOAD_FORM        = "static/form_meta.html";
     private static final String PDFSPLIT_UPLOAD_FORM    = "static/form_pdfsplit.html";
+    private static final String EXCEL_UPLOAD_FORM       = "static/form_excel.html";
 
     private static final String TYPE_JPEG               = "image/jpeg";
     private static final String TYPE_PNG                = "image/png";
     private static final String TYPE_PDF                = "application/pdf";
+    private static final String TYPE_XLSX               = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    private static final String TYPE_CSV                = "text/csv";
+    private static final String TYPE_XML                = "text/xml";
 
     private static final String FILE_PART               = "FILE";
-    private static final String TO_IMAGE                = "IS_IMAGE";
+    private static final String AS_PNG                  = "AS_PNG";
     private static final String MULTIPART_FORM_DATA     = "multipart/form-data";
     private static final String MULTI_PART_BOUNDARY     = "MULTI_PART_BOUNDARY";
     private static final String CONTENT_TRANSFER_ENCODING     = "Content-Transfer-Encoding";
@@ -68,8 +91,13 @@ public class App {
     private static final String EXCEPTION_OPEN_JSON     = "{\"EXCEPTION\": \"";
     private static final String EXCEPTION_CLOSE_JSON    = "\"}";
 
+    private static String pwd = "";
+
 
     public static void main(String[] args) {
+
+        if (args.length > 0)
+            pwd = args[0];
 
         System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
         logger = LoggerFactory.getLogger(App.class);
@@ -81,73 +109,9 @@ public class App {
 
         get(PATH_HELLO, (request, response) ->
                 String.format(de.axxepta.converterservices.IOUtils.getResource(HELLO_PAGE), PATH_THUMB, PATH_THUMBS,
-                        PATH_META, PATH_SPLIT, PATH_UPLOAD_THUMB, PATH_UPLOAD_THUMBS, PATH_UPLOAD_META, PATH_UPLOAD_SPLIT, PATH_STOP)
+                        PATH_META, PATH_SPLIT, PATH_UPLOAD_THUMB, PATH_UPLOAD_THUMBS, PATH_UPLOAD_META,
+                        PATH_UPLOAD_SPLIT, PATH_UPLOAD_EXCEL, PATH_STOP)
         );
-
-        post(PATH_THUMB, MULTIPART_FORM_DATA, (request, response) -> {
-            List<String> files;
-            try {
-                files = thumbifyFiles(request);
-            } catch (IOException | InterruptedException ex) {
-                return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
-            }
-
-            if (files.size() > 0) {
-                HttpServletResponse raw = singleFileResponse(response, "thumb_" + jpgFilename(files.get(0)));
-                File file = new File(TEMP_FILE_PATH + "/" + jpgFilename(files.get(0)));
-                if (file.exists()) {
-                    files.add(jpgFilename(files.get(0)));
-                    try (InputStream is = new FileInputStream(file)) {
-                        de.axxepta.converterservices.IOUtils.copyStreams(is, raw.getOutputStream());
-                        raw.getOutputStream().close();
-                        return raw;
-                    } catch (Exception e) {
-                        return HTML_OPEN + e.getMessage() + HTML_CLOSE;
-                    } finally {
-                        cleanTemp(files);
-                    }
-                } else {
-                    cleanTemp(files);
-                    return NO_SUCH_FILE;
-                }
-            } else {
-                return NO_SUCH_FILE;
-            }
-        });
-
-        post(PATH_THUMBS, MULTIPART_FORM_DATA, (request, response) -> {
-            List<String> files;
-            try {
-                files = thumbifyFiles(request);
-            } catch (IOException | InterruptedException ex) {
-                return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
-            }
-
-            if (files.size() > 0) {
-                try {
-                    List<String> transformedFiles = new ArrayList<>();
-                    HttpServletResponse raw = multiPartResponse(response);
-                    for (String fileName : files) {
-                        File file = new File(TEMP_FILE_PATH + "/" + jpgFilename(fileName));
-                        if (file.exists()) {
-                            transformedFiles.add(jpgFilename(fileName));
-                            try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                addMultiPartFile(raw.getOutputStream(), TYPE_JPEG, is, "thumb_" + jpgFilename(fileName));
-                            }
-                        }
-                    }
-                    files.addAll(transformedFiles);
-                    multiPartClose(raw.getOutputStream());
-                    return raw;
-                } catch (IOException ex) {
-                    return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
-                } finally {
-                    cleanTemp(files);
-                }
-            } else {
-                return NO_SUCH_FILE;
-            }
-        });
 
         get(PATH_DOWNLOAD + "/" + PARAM_NAME, (request, response) -> {
             HttpServletResponse raw = singleFileResponse(response, request.params(PARAM_NAME));
@@ -174,12 +138,27 @@ public class App {
         );
 
         get(PATH_UPLOAD_META, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(META_UPLOAD_FORM), PATH_META, FILE_PART)
+                String.format(de.axxepta.converterservices.IOUtils.getResource(META_UPLOAD_FORM),
+                        PATH_META, PARAM_COMPACT, FILE_PART)
         );
 
         get(PATH_UPLOAD_SPLIT, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(PDFSPLIT_UPLOAD_FORM), PATH_SPLIT, FILE_PART, TO_IMAGE)
+                String.format(de.axxepta.converterservices.IOUtils.getResource(PDFSPLIT_UPLOAD_FORM),
+                        PARAM_VAL_PNG, PARAM_VAL_PDF, PATH_SPLIT, PARAM_AS, FILE_PART, AS_PNG)
         );
+
+        get(PATH_UPLOAD_EXCEL, (request, response) ->
+                String.format(de.axxepta.converterservices.IOUtils.getResource(EXCEL_UPLOAD_FORM),
+                        PATH_EXCEL, FILE_PART)
+        );
+
+        post(PATH_THUMB + "/*/*", MULTIPART_FORM_DATA, App::singleImageHandling);
+
+        post(PATH_THUMB + "/*", MULTIPART_FORM_DATA, App::singleImageHandling);
+
+        post(PATH_THUMBS + "/*/*", MULTIPART_FORM_DATA, App::imageHandling);
+
+        post(PATH_THUMBS + "/*", MULTIPART_FORM_DATA, App::imageHandling);
 
         post(PATH_UPLOAD, MULTIPART_FORM_DATA, (request, response) -> {
             MultipartConfigElement multipartConfigElement = new MultipartConfigElement(STATIC_FILE_PATH);
@@ -204,11 +183,13 @@ public class App {
         });
 
         post(PATH_META, (request, response) -> {
+            boolean compact = checkQueryParameter(request, PARAM_COMPACT, false, "true", true);
             List<String> files = parseMultipartRequest(request, FILE_PART, new ArrayList<>());
             try {
                 if (files.size() > 0) {
-                    ByteArrayOutputStream out =
-                            runExternal("exiftool", "-e", "-json", TEMP_FILE_PATH + "/" + files.get(0));
+                    ByteArrayOutputStream out = compact ?
+                            runExternal("exiftool", "-e", "-json", TEMP_FILE_PATH + "/" + files.get(0)) :
+                            runExternal("exiftool", "-json", TEMP_FILE_PATH + "/" + files.get(0));
                     cleanTemp(files);
                     return new String(out.toByteArray(), "UTF-8");
                 } else return NO_FILES_JSON;
@@ -219,14 +200,15 @@ public class App {
         });
 
         post(PATH_SPLIT, MULTIPART_FORM_DATA, (request, response) -> {
+            boolean as_png = checkQueryParameter(request, PARAM_AS, false, PARAM_VAL_PNG, false);
             List<String> files;
             List<String> outputFiles;
-            boolean toImage;
             try {
                 List<String> partNames = new ArrayList<>();
                 files = parseMultipartRequest(request, FILE_PART, partNames);
-                toImage = partNames.contains(TO_IMAGE);
-                outputFiles = PDFUtils.splitPDF(files.get(0), toImage, TEMP_FILE_PATH);
+                /*if (partNames.contains(AS_PNG))
+                    as_png = true;*/
+                outputFiles = PDFUtils.splitPDF(files.get(0), as_png, TEMP_FILE_PATH);
             } catch (IOException | InterruptedException ex) {
                 return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
             }
@@ -239,7 +221,7 @@ public class App {
                         if (file.exists()) {
                             files.add(fileName);
                             try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                addMultiPartFile(raw.getOutputStream(), toImage ? TYPE_PNG : TYPE_PDF, is, fileName);
+                                addMultiPartFile(raw.getOutputStream(), as_png ? TYPE_PNG : TYPE_PDF, is, fileName);
                             }
                         }
                     }
@@ -255,21 +237,196 @@ public class App {
             }
         });
 
+        post(PATH_EXCEL, (request, response) -> {
+            String sheetName = getQueryParameter(request, PARAM_SHEET_NAME, "");
+            String attSheetName = getQueryParameter(request, PARAM_ATT_SHEET_NAME, ExcelUtils.DEF_ATT_SHEET);
+            String as = getQueryParameter(request, PARAM_AS);
+            boolean indent = !checkQueryParameter(request, PARAM_INDENT, false, "false", false);
+            boolean firstRowName = !checkQueryParameter(request, PARAM_FIRST_ROW_NAME, false, "false", false);
+            boolean firstColumnId = checkQueryParameter(request, PARAM_FIRST_COL_ID, false, "true", false);
+            boolean columnFirst = checkQueryParameter(request, PARAM_COLUMN_FIRST, false, "true", false);
+            String sheet = getQueryParameter(request, PARAM_SHEET_TAG, ExcelUtils.SHEET_EL);
+            String row = getQueryParameter(request, PARAM_ROW_TAG, ExcelUtils.ROW_EL);
+            String column = getQueryParameter(request, PARAM_COLUMN_TAG, ExcelUtils.COL_EL);
+            String separator = getQueryParameter(request, PARAM_SEPARATOR, ExcelUtils.DEF_SEPARATOR);
+
+            List<String> files = parseMultipartRequest(request, FILE_PART, new ArrayList<>());
+            List<String> convertedFiles = new ArrayList<>();
+            for (String file : files) {
+                if (de.axxepta.converterservices.IOUtils.isXLSX(file)) {
+                    convertedFiles.addAll(ExcelUtils.fromExcel(file,
+                            as.equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
+                            sheetName, separator, indent, columnFirst,
+                            firstRowName, firstColumnId, "", sheet, row, column));
+                }
+                if (de.axxepta.converterservices.IOUtils.isCSV(file)) {
+                    convertedFiles.add(ExcelUtils.csvToExcel(file));
+                }
+                if (de.axxepta.converterservices.IOUtils.isXML(file)) {
+                    convertedFiles.add(ExcelUtils.xmlToExcel(file));
+                }
+            }
+
+            if (files.size() > 0) {
+                try {
+                    HttpServletResponse raw = multiPartResponse(response);
+                    for (String fileName : convertedFiles) {
+                        File file = new File(TEMP_FILE_PATH + "/" + fileName);
+                        if (file.exists()) {
+                            String outputType;
+                            if (de.axxepta.converterservices.IOUtils.isXLSX(fileName))
+                                outputType = TYPE_XLSX;
+                            else if (de.axxepta.converterservices.IOUtils.isXML(fileName))
+                                outputType = TYPE_XML;
+                            else
+                                outputType = TYPE_CSV;
+                            try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+                                addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
+                            }
+                            files.add(fileName);
+                        }
+                    }
+                    multiPartClose(raw.getOutputStream());
+                    return raw;
+                } catch (IOException ex) {
+                    return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+                } finally {
+                    cleanTemp(files);
+                }
+            } else {
+                return NO_SUCH_FILE;
+            }
+        });
+
         get(PATH_STOP, (request, response) -> {
-            stop();
-            return "Services stopped.";
+            if (getQueryParameter(request, PARAM_PWD).equals(pwd)) {
+                stop();
+                return "Services stopped.";
+            } else {
+                return "Wrong password provided for stopping server.";
+            }
+
         });
 
     }
 
 //########################################################
 
-    private static List<String> thumbifyFiles(Request request) throws IOException, InterruptedException {
+    private static String getQueryParameter(Request request, String key, String ... defaultVal) {
+        Set<String> params = request.queryParams();
+        if (params.contains(key))
+            return request.queryParams(key);
+        else {
+            if (defaultVal.length > 0)
+                return defaultVal[0];
+            else
+                return "";
+        }
+    }
+
+    private static boolean checkQueryParameter(Request request, String key, boolean caseSens, String value, boolean defaultVal) {
+        String val = getQueryParameter(request, key);
+        if (val.equals("")) {
+            return defaultVal;
+        } else {
+            if (caseSens) {
+                return val.equals(value);
+            } else {
+                return val.toLowerCase().equals(value.toLowerCase());
+            }
+        }
+    }
+
+    private static Object singleImageHandling(Request request, Response response) {
+        List<String> files;
+        try {
+            files = thumbifyFiles(request);
+        } catch (IOException | InterruptedException ex) {
+            return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+        }
+
+        if (files.size() > 0) {
+            HttpServletResponse raw = singleFileResponse(response, "thumb_" + jpgFilename(files.get(0)));
+            File file = new File(TEMP_FILE_PATH + "/" + jpgFilename(files.get(0)));
+            if (file.exists()) {
+                files.add(jpgFilename(files.get(0)));
+                try (InputStream is = new FileInputStream(file)) {
+                    de.axxepta.converterservices.IOUtils.copyStreams(is, raw.getOutputStream());
+                    raw.getOutputStream().close();
+                    return raw;
+                } catch (Exception e) {
+                    return HTML_OPEN + e.getMessage() + HTML_CLOSE;
+                } finally {
+                    cleanTemp(files);
+                }
+            } else {
+                cleanTemp(files);
+                return NO_SUCH_FILE;
+            }
+        } else {
+            return NO_SUCH_FILE;
+        }
+    }
+
+    private static Object imageHandling(Request request, Response response) {
+        List<String> files;
+        try {
+            files = thumbifyFiles(request);
+        } catch (IOException | InterruptedException ex) {
+            return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+        }
+
+        if (files.size() > 0) {
+            try {
+                List<String> transformedFiles = new ArrayList<>();
+                HttpServletResponse raw = multiPartResponse(response);
+                for (String fileName : files) {
+                    File file = new File(TEMP_FILE_PATH + "/" + jpgFilename(fileName));
+                    if (file.exists()) {
+                        transformedFiles.add(jpgFilename(fileName));
+                        try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+                            addMultiPartFile(raw.getOutputStream(), TYPE_JPEG, is, jpgFilename(fileName));
+                        }
+                    }
+                }
+                files.addAll(transformedFiles);
+                multiPartClose(raw.getOutputStream());
+                return raw;
+            } catch (IOException ex) {
+                return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+            } finally {
+                cleanTemp(files);
+            }
+        } else {
+            return NO_SUCH_FILE;
+        }
+    }
+
+    private static List<String> thumbifyFiles(Request request)
+            throws IOException, InterruptedException {
         List<String> files = parseMultipartRequest(request, FILE_PART, new ArrayList<>());
+        String size = request.splat()[0];
+        String fit = "";
+        if (request.splat().length > 1)
+            fit = request.splat()[1];
+        String scaling;
+        switch (fit.toLowerCase()) {
+            case PARAM_VAL_CROP: {
+                scaling = size + "^"; break;    // scale to shorter side, eventually cropped
+            }
+            case PARAM_VAL_SCALE: {
+                scaling = size + "!"; break;    // scale to values, aspect ratio ignored
+            }
+            default: scaling = size;            // scale to fit, eventually borders
+        }
         try {
             for (String file : files) {
-                runExternal("mogrify", "-flatten", "-strip", "-format", "jpg", "-quality",
-                        "75", "-thumbnail", "300x300^", "-gravity", "center", "-extent", "300x300",  TEMP_FILE_PATH + "/" + file);
+                runExternal("mogrify",
+                        "-flatten", "-strip",
+                        "-format", "jpg",
+                        "-quality", "75",
+                        "-thumbnail", scaling,
+                        "-gravity", "center", "-extent", size,  TEMP_FILE_PATH + "/" + file);
             }
         } catch (IOException | InterruptedException ex) {
             cleanTemp(files);

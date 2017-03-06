@@ -43,4 +43,16 @@ class IOUtils {
         int sepPos = path.lastIndexOf("/");
         return path.substring(Math.max(-1, sepPos) + 1);
     }
+
+    static boolean isXLSX(String fileName) {
+        return fileName.toLowerCase().endsWith(".xlsx");
+    }
+
+    static boolean isCSV(String fileName) {
+        return fileName.toLowerCase().endsWith(".csv");
+    }
+
+    static boolean isXML(String fileName) {
+        return fileName.toLowerCase().endsWith(".xml");
+    }
 }

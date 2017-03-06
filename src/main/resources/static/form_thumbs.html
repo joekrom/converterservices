@@ -1,10 +1,32 @@
 <html>
-    <head><title>Upload form for ImageMagick thumb generation</title></head>
+    <head>
+        <title>Upload form for ImageMagick thumb generation</title>
+        <script>
+        function submitCheck()
+        {
+            var size = document.getElementById("size").value;
+            var fit = document.querySelector('input[name="fit"]:checked').value;
+            var form = document.getElementById("form1");
+            form.action = "%s/" + size + "/" + fit;
+            form.submit();
+        }
+        </script>
+    </head>
     <body>
         <h1>Upload multiple files for thumb generation with ImageMagick</h1>
-        <form action="%s" method="post" enctype="multipart/form-data">
-            <input type="file" name="%s" multiple="multiple" />
-            <input type="submit" />
+        <form id="form1" method="post" enctype="multipart/form-data">
+            <input type="file" name="%s" multiple="multiple" /><br>
+            <fieldset id="fits">
+                <input type="radio" id="fit_crop" name="fit" value="crop" checked/>
+                <label for="fit_crop">CROP</label><br>
+                <input type="radio" id="fit_scale" name="fit" value="scale"/>
+                <label for="fit_scale">SCALE</label><br>
+                <input type="radio" id="fit_fit" name="fit" value="fit"/>
+                <label for="fit_fit">FIT</label><br>
+            </fieldset>
+            <input type="text" id="size"/>
+            <label for="size">Size</label><br>
+            <input type=button name="button1" onclick="submitCheck();">
         </form>
     </body>
 </html>

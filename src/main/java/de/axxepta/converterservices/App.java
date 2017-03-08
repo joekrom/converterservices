@@ -242,7 +242,7 @@ public class App {
 
         post(PATH_EXCEL, (request, response) -> {
             String sheetName = getQueryParameter(request, PARAM_SHEET_NAME, "");
-            String attSheetName = getQueryParameter(request, PARAM_ATT_SHEET_NAME, ExcelUtils.DEF_ATT_SHEET);
+            String attSheetName = getQueryParameter(request, PARAM_ATT_SHEET_NAME, "");
             String as = getQueryParameter(request, PARAM_AS);
             boolean customXMLMapping = checkQueryParameter(request, PARAM_CUSTOM_XML, false, "true", false);
             boolean indent = !checkQueryParameter(request, PARAM_INDENT, false, "false", false);
@@ -261,7 +261,7 @@ public class App {
                     convertedFiles.addAll(ExcelUtils.fromExcel(file,
                             as.equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
                             customXMLMapping, sheetName, separator, indent, columnFirst,
-                            firstRowName, firstColumnId, "", sheet, row, column));
+                            firstRowName, firstColumnId, "", sheet, row, column, attSheetName));
                 }
                 if (de.axxepta.converterservices.IOUtils.isCSV(file)) {
                     convertedFiles.add(ExcelUtils.csvToExcel(file,

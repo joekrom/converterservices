@@ -4,10 +4,7 @@ import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.extractor.XSSFExportToXml;
-import org.apache.poi.xssf.usermodel.XSSFMap;
-import org.apache.poi.xssf.usermodel.XSSFRow;
-import org.apache.poi.xssf.usermodel.XSSFSheet;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
@@ -32,7 +29,7 @@ class ExcelUtils {
     static final String ROW_EL                  = "row";
     static final String COL_EL                  = "column";
     static final String DEF_SHEET_NAME          = "sheet0";
-    static final String DEF_ATT_SHEET           = "id";
+    static final String DEF_ATT_SHEET           = "name";
     static final String DEF_SEPARATOR           = ";";
 
     private ExcelUtils() {}
@@ -40,7 +37,7 @@ class ExcelUtils {
 
     static List<String> fromExcel(String fileName, FileType type, boolean customXMLMapping,String sheetName,
                           String separator, boolean indent, boolean columnFirst, boolean firstColName, boolean firstRowName,
-                          String fileEl, String sheetEl, String rowEl, String colEl) {
+                          String fileEl, String sheetEl, String rowEl, String colEl, String attSheetName) {
         List<String> outputFiles = new ArrayList<>();
         try (FileInputStream file = new FileInputStream(App.TEMP_FILE_PATH + "/" + fileName)) {
             Workbook workbook = new XSSFWorkbook(file);
@@ -52,7 +49,7 @@ class ExcelUtils {
                     outputFiles.addAll(excelCustomXMLMapping(fileName));
                 else
                     outputFiles.add(excelToXML(fileName, workbook, sheetName, columnFirst, firstColName, firstRowName,
-                        fileEl, sheetEl, rowEl, colEl, indent));
+                        fileEl, sheetEl, rowEl, colEl, indent, attSheetName));
             }
         } catch (IOException ie) {
             logger.error("Exception reading Excel file: " + ie.getMessage());
@@ -147,8 +144,9 @@ class ExcelUtils {
     private static String excelToXML(String fileName, Workbook workbook, String sheetName, boolean columnFirst,
                                    boolean firstColName, boolean firstRowName,
                                    String fileEl, String sheetEl, String rowEl, String colEl,
-                                   boolean indent) {
+                                   boolean indent, String attSheetName) {
         List<Sheet> sheets = getSheets(workbook, sheetName);
+        FormulaEvaluator evaluator = new XSSFFormulaEvaluator((XSSFWorkbook) workbook);
         DataFormatter formatter = new DataFormatter(true);
 
         String outputFile = xmlFileName(fileName);
@@ -156,7 +154,12 @@ class ExcelUtils {
             writer.write(XML_PROLOGUE);
             writeTag(writer, TagType.open, fileEl.equals("") ? FILE_EL : fileEl, indent, "");
             for (Sheet sheet : sheets) {
-                writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, SHEET_INDENT);
+                if (attSheetName.equals("")) {
+                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, SHEET_INDENT);
+                } else {
+                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, SHEET_INDENT,
+                            attSheetName, sheet.getSheetName());
+                }
                 int firstRow = sheet.getFirstRowNum();
                 int lastRow = sheet.getLastRowNum();
                 int firstColumn = Math.min(sheet.getRow(firstRow).getFirstCellNum(), sheet.getRow(firstRow + 1).getFirstCellNum());
@@ -171,7 +174,7 @@ class ExcelUtils {
                         for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {
                             Cell cell = row.getCell(colNumber);
                             writeElement(writer, colEl.equals("") ? COL_EL : colEl,
-                                    formatter.formatCellValue(cell), indent, CONTENT_INDENT, COL_INDENT,
+                                    formatter.formatCellValue(cell, evaluator), indent, CONTENT_INDENT, COL_INDENT,
                                     "Ref", (cell != null) ? cell.getAddress().toString() : "_",
                                     "ColumnNumber", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_");
                         }

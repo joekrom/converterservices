@@ -6,37 +6,40 @@
             {
                 var submitAction = "%s?";
                 if (document.getElementById("AS").checked) {
-                    submitAction += "as=xml&";
+                    submitAction += "%s=xml&";
+                }
+                if (document.getElementById("CUSTOM_XML").checked) {
+                    submitAction += "%s=xml&";
                 }
                 if (!document.getElementById("INDENT").checked) {
-                    submitAction += "indent=false&";
+                    submitAction += "%s=false&";
                 }
                 if (!document.getElementById("FIRST_ROW").checked) {
-                    submitAction += "firstRowName=false&";
+                    submitAction += "%s=false&";
                 }
                 if (document.getElementById("FIRST_COL").checked) {
-                    submitAction += "firstColId=true&";
+                    submitAction += "%s=true&";
                 }
                 if (document.getElementById("COL_FIRST").checked) {
-                    submitAction += "columnFirst=true&";
+                    submitAction += "%s=true&";
                 }
                 if (!(document.getElementById("SHEET").value === "")) {
-                    submitAction += "sheet="+ document.getElementById("SHEET").value + "&";
+                    submitAction += "%s="+ document.getElementById("SHEET").value + "&";
                 }
                 if (!(document.getElementById("ROW").value === "")) {
-                    submitAction += "row="+ document.getElementById("ROW").value + "&";
+                    submitAction += "%s="+ document.getElementById("ROW").value + "&";
                 }
                 if (!(document.getElementById("COLUMN").value === "")) {
-                    submitAction += "column="+ document.getElementById("COLUMN").value + "&";
+                    submitAction += "%s="+ document.getElementById("COLUMN").value + "&";
                 }
                 if (!(document.getElementById("SHEET_NAME").value === "")) {
-                    submitAction += "sheetName="+ document.getElementById("SHEET_NAME").value + "&";
+                    submitAction += "%s="+ document.getElementById("SHEET_NAME").value + "&";
                 }
                 if (!(document.getElementById("ATT_SHEET").value === "")) {
-                    submitAction += "attSheetName="+ document.getElementById("ATT_SHEET").value + "&";
+                    submitAction += "%s="+ document.getElementById("ATT_SHEET").value + "&";
                 }
                 if (!(document.getElementById("SEPARATOR").value === "")) {
-                    submitAction += "separator="+ document.getElementById("SEPARATOR").value + "&";
+                    submitAction += "%s="+ document.getElementById("SEPARATOR").value + "&";
                 }
                 var form = document.getElementById("form4");
                 form.action = submitAction;
@@ -49,6 +52,7 @@
     <form id="form4" method="post" enctype="multipart/form-data">
         <label><input type="file" name="%s" multiple="multiple"/>Choose XSLX or CSV/XML file</label><br>
         <label><input type="checkbox" id="AS">Convert XSLX to XML (default: CSV). Will be ignored for XML/CSV input.</label><br>
+        <label><input type="checkbox" id="CUSTOM_XML">Use custom XML mapping defined in an XSLX file for XML export. Will be ignored for XML/CSV input or CSV output. Default: false.</label><br>
         <label><input type="checkbox" id="INDENT" checked>Indent XML output. Will be ignored for XML/CSV input or CSV output.</label><br>
         <label><input type="checkbox" id="FIRST_ROW" checked>First row as element names. Will be ignored for XML/CSV input or CSV output.</label><br>
         <label><input type="checkbox" id="FIRST_COL">First column as ID attributes. Will be ignored for XML/CSV input or CSV output.</label><br>

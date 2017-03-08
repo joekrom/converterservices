@@ -49,6 +49,7 @@ public class App {
     private static final String PARAM_NAME              = ":name";
     private static final String PARAM_COMPACT           = "compact";
     private static final String PARAM_AS                = "as";
+    private static final String PARAM_CUSTOM_XML        = "customXMLMapping";
     private static final String PARAM_SHEET_NAME        = "sheetName";
     private static final String PARAM_ATT_SHEET_NAME    = "attSheetName";
     private static final String PARAM_INDENT            = "indent";
@@ -149,7 +150,9 @@ public class App {
 
         get(PATH_UPLOAD_EXCEL, (request, response) ->
                 String.format(de.axxepta.converterservices.IOUtils.getResource(EXCEL_UPLOAD_FORM),
-                        PATH_EXCEL, FILE_PART)
+                        PATH_EXCEL, PARAM_AS, PARAM_CUSTOM_XML, PARAM_INDENT, PARAM_FIRST_ROW_NAME, PARAM_FIRST_COL_ID,
+                        PARAM_COLUMN_FIRST, PARAM_SHEET_TAG, PARAM_ROW_TAG, PARAM_COLUMN_TAG, PARAM_SHEET_NAME,
+                        PARAM_ATT_SHEET_NAME, PARAM_SEPARATOR, FILE_PART)
         );
 
         post(PATH_THUMB + "/*/*", MULTIPART_FORM_DATA, App::singleImageHandling);
@@ -241,6 +244,7 @@ public class App {
             String sheetName = getQueryParameter(request, PARAM_SHEET_NAME, "");
             String attSheetName = getQueryParameter(request, PARAM_ATT_SHEET_NAME, ExcelUtils.DEF_ATT_SHEET);
             String as = getQueryParameter(request, PARAM_AS);
+            boolean customXMLMapping = checkQueryParameter(request, PARAM_CUSTOM_XML, false, "true", false);
             boolean indent = !checkQueryParameter(request, PARAM_INDENT, false, "false", false);
             boolean firstRowName = !checkQueryParameter(request, PARAM_FIRST_ROW_NAME, false, "false", false);
             boolean firstColumnId = checkQueryParameter(request, PARAM_FIRST_COL_ID, false, "true", false);
@@ -256,11 +260,12 @@ public class App {
                 if (de.axxepta.converterservices.IOUtils.isXLSX(file)) {
                     convertedFiles.addAll(ExcelUtils.fromExcel(file,
                             as.equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
-                            sheetName, separator, indent, columnFirst,
+                            customXMLMapping, sheetName, separator, indent, columnFirst,
                             firstRowName, firstColumnId, "", sheet, row, column));
                 }
                 if (de.axxepta.converterservices.IOUtils.isCSV(file)) {
-                    convertedFiles.add(ExcelUtils.csvToExcel(file));
+                    convertedFiles.add(ExcelUtils.csvToExcel(file,
+                            (sheetName.equals("")) ? ExcelUtils.DEF_SHEET_NAME : sheetName, separator));
                 }
                 if (de.axxepta.converterservices.IOUtils.isXML(file)) {
                     convertedFiles.add(ExcelUtils.xmlToExcel(file));

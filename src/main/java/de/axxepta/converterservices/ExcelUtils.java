@@ -23,11 +23,12 @@ class ExcelUtils {
     private static final String SHEET_INDENT    = "  ";
     private static final String ROW_INDENT      = "    ";
     private static final String COL_INDENT      = "      ";
-    private static final String CONTENT_INDENT  = "        ";
-    private static final String FILE_EL         = "workbook";
-    static final String SHEET_EL                = "sheet";
-    static final String ROW_EL                  = "row";
-    static final String COL_EL                  = "column";
+    private static final String VALUE_INDENT    = "        ";
+    private static final String FILE_EL         = "Workbook";
+    static final String SHEET_EL                = "Data";
+    static final String ROW_EL                  = "Row";
+    static final String COL_EL                  = "Cell";
+    private static final String VALUE_EL        = "Value";
     static final String DEF_SHEET_NAME          = "sheet0";
     static final String DEF_ATT_SHEET           = "name";
     static final String DEF_SEPARATOR           = ";";
@@ -152,12 +153,12 @@ class ExcelUtils {
         String outputFile = xmlFileName(fileName);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(App.TEMP_FILE_PATH + "/" + outputFile))) {
             writer.write(XML_PROLOGUE);
-            writeTag(writer, TagType.open, fileEl.equals("") ? FILE_EL : fileEl, indent, "");
+            writeTag(writer, TagType.open, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
             for (Sheet sheet : sheets) {
                 if (attSheetName.equals("")) {
-                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, SHEET_INDENT);
+                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent,false, SHEET_INDENT);
                 } else {
-                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, SHEET_INDENT,
+                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, false, SHEET_INDENT,
                             attSheetName, sheet.getSheetName());
                 }
                 int firstRow = sheet.getFirstRowNum();
@@ -169,21 +170,24 @@ class ExcelUtils {
                 } else {
                     for (int rowNumber = firstRow; rowNumber < lastRow + 1; rowNumber++) {
                         Row row = sheet.getRow(rowNumber);
-                        writeTag(writer, TagType.open, rowEl.equals("") ? ROW_EL : rowEl, indent, ROW_INDENT,
+                        writeTag(writer, TagType.open, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT,
                                 "RowNumber", Integer.toString(row.getRowNum()));
                         for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {
                             Cell cell = row.getCell(colNumber);
-                            writeElement(writer, colEl.equals("") ? COL_EL : colEl,
-                                    formatter.formatCellValue(cell, evaluator), indent, CONTENT_INDENT, COL_INDENT,
-                                    "Ref", (cell != null) ? cell.getAddress().toString() : "_",
-                                    "ColumnNumber", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_");
+                            writeTag(writer, TagType.open, colEl.equals("") ? COL_EL : colEl, indent, false,
+                                    COL_INDENT, "Ref", (cell != null) ? cell.getAddress().toString() : "_",
+                                    "ColumnNumber", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_");//,
+                                    //"Type", cell.getCellTypeEnum().toString().toLowerCase().substring(0, 1));
+                            writeElement(writer, VALUE_EL,
+                                    formatter.formatCellValue(cell, evaluator), indent, VALUE_INDENT);
+                            writeTag(writer, TagType.close, colEl.equals("") ? COL_EL : colEl, indent, false, COL_INDENT);
                         }
-                        writeTag(writer, TagType.close, rowEl.equals("") ? ROW_EL : rowEl, indent, ROW_INDENT);
+                        writeTag(writer, TagType.close, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT);
                     }
                 }
-                writeTag(writer, TagType.close, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, SHEET_INDENT);
+                writeTag(writer, TagType.close, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, false, SHEET_INDENT);
             }
-            writeTag(writer, TagType.close, fileEl.equals("") ? FILE_EL : fileEl, indent, "");
+            writeTag(writer, TagType.close, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
         } catch (IOException ie){
             logger.error("Exception writing to XML file: " + ie.getMessage());
         }
@@ -202,10 +206,10 @@ class ExcelUtils {
         return sheets;
     }
 
-    private static void writeTag(BufferedWriter writer, TagType tag, String name,
-                                 boolean indent, String indentString, String ... attributes) throws IOException {
+    private static void writeTag(BufferedWriter writer, TagType tag, String name, boolean indent, boolean tagWithContent,
+                                 String indentString, String ... attributes) throws IOException {
         StringBuilder builder = new StringBuilder();
-        builder.append(indent ? indentString : "");
+        builder.append((indent && !tagWithContent)? indentString : "");
         if (tag.equals(TagType.open)) {
             builder.append("<").append(name);
             for (int i = 0; i < attributes.length / 2; i++) {
@@ -215,17 +219,16 @@ class ExcelUtils {
         } else {
             builder.append("</").append(name).append(">");
         }
-        builder.append(indent ? System.lineSeparator() : "");
+        builder.append((indent && !tagWithContent) ? System.lineSeparator() : "");
         writer.write(builder.toString());
     }
 
     private static void writeElement(BufferedWriter writer, String name, String content,
-                                 boolean indent, String indentContentString, String indentTagString,
+                                 boolean indent, String indentTagString,
                                      String ... attributes) throws IOException {
-        writeTag(writer, TagType.open, name, indent, indentTagString, attributes);
-        String s = (indent ? indentContentString : "").concat(content).concat(indent ? System.lineSeparator() : "");
-        writer.write(s);
-        writeTag(writer, TagType.close, name, indent, indentTagString);
+        writeTag(writer, TagType.open, name, indent, true, indentTagString, attributes);
+        writer.write(content);
+        writeTag(writer, TagType.close, name, indent, false, indentTagString);
     }
 
     private static String xlsxFileName(String name) {

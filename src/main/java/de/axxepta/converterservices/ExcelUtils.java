@@ -176,8 +176,8 @@ class ExcelUtils {
                             Cell cell = row.getCell(colNumber);
                             writeTag(writer, TagType.open, colEl.equals("") ? COL_EL : colEl, indent, false,
                                     COL_INDENT, "Ref", (cell != null) ? cell.getAddress().toString() : "_",
-                                    "ColumnNumber", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_");//,
-                                    //"Type", cell.getCellTypeEnum().toString().toLowerCase().substring(0, 1));
+                                    "ColumnNumber", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_",
+                                    "Type", (cell != null) ? cell.getCellTypeEnum().toString().toLowerCase().substring(0, 1) : "_");
                             writeElement(writer, VALUE_EL,
                                     formatter.formatCellValue(cell, evaluator), indent, VALUE_INDENT);
                             writeTag(writer, TagType.close, colEl.equals("") ? COL_EL : colEl, indent, false, COL_INDENT);
@@ -209,7 +209,7 @@ class ExcelUtils {
     private static void writeTag(BufferedWriter writer, TagType tag, String name, boolean indent, boolean tagWithContent,
                                  String indentString, String ... attributes) throws IOException {
         StringBuilder builder = new StringBuilder();
-        builder.append((indent && !tagWithContent)? indentString : "");
+        builder.append((indent && (!tagWithContent || tag.equals(TagType.open))) ? indentString : "");
         if (tag.equals(TagType.open)) {
             builder.append("<").append(name);
             for (int i = 0; i < attributes.length / 2; i++) {
@@ -219,7 +219,7 @@ class ExcelUtils {
         } else {
             builder.append("</").append(name).append(">");
         }
-        builder.append((indent && !tagWithContent) ? System.lineSeparator() : "");
+        builder.append((indent && (!tagWithContent || tag.equals(TagType.close))) ? System.lineSeparator() : "");
         writer.write(builder.toString());
     }
 
@@ -228,7 +228,7 @@ class ExcelUtils {
                                      String ... attributes) throws IOException {
         writeTag(writer, TagType.open, name, indent, true, indentTagString, attributes);
         writer.write(content);
-        writeTag(writer, TagType.close, name, indent, false, indentTagString);
+        writeTag(writer, TagType.close, name, indent, true, indentTagString);
     }
 
     private static String xlsxFileName(String name) {

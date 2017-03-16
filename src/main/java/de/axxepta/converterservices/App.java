@@ -61,10 +61,13 @@ public class App {
     private static final String PARAM_COLUMN_TAG        = "column";
     private static final String PARAM_SEPARATOR         = "separator";
     private static final String PARAM_PWD               = "pwd";
+    private static final String PARAM_RESPONSE          = "response";
     private static final String PARAM_VAL_SCALE         = "scale";
     private static final String PARAM_VAL_CROP          = "crop";
     private static final String PARAM_VAL_PDF           = "pdf";
     private static final String PARAM_VAL_PNG           = "png";
+    private static final String PARAM_VAL_SINGLE        = "single";
+    private static final String PARAM_VAL_MULTI         = "multi";
 
     private static final String HELLO_PAGE              = "static/hello.html";
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
@@ -244,6 +247,7 @@ public class App {
             String sheetName = getQueryParameter(request, PARAM_SHEET_NAME, "");
             String attSheetName = getQueryParameter(request, PARAM_ATT_SHEET_NAME, "");
             String as = getQueryParameter(request, PARAM_AS);
+            String responseType = getQueryParameter(request, PARAM_RESPONSE, PARAM_VAL_MULTI);
             boolean customXMLMapping = checkQueryParameter(request, PARAM_CUSTOM_XML, false, "true", false);
             boolean indent = !checkQueryParameter(request, PARAM_INDENT, false, "false", false);
             boolean firstRowName = !checkQueryParameter(request, PARAM_FIRST_ROW_NAME, false, "false", false);
@@ -259,7 +263,7 @@ public class App {
             for (String file : files) {
                 if (de.axxepta.converterservices.IOUtils.isXLSX(file)) {
                     convertedFiles.addAll(ExcelUtils.fromExcel(file,
-                            as.equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
+                            as.toLowerCase().equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
                             customXMLMapping, sheetName, separator, indent, columnFirst,
                             firstRowName, firstColumnId, "", sheet, row, column, attSheetName));
                 }
@@ -274,24 +278,38 @@ public class App {
 
             if (files.size() > 0) {
                 try {
-                    HttpServletResponse raw = multiPartResponse(response);
+                    HttpServletResponse raw = responseType.toLowerCase().equals(PARAM_VAL_SINGLE.toLowerCase()) ?
+                            singleFileResponse(response, convertedFiles.get(0)) :
+                            multiPartResponse(response);
+                    int fileCounter = 0;
                     for (String fileName : convertedFiles) {
                         File file = new File(TEMP_FILE_PATH + "/" + fileName);
                         if (file.exists()) {
-                            String outputType;
-                            if (de.axxepta.converterservices.IOUtils.isXLSX(fileName))
-                                outputType = TYPE_XLSX;
-                            else if (de.axxepta.converterservices.IOUtils.isXML(fileName))
-                                outputType = TYPE_XML;
-                            else
-                                outputType = TYPE_CSV;
-                            try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
-                            }
                             files.add(fileName);
+                            if (responseType.toLowerCase().equals(PARAM_VAL_SINGLE.toLowerCase())) {
+                                if (fileCounter == 0) {
+                                    try (InputStream is = new FileInputStream(file)) {
+                                        de.axxepta.converterservices.IOUtils.copyStreams(is, raw.getOutputStream());
+                                        raw.getOutputStream().close();
+                                    }
+                                }
+                            } else {
+                                String outputType;
+                                if (de.axxepta.converterservices.IOUtils.isXLSX(fileName))
+                                    outputType = TYPE_XLSX;
+                                else if (de.axxepta.converterservices.IOUtils.isXML(fileName))
+                                    outputType = TYPE_XML;
+                                else
+                                    outputType = TYPE_CSV;
+                                try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+                                    addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
+                                }
+                            }
+                            fileCounter++;
                         }
                     }
-                    multiPartClose(raw.getOutputStream());
+                    if (responseType.toLowerCase().equals(PARAM_VAL_MULTI.toLowerCase()))
+                        multiPartClose(raw.getOutputStream());
                     return raw;
                 } catch (IOException ex) {
                     return HTML_OPEN + ex.getMessage() + HTML_CLOSE;

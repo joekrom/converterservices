@@ -501,7 +501,7 @@ public class App {
      * @param request request of type multipart
      * @param filePart name of parts from which files shall be extracted
      * @param partNames will contain the names of all request parts
-     * @return list of filenames of files contained in parts named like filePart
+     * @return list of file names of files contained in parts named like filePart
      */
     private static List<String> parseMultipartRequest(Request request, String filePart, List<String> partNames) {
         MultipartConfigElement multipartConfigElement = new MultipartConfigElement(TEMP_FILE_PATH);

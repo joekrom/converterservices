@@ -14,7 +14,7 @@ import javax.xml.transform.TransformerException;
 import java.io.*;
 import java.util.*;
 
-class ExcelUtils {
+public class ExcelUtils {
 
     private static Logger logger = LoggerFactory.getLogger(ExcelUtils.class);
 
@@ -84,6 +84,47 @@ class ExcelUtils {
             outputFiles.add(convertedFileName);
         }
         return outputFiles;
+    }
+
+
+    public static String excelSheetToHTMLString(String fileName, String sheetName, boolean firstRowHead) {
+        StringBuilder builder = new StringBuilder();
+        builder.append("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"" +
+                " \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">")
+                .append("<html xmlns=\"http://www.w3.org/1999/xhtml\">")
+                .append("<head><title>").append(sheetName).append("</title></head>")
+                .append("<body>");
+        try (FileInputStream file = new FileInputStream(fileName)) {
+            Workbook workbook = new XSSFWorkbook(file);
+            Sheet sheet = workbook.getSheet(sheetName);
+            DataFormatter formatter = new DataFormatter(true);
+            int firstRow = sheet.getFirstRowNum();
+            int lastRow = sheet.getLastRowNum();
+            int firstColumn = Math.min(sheet.getRow(firstRow).getFirstCellNum(), sheet.getRow(firstRow + 1).getFirstCellNum());
+            int lastColumn = Math.max(sheet.getRow(firstRow).getLastCellNum(), sheet.getRow(firstRow + 1).getLastCellNum());
+
+            builder.append("<table>");
+            for (int rowNumber = firstRow; rowNumber < lastRow + 1; rowNumber++) {
+                builder.append("<tr>");
+                Row row = sheet.getRow(rowNumber);
+                for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {
+                    builder.append((firstRowHead && (rowNumber == firstRow)) ? "<th>" : "<td>");
+                    Cell cell = row.getCell(colNumber);
+                    builder.append(formatter.formatCellValue(cell).
+                            replaceAll("&", "&amp;").replaceAll("<", "&lt;").
+                            replaceAll(">", "&gt;"));
+                    builder.append((firstRowHead && (colNumber == firstColumn)) ? "</th>" : "</td>");
+                }
+                builder.append("</tr>");
+            }
+            builder.append("</table>");
+            builder.append("</body></html>");
+
+        } catch (IOException ie) {
+            logger.error("Exception reading Excel file: " + ie.getMessage());
+            builder.append("</body></html>");
+        }
+        return builder.toString();
     }
 
     private static List<String> excelCustomXMLMapping(String fileName) throws IOException {

@@ -2,6 +2,7 @@ group 'de.axxepta'
 version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
+apply plugin: 'maven'
 
 sourceCompatibility = 1.8
 targetCompatibility = '1.8'
@@ -47,6 +48,7 @@ jar {
     }
 }
 
+
 task fatJar(type: Jar) {
     baseName = project.name + '-all'
     manifest {
@@ -58,3 +60,12 @@ task fatJar(type: Jar) {
     with jar
 }
 
+task createPom << {
+    pom {
+        project {
+            groupId 'de.axxepta'
+            artifactId 'converterservices'
+            version version
+        }
+    }.writeTo("pom.xml")
+}

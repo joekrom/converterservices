@@ -13,13 +13,13 @@ import java.util.List;
 
 public class Step {
 
-    private Type type;
+    private Pipeline.StepType type;
     private Object input;
     private Object output;
     private Object additional;
     private Object params;
 
-    Step(Type type, Object input, Object output, Object additional, Object params) {
+    Step(Pipeline.StepType type, Object input, Object output, Object additional, Object params) {
         this.type = type;
         this.input = input;
         this.output = output;
@@ -27,7 +27,7 @@ public class Step {
         this.params = params;
     }
 
-    Type getType() {
+    Pipeline.StepType getType() {
         return type;
     }
 
@@ -55,7 +55,7 @@ public class Step {
         return params;
     }
 
-    Object exec(Pipeline.PipeRun pipe) throws Exception {
+    Object exec(Pipeline pipe) throws Exception {
         if (StringUtils.isEmpty(input) && !(pipe.getLastOutput() instanceof List))
             throw new IllegalStateException("Last process step has wrong type!");
 
@@ -65,7 +65,7 @@ public class Step {
         } else {
             inputFiles = new ArrayList<>();
             if (input instanceof String) {
-                if (type.equals(Type.XQUERY) && input.equals(Saxon.XQUERY_NO_CONTEXT)) {
+                if (type.equals(Pipeline.StepType.XQUERY) && input.equals(Saxon.XQUERY_NO_CONTEXT)) {
                     inputFiles.add((String) input);
                 } else {
                     inputFiles.add(pipedPath(input, pipe));
@@ -170,7 +170,7 @@ public class Step {
         return outputObject;
     }
 
-    protected static String pipedPath(Object fileName, Pipeline.PipeRun pipe) throws IllegalArgumentException {
+    protected static String pipedPath(Object fileName, Pipeline pipe) throws IllegalArgumentException {
         if (!(fileName instanceof String)) {
             throw new IllegalArgumentException("Object is not a String");
         }
@@ -178,21 +178,17 @@ public class Step {
                 pipe.getInputPath() + fileName;
     }
 
-    static boolean assertParameter(Type type, Parameter paramType, Object param) {
+    static boolean assertParameter(Pipeline.StepType type, Parameter paramType, Object param) {
         if (StringUtils.isEmpty(param) &&
                 !(paramType.equals(Parameter.ADDITIONAL) &&
-                        (type.equals(Type.XSLT) || type.equals(Type.XQUERY) || type.equals(Type.COMBINE) ) ) )
+                        (type.equals(Pipeline.StepType.XSLT) || type.equals(Pipeline.StepType.XQUERY) || type.equals(Pipeline.StepType.COMBINE) ) ) )
             return true;
-        if (paramType.equals(Parameter.PARAMS) && type.equals(Type.PDF_SPLIT) && !(param instanceof Boolean))
+        if (paramType.equals(Parameter.PARAMS) && type.equals(Pipeline.StepType.PDF_SPLIT) && !(param instanceof Boolean))
             return false;
-        if (paramType.equals(Parameter.ADDITIONAL) && (type.equals(Type.ZIP) || type.equals(Type.COMBINE))
+        if (paramType.equals(Parameter.ADDITIONAL) && (type.equals(Pipeline.StepType.ZIP) || type.equals(Pipeline.StepType.COMBINE))
                 && (param instanceof Pipeline.SubPipeline))
             return true;
         return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);
-    }
-
-    public enum Type {
-        XSLT, XSL_FO, XQUERY, ZIP, UNZIP, PDF_SPLIT, PDF_MERGE, THUMB, EXIF, COMBINE, NONE
     }
 
     enum Parameter {

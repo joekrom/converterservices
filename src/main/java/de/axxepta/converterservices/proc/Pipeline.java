@@ -128,6 +128,39 @@ public class Pipeline {
         generatedFiles.add(file);
     }
 
+    private static Step createStep(StepType type, Object input, Object output, Object additional, Object params)
+            throws IllegalArgumentException
+    {
+        Step step;
+        switch (type) {
+            case XSLT:
+                step = new XSLTStep(input, output, additional, params);
+                break;
+            case ZIP:
+                step = new ZIPStep(input, output, additional, params);
+                break;
+            case XQUERY:
+                step = new XQueryStep(input, output, additional, params);
+                break;
+            case COMBINE:
+                step = new CombineStep(input, output, additional, params);
+                break;
+            case PDF_SPLIT:
+                step = new PDFSplitStep(input, output, additional, params);
+                break;
+            default:
+                step = new EmptyStep(input, output, additional, params);
+        }
+        if (!step.assertParameter(Step.Parameter.ADDITIONAL, additional))
+            throw new IllegalArgumentException("Wrong additional input type!");
+        if (!step.assertParameter(Step.Parameter.PARAMS, params))
+            throw new IllegalArgumentException("Wrong process parameter type!");
+        if (!step.assertParameter(Step.Parameter.INPUT, input))
+            throw new IllegalArgumentException("Wrong input type!");
+        if (!step.assertParameter(Step.Parameter.OUTPUT, input))
+            throw new IllegalArgumentException("Wrong output type!");
+        return step;
+    }
 
     private Object stepExec(Step step, boolean mainPipe) throws Exception {
         stepCounter += 1;
@@ -227,16 +260,7 @@ public class Pipeline {
         public PipelineBuilder step(StepType type, Object input, Object output, Object additional, Object params) throws IllegalArgumentException {
             if (steps.size() == 0 && StringUtils.isEmpty(input))
                 throw new IllegalArgumentException("Input of first argument must not be null!");
-            if (!Step.assertParameter(type, Step.Parameter.ADDITIONAL, additional))
-                throw new IllegalArgumentException("Wrong additional input type!");
-            if (!Step.assertParameter(type, Step.Parameter.PARAMS, params))
-                throw new IllegalArgumentException("Wrong process parameter type!");
-            if (!Step.assertParameter(type, Step.Parameter.INPUT, input))
-                throw new IllegalArgumentException("Wrong input type!");
-            if (!Step.assertParameter(type, Step.Parameter.OUTPUT, input))
-                throw new IllegalArgumentException("Wrong output type!");
-            Step step = new Step(type, input, output, additional, params);
-            steps.add(step);
+            steps.add(Pipeline.createStep(type, input, output, additional, params));
             return this;
         }
 
@@ -259,8 +283,9 @@ public class Pipeline {
         private SubPipeline() {}
 
         public SubPipeline step(StepType type, Object input, Object output, Object additional, Object params) {
-            Step step = new Step(type, input, output, additional, params);
-            steps.add(step);
+            if (steps.size() == 0 && StringUtils.isEmpty(input))
+                throw new IllegalArgumentException("Input of first argument must not be null!");
+            steps.add(Pipeline.createStep(type, input, output, additional, params));
             return this;
         }
 
@@ -271,7 +296,7 @@ public class Pipeline {
         Step getNext() {
             pointer += 1;
             return steps.size() >= pointer ? steps.get(pointer - 1) :
-                    new Step(StepType.NONE, null, null, null, null);
+                    Pipeline.createStep(StepType.NONE, null, null, null, null);
         }
 
         Object getOutput() {

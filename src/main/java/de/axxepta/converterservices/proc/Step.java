@@ -1,35 +1,25 @@
 package de.axxepta.converterservices.proc;
 
-import de.axxepta.converterservices.tools.Saxon;
-import de.axxepta.converterservices.tools.ZIPUtils;
-import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
-import org.w3c.dom.Document;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
-public class Step {
+public abstract class Step {
 
-    private Pipeline.StepType type;
-    private Object input;
-    private Object output;
-    private Object additional;
-    private Object params;
+    protected Object input;
+    protected Object output;
+    protected Object additional;
+    protected Object params;
 
-    Step(Pipeline.StepType type, Object input, Object output, Object additional, Object params) {
-        this.type = type;
+    Step(Object input, Object output, Object additional, Object params) {
         this.input = input;
         this.output = output;
         this.additional = additional;
         this.params = params;
     }
 
-    Pipeline.StepType getType() {
-        return type;
-    }
+    abstract Pipeline.StepType getType();
 
     Object getInput() {
         return input;
@@ -47,10 +37,6 @@ public class Step {
         this.output = output;
     }
 
-    Object getAdditional() {
-        return additional;
-    }
-
     Object getParams() {
         return params;
     }
@@ -65,11 +51,7 @@ public class Step {
         } else {
             inputFiles = new ArrayList<>();
             if (input instanceof String) {
-                if (type.equals(Pipeline.StepType.XQUERY) && input.equals(Saxon.XQUERY_NO_CONTEXT)) {
-                    inputFiles.add((String) input);
-                } else {
-                    inputFiles.add(pipedPath(input, pipe));
-                }
+                inputFiles.add(pipedPath(input, pipe));
             } else {
                 for (Object inFile : (List) input) {
                     inputFiles.add(pipedPath(inFile, pipe));
@@ -77,7 +59,6 @@ public class Step {
             }
         }
 
-        Object outputObject = null;
         Object additionalInput;
         Object parameters;
         // execute possible sub pipes first
@@ -96,81 +77,15 @@ public class Step {
             parameters = params;
         }
 
-        String outputFile;
-        switch (type) {
-            case XSLT:
-                String inputFile = inputFiles.get(0);
-                outputFile = pipe.getWorkPath() + (StringUtils.isEmpty(output) ?
-                        Saxon.standardOutputFilename((String) additionalInput) : (String) output);
-                pipe.saxonTransform(inputFile, pipe.getInputPath() + additionalInput,
-                        outputFile, parameters instanceof String ? (String) parameters : "");
-                pipe.logFileAddArray(pipe.getErrFileArray());
-                pipe.finalLogFileAdd(inputFile + ": " + pipe.getErrFileArray().getSize() + " messages");
-                pipe.incErrorCounter(pipe.getErrFileArray().getSize());
-                pipe.addLogSectionXsl(inputFile, pipe.getErrFileArray());
-                pipe.addGeneratedFile(outputFile);
-                outputObject = Arrays.asList(outputFile);
-                break;
-            case ZIP:
-                outputFile = pipe.getWorkPath() + (StringUtils.isEmpty(output) ? "step" + pipe.getCounter() + ".zip" : output);
-                List<String> additionalInputs = new ArrayList<>();
-                if ((additionalInput instanceof List) && ((List) additionalInput).get(0) instanceof String) {
-                    inputFiles.addAll((List<String>) additionalInput);
-                } else if (additionalInput instanceof String) {
-                    additionalInputs.add((String) additionalInput);
-                }
-                try {
-                    ZIPUtils.zipRenamedFiles(outputFile, inputFiles, additionalInputs);
-                } catch (IOException ex) {
-                    pipe.finalLogFileAdd(String.format("--- Exception zipping files in step %s: %s", pipe.getCounter(), ex.getMessage()));
-                }
-                pipe.addGeneratedFile(outputFile);
-                outputObject = Arrays.asList(outputFile);
-                break;
-            case XQUERY:
-                String queryFile = pipedPath(additionalInput, pipe);
-                String query = IOUtils.readTextFile(queryFile);
-                Object queryOutput = pipe.saxonXQuery(query, inputFiles.get(0), (String) params);
-                if (queryOutput instanceof Document) {
-                    outputFile = StringUtils.isEmpty(output) ? "output_step" + pipe.getCounter() + ".xml" : (String) output;
-                    Saxon.saveDOM((Document) queryOutput, outputFile);
-                    pipe.addGeneratedFile(outputFile);
-                    outputObject = outputFile;
-                } else {
-                    // ToDo: check cases, assure correct feeding in pipe
-                    outputObject = queryOutput;
-                }
-                break;
-            case XSL_FO:
-                break;
-            case UNZIP:
-                break;
-            case PDF_SPLIT:
-                break;
-            case PDF_MERGE:
-                break;
-            case THUMB:
-                break;
-            case EXIF:
-                outputObject = "";
-                break;
-            case COMBINE:
-                if (additionalInput instanceof String) {
-                    inputFiles.add(pipedPath(additionalInput, pipe));
-                } else {
-                    for (Object inFile : (List) additionalInput) {
-                        inputFiles.add(pipedPath(inFile, pipe));
-                    }
-                }
-                outputObject = inputFiles;
-                break;
-            default:
-        }
+        Object outputObject = execAction(inputFiles, additionalInput, parameters, pipe);
+        // ToDo: log output
 
         return outputObject;
     }
 
-    protected static String pipedPath(Object fileName, Pipeline pipe) throws IllegalArgumentException {
+    abstract Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception;
+
+    static String pipedPath(Object fileName, Pipeline pipe) throws IllegalArgumentException {
         if (!(fileName instanceof String)) {
             throw new IllegalArgumentException("Object is not a String");
         }
@@ -178,18 +93,7 @@ public class Step {
                 pipe.getInputPath() + fileName;
     }
 
-    static boolean assertParameter(Pipeline.StepType type, Parameter paramType, Object param) {
-        if (StringUtils.isEmpty(param) &&
-                !(paramType.equals(Parameter.ADDITIONAL) &&
-                        (type.equals(Pipeline.StepType.XSLT) || type.equals(Pipeline.StepType.XQUERY) || type.equals(Pipeline.StepType.COMBINE) ) ) )
-            return true;
-        if (paramType.equals(Parameter.PARAMS) && type.equals(Pipeline.StepType.PDF_SPLIT) && !(param instanceof Boolean))
-            return false;
-        if (paramType.equals(Parameter.ADDITIONAL) && (type.equals(Pipeline.StepType.ZIP) || type.equals(Pipeline.StepType.COMBINE))
-                && (param instanceof Pipeline.SubPipeline))
-            return true;
-        return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);
-    }
+    abstract boolean assertParameter(Parameter paramType, Object param);
 
     enum Parameter {
         INPUT, OUTPUT, ADDITIONAL, PARAMS

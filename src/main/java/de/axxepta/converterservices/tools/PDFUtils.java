@@ -1,5 +1,6 @@
-package de.axxepta.converterservices;
+package de.axxepta.converterservices.tools;
 
+import de.axxepta.converterservices.utils.IOUtils;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
@@ -15,7 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-class PDFUtils {
+public class PDFUtils {
 
     private static Logger logger = LoggerFactory.getLogger(PDFUtils.class);
 
@@ -66,9 +67,9 @@ class PDFUtils {
         return pdfOutputList;
     }
 
-    static List<String> splitPDF(String inputFile, boolean convertToPNG, String path) throws IOException, InterruptedException {
+    public static List<String> splitPDF(String inputFile, boolean convertToPNG, String path) throws IOException, InterruptedException {
         List<Integer> wList = new ArrayList<>();
         List<Integer> hList = new ArrayList<>();
-        return splitPDF(path + "/" + inputFile, path + "/" + inputFile, convertToPNG, wList, hList);
+        return splitPDF(path + File.separator + inputFile, path + File.separator + inputFile, convertToPNG, wList, hList);
     }
 }

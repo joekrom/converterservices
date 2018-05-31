@@ -1,5 +1,6 @@
-package de.axxepta.converterservices;
+package de.axxepta.converterservices.tools;
 
+import de.axxepta.converterservices.App;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.ss.usermodel.*;
@@ -25,18 +26,18 @@ public class ExcelUtils {
     private static final String COL_INDENT      = "      ";
     private static final String VALUE_INDENT    = "        ";
     private static final String FILE_EL         = "Workbook";
-    static final String SHEET_EL                = "Data";
-    static final String ROW_EL                  = "Row";
-    static final String COL_EL                  = "Cell";
+    public static final String SHEET_EL                = "Data";
+    public static final String ROW_EL                  = "Row";
+    public static final String COL_EL                  = "Cell";
     private static final String VALUE_EL        = "Value";
-    static final String DEF_SHEET_NAME          = "sheet0";
-    static final String DEF_ATT_SHEET           = "name";
-    static final String DEF_SEPARATOR           = ";";
+    public static final String DEF_SHEET_NAME          = "sheet0";
+    public static final String DEF_ATT_SHEET           = "name";
+    public static final String DEF_SEPARATOR           = ";";
 
     private ExcelUtils() {}
 
 
-    static List<String> fromExcel(String fileName, FileType type, boolean customXMLMapping,String sheetName,
+    public static List<String> fromExcel(String fileName, FileType type, boolean customXMLMapping,String sheetName,
                           String separator, boolean indent, boolean columnFirst, boolean firstColName, boolean firstRowName,
                           String fileEl, String sheetEl, String rowEl, String colEl, String attSheetName) {
         List<String> outputFiles = new ArrayList<>();
@@ -58,7 +59,7 @@ public class ExcelUtils {
         return outputFiles;
     }
 
-    private static List<String> excelToCSV(String fileName, Workbook workbook, String sheetName, String separator) {
+    static List<String> excelToCSV(String fileName, Workbook workbook, String sheetName, String separator) {
         List<String> outputFiles = new ArrayList<>();
         List<Sheet> sheets = getSheets(workbook, sheetName);
         DataFormatter formatter = new DataFormatter(true);
@@ -150,7 +151,7 @@ public class ExcelUtils {
         return customMappingFiles;
     }
 
-    static String csvToExcel(String fileName, String sheetName, String separator) {
+    public static String csvToExcel(String fileName, String sheetName, String separator) {
         String outputFile = xlsxFileName(fileName);
         XSSFWorkbook workbook = new XSSFWorkbook();
         try {
@@ -179,7 +180,7 @@ public class ExcelUtils {
         return outputFile;
     }
 
-    static String xmlToExcel(String path) {
+    public static String xmlToExcel(String path) {
         return "";
     }
 

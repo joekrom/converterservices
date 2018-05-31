@@ -1,5 +1,8 @@
 package de.axxepta.converterservices;
 
+import de.axxepta.converterservices.tools.ExcelUtils;
+import de.axxepta.converterservices.tools.ImageUtils;
+import de.axxepta.converterservices.tools.PDFUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemHeaders;
 import org.apache.commons.fileupload.FileUploadException;
@@ -29,7 +32,7 @@ public class App {
     private static Logger logger;
 
     private static final String STATIC_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
-    static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
+    public static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
 
     private static final String PATH_HELLO              = "/hello";
     private static final String PATH_STOP               = "/stop";
@@ -106,13 +109,13 @@ public class App {
         System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
         logger = LoggerFactory.getLogger(App.class);
         try {
-            de.axxepta.converterservices.IOUtils.safeCreateDirectory(TEMP_FILE_PATH);
+            de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(TEMP_FILE_PATH);
         } catch (IOException ie) {
             logger.error("Couldn't create directory for temporary files!");
         }
 
         get(PATH_HELLO, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(HELLO_PAGE), PATH_THUMB, PATH_THUMBS,
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResource(HELLO_PAGE), PATH_THUMB, PATH_THUMBS,
                         PATH_META, PATH_SPLIT, PATH_UPLOAD_THUMB, PATH_UPLOAD_THUMBS, PATH_UPLOAD_META,
                         PATH_UPLOAD_SPLIT, PATH_UPLOAD_EXCEL, PATH_STOP)
         );
@@ -122,7 +125,7 @@ public class App {
             File file = new File(STATIC_FILE_PATH + "/" + request.params(PARAM_NAME));
             if (file.exists()) {
                 try (InputStream is = new FileInputStream(file)) {
-                    de.axxepta.converterservices.IOUtils.copyStreams(is, raw.getOutputStream());
+                    de.axxepta.converterservices.utils.IOUtils.copyStreams(is, raw.getOutputStream());
                     raw.getOutputStream().close();
                 } catch (Exception e) {
                     return HTML_OPEN + e.getMessage() + HTML_CLOSE;
@@ -134,25 +137,25 @@ public class App {
         });
 
         get(PATH_UPLOAD_THUMB, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(THUMB_UPLOAD_FORM), PATH_THUMB, FILE_PART)
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResource(THUMB_UPLOAD_FORM), PATH_THUMB, FILE_PART)
         );
 
         get(PATH_UPLOAD_THUMBS, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(THUMBS_UPLOAD_FORM), PATH_THUMBS, FILE_PART)
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResource(THUMBS_UPLOAD_FORM), PATH_THUMBS, FILE_PART)
         );
 
         get(PATH_UPLOAD_META, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(META_UPLOAD_FORM),
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResource(META_UPLOAD_FORM),
                         PATH_META, PARAM_COMPACT, FILE_PART)
         );
 
         get(PATH_UPLOAD_SPLIT, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(PDFSPLIT_UPLOAD_FORM),
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResource(PDFSPLIT_UPLOAD_FORM),
                         PARAM_VAL_PNG, PARAM_VAL_PDF, PATH_SPLIT, PARAM_AS, FILE_PART, AS_PNG)
         );
 
         get(PATH_UPLOAD_EXCEL, (request, response) ->
-                String.format(de.axxepta.converterservices.IOUtils.getResource(EXCEL_UPLOAD_FORM),
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResource(EXCEL_UPLOAD_FORM),
                         PATH_EXCEL, PARAM_AS, PARAM_CUSTOM_XML, PARAM_INDENT, PARAM_FIRST_ROW_NAME, PARAM_FIRST_COL_ID,
                         PARAM_COLUMN_FIRST, PARAM_SHEET_TAG, PARAM_ROW_TAG, PARAM_COLUMN_TAG, PARAM_SHEET_NAME,
                         PARAM_ATT_SHEET_NAME, PARAM_SEPARATOR, FILE_PART)
@@ -261,17 +264,17 @@ public class App {
             List<String> files = parseMultipartRequest(request, FILE_PART, new ArrayList<>());
             List<String> convertedFiles = new ArrayList<>();
             for (String file : files) {
-                if (de.axxepta.converterservices.IOUtils.isXLSX(file)) {
+                if (de.axxepta.converterservices.utils.IOUtils.isXLSX(file)) {
                     convertedFiles.addAll(ExcelUtils.fromExcel(file,
                             as.toLowerCase().equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
                             customXMLMapping, sheetName, separator, indent, columnFirst,
                             firstRowName, firstColumnId, "", sheet, row, column, attSheetName));
                 }
-                if (de.axxepta.converterservices.IOUtils.isCSV(file)) {
+                if (de.axxepta.converterservices.utils.IOUtils.isCSV(file)) {
                     convertedFiles.add(ExcelUtils.csvToExcel(file,
                             (sheetName.equals("")) ? ExcelUtils.DEF_SHEET_NAME : sheetName, separator));
                 }
-                if (de.axxepta.converterservices.IOUtils.isXML(file)) {
+                if (de.axxepta.converterservices.utils.IOUtils.isXML(file)) {
                     convertedFiles.add(ExcelUtils.xmlToExcel(file));
                 }
             }
@@ -289,15 +292,15 @@ public class App {
                             if (responseType.toLowerCase().equals(PARAM_VAL_SINGLE.toLowerCase())) {
                                 if (fileCounter == 0) {
                                     try (InputStream is = new FileInputStream(file)) {
-                                        de.axxepta.converterservices.IOUtils.copyStreams(is, raw.getOutputStream());
+                                        de.axxepta.converterservices.utils.IOUtils.copyStreams(is, raw.getOutputStream());
                                         raw.getOutputStream().close();
                                     }
                                 }
                             } else {
                                 String outputType;
-                                if (de.axxepta.converterservices.IOUtils.isXLSX(fileName))
+                                if (de.axxepta.converterservices.utils.IOUtils.isXLSX(fileName))
                                     outputType = TYPE_XLSX;
-                                else if (de.axxepta.converterservices.IOUtils.isXML(fileName))
+                                else if (de.axxepta.converterservices.utils.IOUtils.isXML(fileName))
                                     outputType = TYPE_XML;
                                 else
                                     outputType = TYPE_CSV;
@@ -369,12 +372,12 @@ public class App {
         }
 
         if (files.size() > 0) {
-            HttpServletResponse raw = singleFileResponse(response, "thumb_" + jpgFilename(files.get(0)));
-            File file = new File(TEMP_FILE_PATH + "/" + jpgFilename(files.get(0)));
+            HttpServletResponse raw = singleFileResponse(response, "thumb_" + ImageUtils.jpgFilename(files.get(0)));
+            File file = new File(TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(files.get(0)));
             if (file.exists()) {
-                files.add(jpgFilename(files.get(0)));
+                files.add(ImageUtils.jpgFilename(files.get(0)));
                 try (InputStream is = new FileInputStream(file)) {
-                    de.axxepta.converterservices.IOUtils.copyStreams(is, raw.getOutputStream());
+                    de.axxepta.converterservices.utils.IOUtils.copyStreams(is, raw.getOutputStream());
                     raw.getOutputStream().close();
                     return raw;
                 } catch (Exception e) {
@@ -404,11 +407,11 @@ public class App {
                 List<String> transformedFiles = new ArrayList<>();
                 HttpServletResponse raw = multiPartResponse(response);
                 for (String fileName : files) {
-                    File file = new File(TEMP_FILE_PATH + "/" + jpgFilename(fileName));
+                    File file = new File(TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(fileName));
                     if (file.exists()) {
-                        transformedFiles.add(jpgFilename(fileName));
+                        transformedFiles.add(ImageUtils.jpgFilename(fileName));
                         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                            addMultiPartFile(raw.getOutputStream(), TYPE_JPEG, is, jpgFilename(fileName));
+                            addMultiPartFile(raw.getOutputStream(), TYPE_JPEG, is, ImageUtils.jpgFilename(fileName));
                         }
                     }
                 }
@@ -444,12 +447,7 @@ public class App {
         }
         try {
             for (String file : files) {
-                runExternal("mogrify",
-                        "-flatten", "-strip",
-                        "-format", "jpg",
-                        "-quality", "75",
-                        "-thumbnail", scaling,
-                        "-gravity", "center", "-extent", size,  TEMP_FILE_PATH + "/" + file);
+                ImageUtils.thumbify(scaling, size, TEMP_FILE_PATH + "/" + file);
             }
         } catch (IOException | InterruptedException ex) {
             cleanTemp(files);
@@ -479,7 +477,7 @@ public class App {
         os.println("Content-Disposition: attachment; filename=\"" + name + "\"");
         os.println("Content-Type: " + contentType);
         os.println();
-        de.axxepta.converterservices.IOUtils.copyStreams(is, os);
+        de.axxepta.converterservices.utils.IOUtils.copyStreams(is, os);
         os.println("--" + MULTI_PART_BOUNDARY);     // ?
         os.flush();
     }
@@ -491,11 +489,6 @@ public class App {
         os.close();
     }
 
-    private static String jpgFilename(String name) {
-        int pos = name.lastIndexOf(".");
-        return name.substring(0, (pos == -1) ? name.length() : pos) + ".jpg";
-    }
-
     /**
      * Extract names of all request parts, store contained files to disk
      * @param request request of type multipart
@@ -503,25 +496,25 @@ public class App {
      * @param partNames will contain the names of all request parts
      * @return list of file names of files contained in parts named like filePart
      */
-    private static List<String> parseMultipartRequest(Request request, String filePart, List<String> partNames) {
-        MultipartConfigElement multipartConfigElement = new MultipartConfigElement(TEMP_FILE_PATH);
+    public static List<String> parseMultipartRequest(Request request, String filePart, List<String> partNames) {
+        MultipartConfigElement multipartConfigElement = new MultipartConfigElement(App.TEMP_FILE_PATH);
         request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
 
-        File upload = new File(TEMP_FILE_PATH);
+        File upload = new File(App.TEMP_FILE_PATH);
         DiskFileItemFactory factory = new DiskFileItemFactory();
         factory.setRepository(upload);
         ServletFileUpload fileUpload = new ServletFileUpload(factory);
         try {
             List<FileItem> items = fileUpload.parseRequest(request.raw());
             items.forEach(item -> partNames.add(item.getFieldName()));
-            return storeFilesTemporary(items, filePart);
+            return App.storeFilesTemporary(items, filePart);
         } catch (FileUploadException fu) {
-            if (logger != null) logger.error(fu.getMessage());
+            if (App.logger != null) App.logger.error(fu.getMessage());
             return new ArrayList<>();
         }
     }
 
-    private static List<String> storeFilesTemporary(List<FileItem> items, String filePart) {
+    public static List<String> storeFilesTemporary(List<FileItem> items, String filePart) {
         List<String> files = new ArrayList<>();
         items.stream()
                 .filter(e -> e.getFieldName().equals(filePart))
@@ -557,7 +550,7 @@ public class App {
         }
     }
 
-    private static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {
+    public static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             byte[] buffer = new byte[1024];

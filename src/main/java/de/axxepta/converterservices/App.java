@@ -1,5 +1,6 @@
 package de.axxepta.converterservices;
 
+import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.tools.ImageUtils;
 import de.axxepta.converterservices.tools.PDFUtils;
@@ -11,7 +12,6 @@ import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.impl.SimpleLogger;
 import spark.Request;
 import spark.Response;
 
@@ -29,7 +29,7 @@ import static spark.Spark.*;
 
 public class App {
 
-    private static Logger logger;
+    private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
     private static final String STATIC_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
     public static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
@@ -106,12 +106,10 @@ public class App {
         if (args.length > 0)
             pwd = args[0];
 
-        System.setProperty(SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "ERROR");
-        logger = LoggerFactory.getLogger(App.class);
         try {
             de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(TEMP_FILE_PATH);
         } catch (IOException ie) {
-            logger.error("Couldn't create directory for temporary files!");
+            LOGGER.error("Couldn't create directory for temporary files!");
         }
 
         get(PATH_HELLO, (request, response) ->
@@ -196,11 +194,10 @@ public class App {
             List<String> files = parseMultipartRequest(request, FILE_PART, new ArrayList<>());
             try {
                 if (files.size() > 0) {
-                    ByteArrayOutputStream out = compact ?
-                            runExternal("exiftool", "-e", "-json", TEMP_FILE_PATH + "/" + files.get(0)) :
-                            runExternal("exiftool", "-json", TEMP_FILE_PATH + "/" + files.get(0));
-                    cleanTemp(files);
-                    return new String(out.toByteArray(), "UTF-8");
+                    try (ByteArrayOutputStream out = CmdUtils.exif(compact, "-json", TEMP_FILE_PATH + "/" + files.get(0))) {
+                        cleanTemp(files);
+                        return new String(out.toByteArray(), "UTF-8");
+                    }
                 } else return NO_FILES_JSON;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -271,11 +268,11 @@ public class App {
                             firstRowName, firstColumnId, "", sheet, row, column, attSheetName));
                 }
                 if (de.axxepta.converterservices.utils.IOUtils.isCSV(file)) {
-                    convertedFiles.add(ExcelUtils.csvToExcel(file,
+                    convertedFiles.add(ExcelUtils.CSVToExcel(file,
                             (sheetName.equals("")) ? ExcelUtils.DEF_SHEET_NAME : sheetName, separator));
                 }
                 if (de.axxepta.converterservices.utils.IOUtils.isXML(file)) {
-                    convertedFiles.add(ExcelUtils.xmlToExcel(file));
+                    convertedFiles.add(ExcelUtils.XMLToExcel(file));
                 }
             }
 
@@ -509,7 +506,7 @@ public class App {
             items.forEach(item -> partNames.add(item.getFieldName()));
             return App.storeFilesTemporary(items, filePart);
         } catch (FileUploadException fu) {
-            if (App.logger != null) App.logger.error(fu.getMessage());
+            if (App.LOGGER != null) App.LOGGER.error(fu.getMessage());
             return new ArrayList<>();
         }
     }
@@ -534,7 +531,7 @@ public class App {
                         }
                         files.add(fileName);
                     } catch (Exception ex) {
-                        if (logger != null) logger.error(ex.getMessage());
+                        if (LOGGER != null) LOGGER.error(ex.getMessage());
                     }
                 });
         return files;
@@ -545,35 +542,9 @@ public class App {
             try {
                 Files.delete(Paths.get(TEMP_FILE_PATH + "/" + file));
             } catch (IOException ex) {
-                if (logger != null) logger.error(ex.getMessage());
+                if (LOGGER != null) LOGGER.error(ex.getMessage());
             }
         }
-    }
-
-    public static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        try {
-            byte[] buffer = new byte[1024];
-            Process process = Runtime.getRuntime().exec(command);
-            try (InputStream is = process.getInputStream()) {
-                int n;
-                while ((n = is.read(buffer)) > -1) {
-                    stream.write(buffer, 0, n);
-                }
-            }
-            try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getErrorStream()))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    if (logger != null) logger.error(line);
-                }
-            }
-            int code = process.waitFor();
-            if (logger != null) logger.debug("External program returned with code " + code);
-        } catch (IOException | InterruptedException err) {
-            if (logger != null) logger.error(err.getMessage());
-            throw err;
-        }
-        return stream;
     }
 
 }

@@ -1,12 +1,12 @@
 package de.axxepta.converterservices.tools;
 
-import de.axxepta.converterservices.App;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+
 public class ImageUtils {
 
     public static ByteArrayOutputStream thumbify(String scaling, String size, String path) throws IOException, InterruptedException {
-        return App.runExternal("mogrify",
+        return CmdUtils.runExternal("mogrify",
                 "-flatten", "-strip",
                 "-format", "jpg",
                 "-quality", "75",

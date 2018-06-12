@@ -76,10 +76,13 @@ public abstract class Step {
         } else {
             parameters = params;
         }
+        pipe.log("##   Input              : " + inputFiles);
+        pipe.log("##   Additional Input   : " + additionalInput);
+        pipe.log("##   Parameters         : " + parameters);
 
         Object outputObject = execAction(inputFiles, additionalInput, parameters, pipe);
-        // ToDo: log output
-
+        pipe.log("##   Output             : " + outputObject);
+        pipe.log("");
         return outputObject;
     }
 
@@ -91,6 +94,16 @@ public abstract class Step {
         }
         return ((String) fileName).startsWith("pipe:") ? pipe.getWorkPath() + ((String) fileName).substring(5) :
                 pipe.getInputPath() + fileName;
+    }
+
+    String getStandardOutputFile(int step) {
+        return StringUtils.isEmpty(output) ? "output_step_" + step + ".xml" : (String) output;
+    }
+
+    static List<String> singleFileList(String file) {
+        List<String> outputFiles = new ArrayList<>();
+        outputFiles.add(file);
+        return outputFiles;
     }
 
     abstract boolean assertParameter(Parameter paramType, Object param);

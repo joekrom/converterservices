@@ -8,16 +8,21 @@ import org.apache.poi.xssf.extractor.XSSFExportToXml;
 import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
 
 import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
 import javax.xml.transform.TransformerException;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class ExcelUtils {
 
-    private static Logger logger = LoggerFactory.getLogger(ExcelUtils.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(ExcelUtils.class);
 
     private static final String XML_PROLOGUE    = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>"
             + System.lineSeparator();
@@ -54,17 +59,17 @@ public class ExcelUtils {
                         fileEl, sheetEl, rowEl, colEl, indent, attSheetName));
             }
         } catch (IOException ie) {
-            logger.error("Exception reading Excel file: " + ie.getMessage());
+            LOGGER.error("Exception reading Excel file: " + ie.getMessage());
         }
         return outputFiles;
     }
 
-    static List<String> excelToCSV(String fileName, Workbook workbook, String sheetName, String separator) {
+    private static List<String> excelToCSV(String fileName, Workbook workbook, String sheetName, String separator) {
         List<String> outputFiles = new ArrayList<>();
         List<Sheet> sheets = getSheets(workbook, sheetName);
         DataFormatter formatter = new DataFormatter(true);
         for (Sheet sheet : sheets) {
-            String convertedFileName = csvFileName(fileName, sheet.getSheetName());
+            String convertedFileName = CSVFileName(fileName, sheet.getSheetName());
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(App.TEMP_FILE_PATH + "/" + convertedFileName))) {
                 int firstRow = sheet.getFirstRowNum();
                 int lastRow = sheet.getLastRowNum();
@@ -80,7 +85,7 @@ public class ExcelUtils {
                     writer.write(joiner.toString() + System.lineSeparator());
                 }
             } catch (IOException ie) {
-                logger.error("Exception writing to CSV file: " + ie.getMessage());
+                LOGGER.error("Exception writing to CSV file: " + ie.getMessage());
             }
             outputFiles.add(convertedFileName);
         }
@@ -122,7 +127,7 @@ public class ExcelUtils {
             builder.append("</body></html>");
 
         } catch (IOException ie) {
-            logger.error("Exception reading Excel file: " + ie.getMessage());
+            LOGGER.error("Exception reading Excel file: " + ie.getMessage());
             builder.append("</body></html>");
         }
         return builder.toString();
@@ -135,7 +140,7 @@ public class ExcelUtils {
             XSSFWorkbook wb = new XSSFWorkbook(pkg);
             for (XSSFMap map : wb.getCustomXMLMappings()) {
                 XSSFExportToXml exporter = new XSSFExportToXml(map);
-                String outputFile = xmlMappingFileName(fileName, map.hashCode());
+                String outputFile = XMLMappingFileName(fileName, map.hashCode());
                 try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
                     exporter.exportToXML(baos, true);
                     try (OutputStream outputStream = new FileOutputStream(App.TEMP_FILE_PATH + "/" + outputFile)) {
@@ -146,13 +151,13 @@ public class ExcelUtils {
             }
             pkg.close();
         } catch (InvalidFormatException | SAXException | ParserConfigurationException | TransformerException ife) {
-            logger.error("Exception writing to CSV file: " + ife.getMessage());
+            LOGGER.error("Exception writing to CSV file: " + ife.getMessage());
         }
         return customMappingFiles;
     }
 
-    public static String csvToExcel(String fileName, String sheetName, String separator) {
-        String outputFile = xlsxFileName(fileName);
+    public static String CSVToExcel(String fileName, String sheetName, String separator) {
+        String outputFile = XLSXFileName(fileName);
         XSSFWorkbook workbook = new XSSFWorkbook();
         try {
             FileOutputStream out = new FileOutputStream(new File(App.TEMP_FILE_PATH + "/" + outputFile));
@@ -175,12 +180,12 @@ public class ExcelUtils {
             workbook.write(out);
             out.close();
         } catch (IOException ie) {
-            logger.error("Exception writing to XLSX file: " + ie.getMessage());
+            LOGGER.error("Exception writing to XLSX file: " + ie.getMessage());
         }
         return outputFile;
     }
 
-    public static String xmlToExcel(String path) {
+    public static String XMLToExcel(String path) {
         return "";
     }
 
@@ -192,7 +197,7 @@ public class ExcelUtils {
         FormulaEvaluator evaluator = new XSSFFormulaEvaluator((XSSFWorkbook) workbook);
         DataFormatter formatter = new DataFormatter(true);
 
-        String outputFile = xmlFileName(fileName);
+        String outputFile = XMLFileName(fileName);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(App.TEMP_FILE_PATH + "/" + outputFile))) {
             writer.write(XML_PROLOGUE);
             writeTag(writer, TagType.open, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
@@ -231,7 +236,7 @@ public class ExcelUtils {
             }
             writeTag(writer, TagType.close, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
         } catch (IOException ie){
-            logger.error("Exception writing to XML file: " + ie.getMessage());
+            LOGGER.error("Exception writing to XML file: " + ie.getMessage());
         }
         return outputFile;
     }
@@ -246,6 +251,18 @@ public class ExcelUtils {
             }
         }
         return sheets;
+    }
+
+    public static ByteArrayOutputStream XMLToCSV(String fileName, String rowTag, String columnTag, String delimiter)
+            throws ParserConfigurationException, SAXException, IOException
+    {
+        CSVContentHandler handler = new CSVContentHandler(rowTag, columnTag, delimiter);
+        File file = new File(fileName);
+        SAXParserFactory factory = SAXParserFactory.newInstance();
+        SAXParser parser = factory.newSAXParser();
+        parser.parse(file, handler);
+        ByteArrayOutputStream builderStream = handler.getOutputStream();
+        return builderStream;
     }
 
     private static void writeTag(BufferedWriter writer, TagType tag, String name, boolean indent, boolean tagWithContent,
@@ -273,19 +290,19 @@ public class ExcelUtils {
         writeTag(writer, TagType.close, name, indent, true, indentTagString);
     }
 
-    private static String xlsxFileName(String name) {
+    private static String XLSXFileName(String name) {
         return name.substring(0, name.lastIndexOf(".")) + ".xlsx";
     }
 
-    private static String xmlFileName(String xlsName) {
+    private static String XMLFileName(String xlsName) {
         return xlsName.substring(0, xlsName.lastIndexOf(".")) + ".xml";
     }
 
-    private static String xmlMappingFileName(String xlsName, int hash) {
+    private static String XMLMappingFileName(String xlsName, int hash) {
         return xlsName.substring(0, xlsName.lastIndexOf(".")) + "_" + Integer.toString(hash) + ".xml";
     }
 
-    private static String csvFileName(String xlsName, String sheetName) {
+    private static String CSVFileName(String xlsName, String sheetName) {
         return xlsName.substring(0, xlsName.lastIndexOf(".")) + "_" + sheetName + ".csv";
     }
 
@@ -299,5 +316,68 @@ public class ExcelUtils {
     private enum TagType {
         open,
         close
+    }
+
+    private static class CSVContentHandler extends DefaultHandler {
+        private ByteArrayOutputStream builder = new ByteArrayOutputStream();
+        private final String row;
+        private final String column;
+        private final String delimiter;
+        private boolean inRowElement = false;
+        private boolean rowStarted = false;
+        private boolean inColumnElement = false;
+
+        private CSVContentHandler(final String row, final String column, final String delimiter) {
+            this.row = row;
+            this.column = column;
+            this.delimiter = delimiter;
+        }
+
+        @Override
+        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
+            if (qName.equals(row)) {
+                inRowElement = true;
+                rowStarted = true;
+            }
+            if (qName.equals(column) && inRowElement) {
+                if (rowStarted) {
+                    rowStarted = false;
+                } else {
+                    try {
+                        builder.write(delimiter.getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException ex) {
+                        LOGGER.error("Error converting XML to CSV: ", ex);
+                    }
+                }
+                inColumnElement = true;
+            }
+        }
+
+        @Override
+        public void endElement(String uri, String localName, String qName) throws SAXException {
+            if (qName.equals(row)) {
+                builder.write((byte) '\n');
+                rowStarted = false;
+                inRowElement = false;
+            }
+            if (qName.equals(column)) {
+                inColumnElement = false;
+            }
+        }
+
+        @Override
+        public void characters(char[] ch, int start, int length) throws SAXException {
+            if (inColumnElement) {
+                try {
+                    builder.write(new String(ch).getBytes(StandardCharsets.UTF_8));
+                } catch (IOException ex) {
+                    LOGGER.error("Error converting XML to CSV: ", ex);
+                }
+            }
+        }
+
+        private ByteArrayOutputStream getOutputStream() {
+            return builder;
+        }
     }
 }

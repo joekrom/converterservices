@@ -1,16 +1,36 @@
 package de.axxepta.converterservices.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class IOUtils {
 
-    private IOUtils() {}
+    private static final Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
 
+    private static String hostName = null;
+
+    // enable use of static functions by BaseX XQuery
+    public IOUtils() {}
+
+    public static boolean fileExists(String path) {
+        File f = new File(path);
+        return f.exists();
+    }
+
+    public static boolean isDirectory(String path) {
+        File f = new File(path);
+        return (f.exists() && f.isDirectory());
+    }
 
     public static void copyStreams(InputStream is, OutputStream os) throws IOException {
         byte[] buffer = new byte[1024];
@@ -18,6 +38,18 @@ public class IOUtils {
         while ((length = is.read(buffer, 0, buffer.length)) > -1) {
             os.write(buffer, 0, length);
             os.flush();
+        }
+    }
+
+    public static void ByteArrayOutputStreamToFile(ByteArrayOutputStream os, String destination) throws IOException {
+        try(OutputStream outputStream = new FileOutputStream(destination)) {
+            os.writeTo(outputStream);
+        }
+    }
+
+    public static void copyStreamToFile(InputStream is, String destination) throws IOException {
+        try (OutputStream os = new FileOutputStream(destination)) {
+            copyStreams(is, os);
         }
     }
 
@@ -38,7 +70,9 @@ public class IOUtils {
         Path filePath = Paths.get(path);
         try {
             Files.deleteIfExists(filePath);
-        } catch (IOException io) {}
+        } catch (IOException io) {
+            LOGGER.warn("File could not be deleted: ", io);
+        }
     }
 
     public static String dirFromPath(String path) {
@@ -47,8 +81,8 @@ public class IOUtils {
     }
 
     public static String filenameFromPath(String path) {
-        int sepPos = path.lastIndexOf(File.separator);
-        return path.substring(Math.max(-1, sepPos) + 1);
+        String[] components = path.split("/|\\\\");
+        return components[components.length - 1];
     }
 
     public static String readTextFile(String fileName) throws FileNotFoundException, IOException {
@@ -93,4 +127,31 @@ public class IOUtils {
     public static boolean isWin() {
         return System.getProperty("os.name").startsWith("Windows");
     }
+
+    public static String getHostName() {
+        if (hostName != null) {
+            return hostName;
+        } else {
+            hostName = hostName();
+            return hostName;
+        }
+    }
+
+    private static String hostName() {
+        Map<String, String> env = System.getenv();
+        if (env.containsKey("COMPUTERNAME")) {
+            return env.get("COMPUTERNAME");
+        } else if (env.containsKey("HOSTNAME")) {
+            return env.get("HOSTNAME");
+        } else {
+            try {
+                InetAddress address;
+                address = InetAddress.getLocalHost();
+                return address.getHostName();
+            } catch (UnknownHostException ex) {
+                return "Hostname Unknown";
+            }
+        }
+    }
+
 }

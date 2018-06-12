@@ -33,7 +33,7 @@ class ZIPStep extends Step {
             pipe.finalLogFileAdd(String.format("--- Exception zipping files in step %s: %s", pipe.getCounter(), ex.getMessage()));
         }
         pipe.addGeneratedFile(outputFile);
-        return Arrays.asList(outputFile);
+        return singleFileList(outputFile);
     }
 
     @Override

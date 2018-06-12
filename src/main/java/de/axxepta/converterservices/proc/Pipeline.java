@@ -3,27 +3,34 @@ package de.axxepta.converterservices.proc;
 import de.axxepta.converterservices.App;
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.tools.ZIPUtils;
-import de.axxepta.converterservices.utils.FileArray;
-import de.axxepta.converterservices.utils.IOUtils;
-import de.axxepta.converterservices.utils.LoggingErrorListener;
-import de.axxepta.converterservices.utils.StringUtils;
+import de.axxepta.converterservices.utils.*;
 import net.sf.saxon.s9api.SaxonApiException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+
 public class Pipeline {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Pipeline.class);
 
     private boolean verbose;
     private String dateString;
     private String workPath;
     private String inputPath;
     private String outputPath;
+    private String inputFile;
     private String logFileName;
+    private String logLevel;
     private List<Step> steps;
 
     private int stepCounter = 0;
@@ -43,7 +50,9 @@ public class Pipeline {
         this.workPath = builder.workPath;
         this.inputPath = builder.inputPath;
         this.outputPath = builder.outputPath;
+        this.inputFile = builder.inputFile;
         this.logFileName = builder.logFileName;
+        this.logLevel = builder.logLevel;
         this.steps = builder.steps;
 
         saxon = new Saxon();
@@ -68,9 +77,15 @@ public class Pipeline {
             for (Step step : steps) {
                 lastOutput = stepExec(step, true);
             }
+            if (lastOutput instanceof List && (((List) lastOutput).get(0) instanceof String)) {
+                for (Object outputFile : (List) lastOutput) {
+                    String path = (String) outputFile;
+                    Files.copy(Paths.get(path), Paths.get(outputPath + IOUtils.filenameFromPath(path)), REPLACE_EXISTING);
+                }
+            }
         } catch (Exception ex) {
             errCode = -1;
-            logFileFinal.add(String.format("--- Exception in process step %s: %s", stepCounter, ex.getMessage()));
+            log(String.format("--- Exception in process step %s: %s", stepCounter, ex.getMessage()));
         }
         finishLogging();
         try {
@@ -79,10 +94,16 @@ public class Pipeline {
             if (verbose)
                 System.out.println(String.format("Exception while zipping work directory %s", ie.getMessage()));
         }
-        generatedFiles.forEach(IOUtils::safeDeleteFile);
+        //generatedFiles.forEach(IOUtils::safeDeleteFile);
         return errCode;
     }
 
+    void log(String text) {
+        if (verbose) {
+            System.out.println(text);
+            logFileFinal.add(text);
+        }
+    }
 
     void finalLogFileAdd(String text) {
         logFileFinal.add(text);
@@ -112,6 +133,10 @@ public class Pipeline {
         errorCounter += add;
     }
 
+    boolean isVerbose() {
+        return verbose;
+    }
+
     int getCounter() {
         return stepCounter;
     }
@@ -128,6 +153,10 @@ public class Pipeline {
         generatedFiles.add(file);
     }
 
+    void addGeneratedFiles(List<String> files) {
+        generatedFiles.addAll(files);
+    }
+
     private static Step createStep(StepType type, Object input, Object output, Object additional, Object params)
             throws IllegalArgumentException
     {
@@ -139,14 +168,23 @@ public class Pipeline {
             case ZIP:
                 step = new ZIPStep(input, output, additional, params);
                 break;
+            case UNZIP:
+                step = new UnzipStep(input, output, additional, params);
+                break;
             case XQUERY:
                 step = new XQueryStep(input, output, additional, params);
+                break;
+            case XML_CSV:
+                step = new XMLToCSVStep(input, output, additional, params);
                 break;
             case COMBINE:
                 step = new CombineStep(input, output, additional, params);
                 break;
             case PDF_SPLIT:
                 step = new PDFSplitStep(input, output, additional, params);
+                break;
+            case EXIF:
+                step = new EXIFStep(input, output, additional, params);
                 break;
             default:
                 step = new EmptyStep(input, output, additional, params);
@@ -164,10 +202,8 @@ public class Pipeline {
 
     private Object stepExec(Step step, boolean mainPipe) throws Exception {
         stepCounter += 1;
-        if (verbose) {
-            System.out.println("## Process step number " + stepCounter + (mainPipe ? "" : "(side pipeline)"));
-            System.out.println("## Process type:       " + step.getType());
-        }
+        log("## Process Step Number " + stepCounter + (mainPipe ? "" : "(side pipeline)"));
+        log("##   Type               : " + step.getType());
         return step.exec(this);
     }
 
@@ -178,25 +214,14 @@ public class Pipeline {
     }
 
     private void startLogging() {
-        if (verbose) {
-            System.out.println("### Settings Start ###");
-            //    System.out.println("Process workPath    = " + processPath);
-            //    System.out.println("Input File      = " + inputFile);
-            //    System.out.println("XSL folder      = " + xslFolder);
-            System.out.println("Output folder   = " + workPath);
-            //    System.out.println("Output file     = " + outputFolder + "/" + outputFile);
-            System.out.println("### Settings end ###");
-        }
-
-        logFileFinal.add("--- Settings Start -----------------------------------------------------------------------");
-        //logFileFinal.add("Process workPath      = " + processPath);
-        //logFileFinal.add("inputFile             = " + inputFile);
-        //logFileFinal.add("myXslFolder           = " + xslFolder);
-        logFileFinal.add("Output folder  = " + workPath);
-        //logFileFinal.add("myOutputFile   = " + outputFile + "/" + outputFile);
-        logFileFinal.add("--- Settings end -------------------------------------------------------------------------");
-        logFileFinal.add("");
-        logFileFinal.add("--- Log Summary Start --------------------------------------------------------------------");
+        log("--- Settings Start -----------------------------------------------------------------------");
+        log("Process Work Path      = " + workPath);
+        log("Input File             = " + inputFile);
+        log("Output Path            = " + outputPath);
+        //log("myOutputFile   = " + outputFile + "/" + outputFile);
+        log("--- Settings end -------------------------------------------------------------------------");
+        log("");
+        log("--- Log Summary Start --------------------------------------------------------------------");
     }
 
     void addLogSectionXsl(String sectionName, FileArray currentErrLog) {
@@ -220,7 +245,10 @@ public class Pipeline {
         logFileFinal.addFileArray(logFile);
 
         if (errorCounter > 0) logFileName = logFileName + "_error";
+        // special pipeline log file
         logFileFinal.saveFileArray(workPath + "/" + logFileName);
+        // logger framework, could be sent to remote server by SocketAppender
+        Logging.log(LOGGER, logLevel, String.join("\n", logFileFinal.getContent()) );
     }
 
 
@@ -232,7 +260,9 @@ public class Pipeline {
         private String workPath = App.TEMP_FILE_PATH + File.separator + dateString;
         private String inputPath = workPath;
         private String outputPath = workPath;
+        private String inputFile = "";
         private String logFileName = workPath + File.separator + dateString + ".log";
+        private String logLevel = Logging.NONE;
         private List<Step> steps = new ArrayList<>();
 
         private PipelineBuilder() {}
@@ -257,9 +287,23 @@ public class Pipeline {
             return this;
         }
 
+        public PipelineBuilder setLogLevel(String logLevel) {
+            this.logLevel = logLevel;
+            return this;
+        }
+
         public PipelineBuilder step(StepType type, Object input, Object output, Object additional, Object params) throws IllegalArgumentException {
-            if (steps.size() == 0 && StringUtils.isEmpty(input))
-                throw new IllegalArgumentException("Input of first argument must not be null!");
+            if (steps.size() == 0) {
+                if (StringUtils.isEmpty(input)) {
+                    throw new IllegalArgumentException("Input of first argument must not be null!");
+                } else {
+                    if (input instanceof String) {
+                        inputFile = (String) input;
+                    } else if (input instanceof List && (((List) input).get(0) instanceof String)) {
+                        inputFile = (String) ((List) input).get(0);
+                    }
+                }
+            }
             steps.add(Pipeline.createStep(type, input, output, additional, params));
             return this;
         }
@@ -313,7 +357,7 @@ public class Pipeline {
 
 
     public enum StepType {
-        XSLT, XSL_FO, XQUERY, ZIP, UNZIP, PDF_SPLIT, PDF_MERGE, THUMB, EXIF, COMBINE, NONE
+        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, COMBINE, NONE
     }
 
 }

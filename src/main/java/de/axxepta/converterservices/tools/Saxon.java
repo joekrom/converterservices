@@ -55,11 +55,6 @@ public class Saxon {
         } catch(Exception e) {
             System.out.println("Error setting transformer factory attributes " + e.getMessage());
         }
-        System.out.println("Message: XSL Transformation  ---transform()");
-        System.out.println("   INPUT     = " + sourceFile);
-        System.out.println("   XSL       = " + xsltFile);
-        System.out.println("   OUTPUT    = " + resultFile);
-        System.out.println("   PARAMETER = " + parameter);
         try {
             Transformer transformer =  tFactory.newTransformer(new StreamSource(new File(xsltFile)));
 

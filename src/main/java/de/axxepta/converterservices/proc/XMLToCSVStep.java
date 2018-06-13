@@ -5,7 +5,6 @@ import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
 import java.util.List;
 
 class XMLToCSVStep extends Step {
@@ -37,7 +36,7 @@ class XMLToCSVStep extends Step {
                 delimiter = components[components.length - 1];
             }
         }
-        String outputFile = getStandardOutputFile(pipe.getCounter());
+        String outputFile = getStandardOutputFile(pipe.getCounter(), pipe);
         try (ByteArrayOutputStream os = ExcelUtils.XMLToCSV(inputFiles.get(0), row, column, delimiter)) {
             IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
         }

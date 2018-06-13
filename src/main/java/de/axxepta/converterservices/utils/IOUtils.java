@@ -9,6 +9,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -18,9 +19,6 @@ public class IOUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(IOUtils.class);
 
     private static String hostName = null;
-
-    // enable use of static functions by BaseX XQuery
-    public IOUtils() {}
 
     public static boolean fileExists(String path) {
         File f = new File(path);
@@ -50,6 +48,14 @@ public class IOUtils {
     public static void copyStreamToFile(InputStream is, String destination) throws IOException {
         try (OutputStream os = new FileOutputStream(destination)) {
             copyStreams(is, os);
+        }
+    }
+
+    public static void saveStringArrayToFile(List<String> lines, String fileName) throws IOException {
+        try (FileWriter writer = new FileWriter(fileName)) {
+            for (String line : lines) {
+                writer.write(line);
+            }
         }
     }
 
@@ -119,8 +125,9 @@ public class IOUtils {
         }
         if (up > startDirs.length)
             throw new IllegalStateException("Paths cannot be combined to valid path");
-        List<String> compList = Arrays.asList(startDirs).subList(0, startDirs.length - 1 - up);
-        compList.addAll(Arrays.asList(endDirs).subList(up, endDirs.length - 1));
+        List<String> compList = new ArrayList<>(Arrays.asList(startDirs).subList(0, startDirs.length - 1 - up));
+        List<String> remain = Arrays.asList(endDirs).subList(up, endDirs.length);
+        compList.addAll(remain);
         return String.join(File.separator, compList);
     }
 

@@ -5,7 +5,6 @@ import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
 import org.w3c.dom.Document;
 
-import java.util.ArrayList;
 import java.util.List;
 
 class XQueryStep extends Step {

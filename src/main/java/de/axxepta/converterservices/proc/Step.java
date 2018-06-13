@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
 
 import java.util.ArrayList;
@@ -92,12 +93,14 @@ public abstract class Step {
         if (!(fileName instanceof String)) {
             throw new IllegalArgumentException("Object is not a String");
         }
-        return ((String) fileName).startsWith("pipe:") ? pipe.getWorkPath() + ((String) fileName).substring(5) :
-                pipe.getInputPath() + fileName;
+        return ((String) fileName).startsWith("pipe:") ?
+                IOUtils.pathCombine(pipe.getWorkPath(), ((String) fileName).substring(5)) :
+                IOUtils.pathCombine(pipe.getInputPath(), (String) fileName);
     }
 
-    String getStandardOutputFile(int step) {
-        return StringUtils.isEmpty(output) ? "output_step_" + step + ".xml" : (String) output;
+    String getStandardOutputFile(int step, Pipeline pipe) {
+        return IOUtils.pathCombine(pipe.getWorkPath(),
+                StringUtils.isEmpty(output) ? "output_step_" + step + ".xml" : (String) output );
     }
 
     static List<String> singleFileList(String file) {

@@ -24,6 +24,7 @@ public class Pipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(Pipeline.class);
 
     private boolean verbose;
+    private boolean cleanup;
     private String dateString;
     private String workPath;
     private String inputPath;
@@ -46,6 +47,7 @@ public class Pipeline {
 
     private Pipeline(PipelineBuilder builder) {
         this.verbose = builder.verbose;
+        this.cleanup = builder.cleanup;
         this.dateString = builder.dateString;
         this.workPath = builder.workPath;
         this.inputPath = builder.inputPath;
@@ -68,7 +70,10 @@ public class Pipeline {
         return new SubPipeline();
     }
 
-
+    /**
+     * Executes the pipeline
+     * @return int value indicating no errors, -1 error occurred during execution
+     */
     public int exec() {
         int errCode = 0;
         startLogging();
@@ -89,12 +94,14 @@ public class Pipeline {
         }
         finishLogging();
         try {
-            ZIPUtils.plainZipFiles(outputPath + dateString + "_work.zip", generatedFiles);
+            ZIPUtils.plainZipFiles(IOUtils.pathCombine(outputPath, dateString + "_work.zip"), generatedFiles);
         } catch (IOException ie) {
             if (verbose)
                 System.out.println(String.format("Exception while zipping work directory %s", ie.getMessage()));
         }
-        //generatedFiles.forEach(IOUtils::safeDeleteFile);
+        if (cleanup) {
+            generatedFiles.forEach(IOUtils::safeDeleteFile);
+        }
         return errCode;
     }
 
@@ -186,6 +193,12 @@ public class Pipeline {
             case EXIF:
                 step = new EXIFStep(input, output, additional, params);
                 break;
+            case MD5:
+                step = new MD5Step(input, output, additional, params);
+                break;
+            case MD5_FILTER:
+                step = new MD5FilterStep(input, output, additional, params);
+                break;
             default:
                 step = new EmptyStep(input, output, additional, params);
         }
@@ -256,12 +269,13 @@ public class Pipeline {
     public static class PipelineBuilder {
 
         private boolean verbose;
+        private boolean cleanup;
         private String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         private String workPath = App.TEMP_FILE_PATH + File.separator + dateString;
         private String inputPath = workPath;
         private String outputPath = workPath;
         private String inputFile = "";
-        private String logFileName = workPath + File.separator + dateString + ".log";
+        private String logFileName = dateString + ".log";
         private String logLevel = Logging.NONE;
         private List<Step> steps = new ArrayList<>();
 
@@ -313,6 +327,21 @@ public class Pipeline {
             return this;
         }
 
+        public PipelineBuilder verbose(boolean verbose) {
+            this.verbose = verbose;
+            return this;
+        }
+
+        public PipelineBuilder cleanup() {
+            cleanup = true;
+            return this;
+        }
+
+        public PipelineBuilder cleanup(boolean cleanup) {
+            this.cleanup = cleanup;
+            return this;
+        }
+
         public Pipeline build() {
             return new Pipeline(this);
         }
@@ -357,7 +386,7 @@ public class Pipeline {
 
 
     public enum StepType {
-        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, COMBINE, NONE
+        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER, COMBINE, CMD, NONE
     }
 
 }

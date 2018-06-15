@@ -1,5 +1,8 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.utils.IOUtils;
+
+import java.util.ArrayList;
 import java.util.List;
 
 class MD5FilterStep extends Step {
@@ -15,11 +18,25 @@ class MD5FilterStep extends Step {
 
     @Override
     Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
-        return null;
+        List<String> outputFiles = new ArrayList<>();
+        String md5File;
+        for (String inFile : inputFiles) {
+            if (!IOUtils.isDirectory(inFile)) {
+                md5File = inFile + ".md5";
+                String md5result = IOUtils.getMD5Checksum(inFile);
+                if (!IOUtils.pathExists(md5File) || IOUtils.loadStringFromFile(md5File).equals(md5result) ) {
+                    IOUtils.saveStringToFile(md5result, md5File);
+                    pipe.addGeneratedFile(md5File);
+                    outputFiles.add(inFile);
+                }
+            }
+        }
+        actualOutput = outputFiles;
+        return outputFiles;
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         return true;
     }
 }

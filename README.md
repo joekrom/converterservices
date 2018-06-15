@@ -3,7 +3,7 @@
 In this project a bunch of tools, especially for XML publication, is collected and wrapped in a Java toolbox for simple access.
 
 *converterservices* can be used as library, can be started as web service, using [sparkjava](http://sparkjava.com/) as framework,
-or (possibly to be implemented) as a command line tool for pipeline processing.
+or as a command line tool for pipeline processing.
 
 Check out the [Wiki] (https://github.com/axxepta/converterservices/wiki) to find out more about *converterservices*.
 

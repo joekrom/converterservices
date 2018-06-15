@@ -19,7 +19,7 @@ class PDFSplitStep extends Step {
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         if (paramType.equals(Parameter.PARAMS) && !(param instanceof Boolean))
             return false;
         return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);

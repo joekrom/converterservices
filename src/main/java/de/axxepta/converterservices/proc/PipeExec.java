@@ -1,6 +1,8 @@
 package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.utils.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -20,6 +22,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class PipeExec {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(PipeExec.class);
 
     private final static String PIPE_ELEMENT = "pipeline";
     private final static String STEP_ELEMENT = "step";
@@ -61,7 +65,7 @@ public class PipeExec {
             throws IllegalArgumentException, NullPointerException, ParserConfigurationException, IOException,
             SAXException, XPathExpressionException
     {
-        if (IOUtils.fileExists(file) && !IOUtils.isDirectory(file)) {
+        if (IOUtils.pathExists(file) && !IOUtils.isDirectory(file)) {
             File xmlFile = new File(file);
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
             Document dom = builder.parse(xmlFile);
@@ -215,10 +219,17 @@ public class PipeExec {
     }
 
     private static Pipeline.StepType evalStepType(Node typeAtt) {
-        try {
-            return Pipeline.StepType.valueOf(typeAtt.getNodeValue());
-        } catch (NullPointerException|IllegalArgumentException ex) {
+        if (typeAtt == null) {
+            LOGGER.warn("Step lacks type definition, step will be ignored.");
             return Pipeline.StepType.NONE;
+        } else {
+            try {
+                return Pipeline.StepType.valueOf(typeAtt.getNodeValue());
+            } catch (NullPointerException | IllegalArgumentException ex) {
+                LOGGER.warn(String.format("Type %s does not correspond to a defined step type, step will be ignored.",
+                        typeAtt.getNodeValue()));
+                return Pipeline.StepType.NONE;
+            }
         }
     }
 }

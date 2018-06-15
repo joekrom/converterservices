@@ -6,9 +6,11 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -20,7 +22,7 @@ public class IOUtils {
 
     private static String hostName = null;
 
-    public static boolean fileExists(String path) {
+    public static boolean pathExists(String path) {
         File f = new File(path);
         return f.exists();
     }
@@ -51,12 +53,22 @@ public class IOUtils {
         }
     }
 
+    public static void saveStringToFile(String line, String fileName) throws IOException {
+        try (FileWriter writer = new FileWriter(fileName)) {
+            writer.write(line);
+        }
+    }
+
     public static void saveStringArrayToFile(List<String> lines, String fileName) throws IOException {
         try (FileWriter writer = new FileWriter(fileName)) {
             for (String line : lines) {
                 writer.write(line);
             }
         }
+    }
+
+    public static String loadStringFromFile(String fileName) throws IOException {
+        return new String(Files.readAllBytes(Paths.get(fileName)), StandardCharsets.UTF_8);
     }
 
     public static String getResource(String name) throws IOException {
@@ -81,6 +93,31 @@ public class IOUtils {
         }
     }
 
+    public static String relativePath(File file, String basePath) throws IOException {
+        return relativePath(file.getCanonicalFile(), basePath);
+    }
+
+    public static String relativePath(String file, String basePath) {
+        String[] fileParts = file.split("/|\\\\");
+        String[] baseParts = basePath.split("/|\\\\");
+        if (fileParts[0].equals(baseParts[0])) {
+            int same = 0;
+            while (fileParts.length > same && baseParts.length > same && fileParts[same].equals(baseParts[same])) {
+                same++;
+            }
+            List<String> builder = new ArrayList<>();
+            for (int i = same; i < baseParts.length; i++) {
+                builder.add("..");
+            }
+            for (int i = same; i < fileParts.length; i++) {
+                builder.add(fileParts[i]);
+            }
+            return String.join("/", builder);
+        } else {
+            throw new IllegalArgumentException("Given path is not in base path.");
+        }
+    }
+
     public static String dirFromPath(String path) {
         int sepPos = path.lastIndexOf(File.separator);
         return path.substring(0, Math.max(0, sepPos));
@@ -91,7 +128,17 @@ public class IOUtils {
         return components[components.length - 1];
     }
 
-    public static String readTextFile(String fileName) throws FileNotFoundException, IOException {
+    public static String getFileExtension(String path) {
+        int sepPos = path.lastIndexOf(".");
+        if (sepPos == -1) {
+            return "";
+        } else {
+            String[] parts = path.split("\\.");
+            return parts[parts.length - 1];
+        }
+    }
+
+    public static String readTextFile(String fileName) throws IOException {
         try(BufferedReader br = new BufferedReader(new FileReader(fileName))) {
             StringBuilder sb = new StringBuilder();
             String line = br.readLine();
@@ -125,7 +172,7 @@ public class IOUtils {
         }
         if (up > startDirs.length)
             throw new IllegalStateException("Paths cannot be combined to valid path");
-        List<String> compList = new ArrayList<>(Arrays.asList(startDirs).subList(0, startDirs.length - 1 - up));
+        List<String> compList = new ArrayList<>(Arrays.asList(startDirs).subList(0, startDirs.length - up));
         List<String> remain = Arrays.asList(endDirs).subList(up, endDirs.length);
         compList.addAll(remain);
         return String.join(File.separator, compList);
@@ -157,6 +204,64 @@ public class IOUtils {
                 return address.getHostName();
             } catch (UnknownHostException ex) {
                 return "Hostname Unknown";
+            }
+        }
+    }
+
+    private static byte[] createChecksum(String filename) throws Exception {
+        MessageDigest complete = MessageDigest.getInstance("MD5");
+        try (InputStream is =  new FileInputStream(filename)) {
+            byte[] buffer = new byte[1024];
+            int length;
+            do {
+                length = is.read(buffer);
+                if (length > 0) {
+                    complete.update(buffer, 0, length);
+                }
+            } while (length != -1);
+        }
+        return complete.digest();
+    }
+
+    public static String getMD5Checksum(String filename) throws Exception {
+        byte[] checksum = createChecksum(filename);
+        StringBuilder result = new StringBuilder();
+        for (byte b : checksum) {
+            result.append(Integer.toString( ( b & 0xff ) + 0x100, 16).substring(1));
+        }
+        return result.toString();
+    }
+
+    /**
+     * Recursively collect all files in a list of files and paths with sub-directories with absolute paths
+     * @param input List of file or directory names
+     * @return All absolute file names including all files in sub-directories
+     * @throws IOException
+     */
+    public static List<String> collectFiles(List<String> input) throws IOException {
+        List<String> output = new ArrayList<>();
+        for (String inFile : input) {
+            if (IOUtils.pathExists(inFile)) {
+                if (IOUtils.isDirectory(inFile)) {
+                    addSubDirFiles(output, inFile);
+                } else {
+                    output.add(inFile);
+                }
+            }
+        }
+        return output;
+    }
+
+    private static void addSubDirFiles(List<String> output, String dir)
+            throws IOException
+    {
+        File directory = new File(dir);
+        File[] filesList = directory.listFiles();
+        for (File file : filesList) {
+            if (file.isFile()) {
+                output.add(file.getCanonicalPath());
+            } else {
+                addSubDirFiles(output, file.getCanonicalPath());
             }
         }
     }

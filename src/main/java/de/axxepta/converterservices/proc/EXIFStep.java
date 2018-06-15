@@ -25,12 +25,13 @@ class EXIFStep extends Step {
             IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
         }
         pipe.addGeneratedFile(outputFile);
+        actualOutput = outputFile;
         return singleFileList(outputFile);
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
-        return (param instanceof Boolean);
+    protected boolean assertParameter(Parameter paramType, Object param) {
+        return true;
     }
 
 }

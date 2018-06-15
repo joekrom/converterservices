@@ -148,11 +148,17 @@ public class Pipeline {
         return stepCounter;
     }
 
+    Object getStepOutput(int step) throws IllegalArgumentException {
+        if (step > steps.size() -1)
+            throw new IllegalArgumentException(String.format("Referenced step %s not defined.", step));
+        return steps.get(step).getActualOutput();
+    }
+
     void saxonTransform(String sourceFile, String xsltFile, String resultFile, String parameter) {
         saxon.transform(sourceFile, xsltFile, resultFile, parameter);
     }
 
-    Object saxonXQuery(String query, String contextFile, String params) throws SaxonApiException {
+    Object saxonXQuery(String query, String contextFile, String... params) throws SaxonApiException {
         return saxon.xquery(query, contextFile, params);
     }
 
@@ -202,14 +208,7 @@ public class Pipeline {
             default:
                 step = new EmptyStep(input, output, additional, params);
         }
-        if (!step.assertParameter(Step.Parameter.ADDITIONAL, additional))
-            throw new IllegalArgumentException("Wrong additional input type!");
-        if (!step.assertParameter(Step.Parameter.PARAMS, params))
-            throw new IllegalArgumentException("Wrong process parameter type!");
-        if (!step.assertParameter(Step.Parameter.INPUT, input))
-            throw new IllegalArgumentException("Wrong input type!");
-        if (!step.assertParameter(Step.Parameter.OUTPUT, input))
-            throw new IllegalArgumentException("Wrong output type!");
+        step.assertParameters();
         return step;
     }
 
@@ -355,7 +354,7 @@ public class Pipeline {
 
         private SubPipeline() {}
 
-        public SubPipeline step(StepType type, Object input, Object output, Object additional, Object params) {
+        public SubPipeline step(StepType type, Object input, Object output, Object additional, Object... params) {
             if (steps.size() == 0 && StringUtils.isEmpty(input))
                 throw new IllegalArgumentException("Input of first argument must not be null!");
             steps.add(Pipeline.createStep(type, input, output, additional, params));
@@ -386,7 +385,8 @@ public class Pipeline {
 
 
     public enum StepType {
-        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER, COMBINE, CMD, NONE
+        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER, COMBINE, CMD,
+        FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, NONE
     }
 
 }

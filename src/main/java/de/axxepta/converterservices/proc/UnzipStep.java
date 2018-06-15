@@ -27,11 +27,12 @@ class UnzipStep extends Step {
             outputFiles.addAll(ZIPUtils.unzip(inputFiles.get(0), pipe.getWorkPath()));
         }
         pipe.addGeneratedFiles(outputFiles);
+        actualOutput = outputFiles;
         return outputFiles;
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         if (StringUtils.isEmpty(param))
             return true;
         if (paramType.equals(Parameter.PARAMS)) {

@@ -41,11 +41,12 @@ class XMLToCSVStep extends Step {
             IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
         }
         pipe.addGeneratedFile(outputFile);
+        actualOutput = outputFile;
         return singleFileList(outputFile);
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         return (param instanceof String);
     }
 }

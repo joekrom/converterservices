@@ -1,10 +1,7 @@
 package de.axxepta.converterservices.proc;
 
-import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.utils.IOUtils;
-import de.axxepta.converterservices.utils.StringUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,20 +21,22 @@ class MD5Step extends Step {
         List<String> outputFiles = new ArrayList<>();
         String outputFile;
         for (String inFile : inputFiles) {
+
             //outputFile = StringUtils.isEmpty(output) ? inFile + ".md5" : (String) output;
             // check directory, check length of output and type match List/String
 
             outputFile = IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".md5");
-            List<String> md5result = CmdUtils.exec("md5sum " + inFile);
-            IOUtils.saveStringArrayToFile(md5result, outputFile);
+            String md5result = IOUtils.getMD5Checksum(inFile);
+            IOUtils.saveStringToFile(md5result, outputFile);
             pipe.addGeneratedFile(outputFile);
             outputFiles.add(outputFile);
         }
+        actualOutput = outputFiles;
         return outputFiles;
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         return true;
     }
 }

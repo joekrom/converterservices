@@ -39,11 +39,11 @@ public class Saxon {
         _err = err;
     }
 
-    public void transform(String sourceFile, String xsltFile, String resultFile, String parameter) {
-        transform(sourceFile, xsltFile, resultFile, parameter, "false");
+    public void transform(String sourceFile, String xsltFile, String resultFile, String... parameters) {
+        transform(sourceFile, xsltFile, resultFile, "false", parameters);
     }
 
-    private void transform(String sourceFile, String xsltFile, String resultFile, String parameter, String validateDTD) {
+    private void transform(String sourceFile, String xsltFile, String resultFile, String validateDTD, String... parameters) {
 
         TransformerFactory tFactory = TransformerFactory.newInstance("net.sf.saxon.TransformerFactoryImpl", null);
         try {
@@ -58,17 +58,10 @@ public class Saxon {
         try {
             Transformer transformer =  tFactory.newTransformer(new StreamSource(new File(xsltFile)));
 
-            if (parameter.length() != 0) {
-                if (parameter.contains("###")) {
-                    String params[] = parameter.split("###");
-                    for (String singleParam : params) {
-                        String param[] = singleParam.split("=");
-                        transformer.setParameter(param[0], param[1]);
-                    }
-                }
-                else {
-                    String parts[] = parameter.split("=");
-                    transformer.setParameter(parts[0], parts[1]);
+            if (parameters.length > 0) {
+                for (String singleParam : parameters) {
+                    String param[] = singleParam.split("=");
+                    transformer.setParameter(param[0], param[1]);
                 }
             }
             transformer.transform(new StreamSource(new File(sourceFile)), new StreamResult(new File(resultFile)));
@@ -157,8 +150,8 @@ public class Saxon {
      *               The standard output type is DOM, denoted by Saxon.NODE.
      * @throws SaxonApiException
      */
-    public Object xquery(String query, String contextFile, String params) throws SaxonApiException{
-        List<String> bindings = new ArrayList<>(Arrays.asList(StringUtils.nlListToArray(params)));
+    public Object xquery(String query, String contextFile, String... params) throws SaxonApiException{
+        List<String> bindings = new ArrayList<>(Arrays.asList(params));
         String outputType = NODE;
         for (int i = bindings.size() - 1; i >= 0; i--) {
             String line = bindings.get(i);

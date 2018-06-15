@@ -16,7 +16,7 @@ class CombineStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(final List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
         if (additionalInput instanceof String) {
             inputFiles.add(pipedPath(additionalInput, pipe));
         } else {
@@ -24,15 +24,17 @@ class CombineStep extends Step {
                 inputFiles.add(pipedPath(inFile, pipe));
             }
         }
+        actualOutput = inputFiles;
         return inputFiles;
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         if (paramType.equals(Parameter.ADDITIONAL) && StringUtils.isEmpty(param))
             return false;
         if (paramType.equals(Parameter.ADDITIONAL) && (param instanceof Pipeline.SubPipeline))
             return true;
-        return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);
+        return (param instanceof String) || (param instanceof Integer) ||
+                ((param instanceof List) && ((List) param).get(0) instanceof String);
     }
 }

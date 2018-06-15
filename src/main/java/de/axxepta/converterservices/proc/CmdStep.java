@@ -2,14 +2,15 @@ package de.axxepta.converterservices.proc;
 
 import java.util.List;
 
-class EmptyStep extends Step {
+class CmdStep extends Step {
 
-    EmptyStep(Object input, Object output, Object additional, Object params) {
+    CmdStep(Object input, Object output, Object additional, Object params) {
         super(input, output, additional, params);
     }
 
+    @Override
     Pipeline.StepType getType() {
-        return Pipeline.StepType.NONE;
+        return null;
     }
 
     @Override

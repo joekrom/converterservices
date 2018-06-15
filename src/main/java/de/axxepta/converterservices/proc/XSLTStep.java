@@ -28,11 +28,12 @@ class XSLTStep extends Step {
         pipe.incErrorCounter(pipe.getErrFileArray().getSize());
         pipe.addLogSectionXsl(inputFile, pipe.getErrFileArray());
         pipe.addGeneratedFile(outputFile);
+        actualOutput = outputFile;
         return singleFileList(outputFile);
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         if (paramType.equals(Parameter.ADDITIONAL) && StringUtils.isEmpty(param))
             return false;
         return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);

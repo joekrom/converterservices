@@ -33,11 +33,12 @@ class ZIPStep extends Step {
             pipe.finalLogFileAdd(String.format("--- Exception zipping files in step %s: %s", pipe.getCounter(), ex.getMessage()));
         }
         pipe.addGeneratedFile(outputFile);
+        actualOutput = outputFile;
         return singleFileList(outputFile);
     }
 
     @Override
-    boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(Parameter paramType, Object param) {
         if (StringUtils.isEmpty(param))
             return true;
         if (paramType.equals(Parameter.ADDITIONAL) && (param instanceof Pipeline.SubPipeline))

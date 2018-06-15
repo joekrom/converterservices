@@ -1,5 +1,10 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.tools.CmdUtils;
+import de.axxepta.converterservices.utils.IOUtils;
+
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 class CmdStep extends Step {
@@ -15,7 +20,28 @@ class CmdStep extends Step {
 
     @Override
     Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
-        return null;
+        String cmdLine = ((String[]) parameters)[0];
+        List<String> outputFiles = new ArrayList<>();
+        int i = 0;
+        for (String inFile : inputFiles) {
+            int outSize = 0;
+            List<String> outputs = new ArrayList<>();
+            try {
+                outputs = (List) output;
+                outSize = outputs.size();
+            } catch (ClassCastException cc) {}
+            String outputFile = (inputFiles.size() == outSize) ?
+                    IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
+                    IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".step") ;
+            try (ByteArrayOutputStream os = CmdUtils.runExternal(String.format(cmdLine, inFile))) {
+                IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
+            }
+            pipe.addGeneratedFile(outputFile);
+            outputFiles.add(outputFile);
+            i++;
+        }
+        actualOutput = outputFiles;
+        return outputFiles;
     }
 
     @Override

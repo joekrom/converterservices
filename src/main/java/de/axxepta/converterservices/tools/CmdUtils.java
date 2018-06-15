@@ -39,8 +39,13 @@ public class CmdUtils {
                 runExternal("exiftool", option, TEMP_FILE_PATH + "/" + file);
     }
 
+    public static ByteArrayOutputStream exifPipe(boolean compact, String option, String file) throws IOException, InterruptedException {
+        return compact ?
+                runExternal("exiftool", "-e", option, file) :
+                runExternal("exiftool", option, file);
+    }
 
-    static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {
+    public static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             byte[] buffer = new byte[1024];

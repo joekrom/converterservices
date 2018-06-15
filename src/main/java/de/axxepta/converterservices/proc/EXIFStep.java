@@ -4,6 +4,7 @@ import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 class EXIFStep extends Step {
@@ -20,13 +21,27 @@ class EXIFStep extends Step {
     @Override
     Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
         boolean compact = (parameters instanceof Boolean) && (Boolean) parameters;
-        String outputFile = getStandardOutputFile(pipe.getCounter(), pipe);
-        try (ByteArrayOutputStream os = CmdUtils.exif(compact, "-X", inputFiles.get(0)) ) {
-            IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
+        List<String> outputFiles = new ArrayList<>();
+        int i = 0;
+        for (String inFile : inputFiles) {
+            int outSize = 0;
+            List<String> outputs = new ArrayList<>();
+            try {
+                outputs = (List) output;
+                outSize = outputs.size();
+            } catch (ClassCastException cc) {}
+            String outputFile = (inputFiles.size() == outSize) ?
+                    IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
+                    IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".rdf") ;
+            try (ByteArrayOutputStream os = CmdUtils.exifPipe(compact, "-X", inFile)) {
+                IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
+            }
+            pipe.addGeneratedFile(outputFile);
+            outputFiles.add(outputFile);
+            i++;
         }
-        pipe.addGeneratedFile(outputFile);
-        actualOutput = outputFile;
-        return singleFileList(outputFile);
+        actualOutput = outputFiles;
+        return outputFiles;
     }
 
     @Override

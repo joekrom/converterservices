@@ -45,8 +45,8 @@ class FTPUpStep extends Step {
                     case "secure": case "ssl":
                         if (parts[1].toLowerCase().equals("true")) {
                             secure = true;
-                            if (port.equals("") && StringUtils.isInt(parts[1])) {
-                                port = "990";
+                            if (port.equals("")) {
+                                port = "22";
                             }
                         }
                         break;
@@ -73,9 +73,8 @@ class FTPUpStep extends Step {
         List<String> uploadedFiles = new ArrayList<>();
 
         for (String file : uploadFiles) {
-            String relPath = IOUtils.pathCombine(path, IOUtils.relativePath(file, base)).replaceAll("\\\\", "/");
             try {
-                FTPUtils.upload(secure, user, pwd, server, (relPath.startsWith("/") ? "" : "/") + relPath, file);
+                FTPUtils.upload(secure, user, pwd, server, port, path, base, file);
                 uploadedFiles.add(file);
             } catch (IOException ex) {
                 pipe.log(String.format("Error during FTP file transfer of file %s: %s", file, ex.getMessage()));

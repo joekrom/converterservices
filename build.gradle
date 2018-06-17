@@ -31,6 +31,7 @@ dependencies {
     compile 'org.apache.poi:poi-ooxml:3.15'
     compile 'org.apache.httpcomponents:httpclient:4.5.3'
     compile 'commons-net:commons-net:3.6'
+    compile 'com.jcraft:jsch:0.1.54'
     compile 'org.json:json:20171018'
 
     releaseJars 'com.sparkjava:spark-core:2.5.4'
@@ -49,6 +50,7 @@ dependencies {
     releaseJars 'org.apache.poi:poi-ooxml:3.15'
     releaseJars 'org.apache.httpcomponents:httpclient:4.5.3'
     releaseJars 'commons-net:commons-net:3.6'
+    releaseJars 'com.jcraft:jsch:0.1.54'
     releaseJars 'org.json:json:20171018'
 }
 

@@ -38,7 +38,8 @@ public class FTPUtils {
     public static String download(boolean secure, String user, String pwd, String server, String path, String storePath)
             throws IOException
     {
-        URL url = new URL((secure ? "ftps://" : "ftp://") + user + ":" + pwd + "@" + server + path);
+        System.out.println((secure ? "sftp://" : "ftp://") + user + ":" + pwd + "@" + server + path);
+        URL url = new URL((secure ? "sftp://" : "ftp://") + user + ":" + pwd + "@" + server + path);
         save(url, storePath);
         return storePath;
     }
@@ -74,10 +75,12 @@ public class FTPUtils {
     public static String upload(boolean secure, String user, String pwd, String server, String path, String sourcePath)
             throws IOException
     {
-            URL url = new URL((secure ? "ftps://" : "ftp://") + user + ":" + pwd + "@" + server + path);
-            URLConnection conn = url.openConnection();
-            transmit(conn, sourcePath);
-            return "<success>Uploaded " + sourcePath + " to " + "ftp://" + server + path + "</success>";
+
+        System.out.println((secure ? "sftp://" : "ftp://") + user + ":" + pwd + "@" + server + path);
+        URL url = new URL((secure ? "sftp://" : "ftp://") + user + ":" + pwd + "@" + server + path);
+        URLConnection conn = url.openConnection();
+        transmit(conn, sourcePath);
+        return "<success>Uploaded " + sourcePath + " to " + "ftp://" + server + path + "</success>";
     }
 
     private static void transmit(URLConnection connection, String file) throws IOException {

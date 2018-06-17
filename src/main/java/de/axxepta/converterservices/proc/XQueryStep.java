@@ -9,7 +9,7 @@ import java.util.List;
 
 class XQueryStep extends Step {
 
-    XQueryStep(Object input, Object output, Object additional, Object params) {
+    XQueryStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -18,12 +18,12 @@ class XQueryStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         String queryFile = pipedPath(additionalInput, pipe);
         String query = IOUtils.readTextFile(queryFile);
         Object queryOutput = pipe.saxonXQuery(query,
                 input.equals(Saxon.XQUERY_NO_CONTEXT) ? (String) input : inputFiles.get(0),
-                (String[]) params);
+                parameters);
         if (queryOutput instanceof Document) {
             String outputFile = StringUtils.isEmpty(output) ? "output_step" + pipe.getCounter() + ".xml" : (String) output;
             Saxon.saveDOM((Document) queryOutput, outputFile);

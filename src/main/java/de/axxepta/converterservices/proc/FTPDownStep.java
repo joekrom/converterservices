@@ -4,7 +4,7 @@ import java.util.List;
 
 class FTPDownStep extends Step {
 
-    FTPDownStep(Object input, Object output, Object additional, Object... params) {
+    FTPDownStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -14,7 +14,7 @@ class FTPDownStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         return null;
     }
 

@@ -5,12 +5,11 @@ import de.axxepta.converterservices.utils.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 class ZIPStep extends Step {
 
-    ZIPStep(Object input, Object output, Object additional, Object params) {
+    ZIPStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -19,7 +18,7 @@ class ZIPStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         String outputFile = pipe.getWorkPath() + (StringUtils.isEmpty(output) ? "step" + pipe.getCounter() + ".zip" : output);
         List<String> additionalInputs = new ArrayList<>();
         if ((additionalInput instanceof List) && ((List) additionalInput).get(0) instanceof String) {

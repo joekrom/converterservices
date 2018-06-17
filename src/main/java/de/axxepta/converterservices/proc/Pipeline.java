@@ -24,6 +24,7 @@ public class Pipeline {
     private static final Logger LOGGER = LoggerFactory.getLogger(Pipeline.class);
 
     private boolean verbose;
+    private boolean archive;
     private boolean cleanup;
     private String dateString;
     private String workPath;
@@ -47,6 +48,7 @@ public class Pipeline {
 
     private Pipeline(PipelineBuilder builder) {
         this.verbose = builder.verbose;
+        this.archive = builder.archive;
         this.cleanup = builder.cleanup;
         this.dateString = builder.dateString;
         this.workPath = builder.workPath;
@@ -82,22 +84,33 @@ public class Pipeline {
             for (Step step : steps) {
                 lastOutput = stepExec(step, true);
             }
-            if (lastOutput instanceof List && (((List) lastOutput).get(0) instanceof String)) {
+            if (lastOutput instanceof List && ((List) lastOutput).size() >0 && ((List) lastOutput).get(0) instanceof String) {
                 for (Object outputFile : (List) lastOutput) {
                     String path = (String) outputFile;
-                    Files.copy(Paths.get(path), Paths.get(outputPath + IOUtils.filenameFromPath(path)), REPLACE_EXISTING);
+                    if (IOUtils.pathExists(path)) {
+                        try {
+                            Files.copy(Paths.get(path), Paths.get(outputPath + IOUtils.filenameFromPath(path)), REPLACE_EXISTING);
+                        } catch (IOException ie) {
+                            log("Could not copy output file " + path);
+                        }
+                    }
                 }
             }
         } catch (Exception ex) {
             errCode = -1;
-            log(String.format("--- Exception in process step %s: %s", stepCounter, ex.getMessage()));
+            log(String.format("--- Exception in process step %s: %s \n %s", stepCounter, ex.getMessage(), ex.getStackTrace()));
+            if (verbose) {
+                ex.printStackTrace();
+            }
         }
         finishLogging();
-        try {
-            ZIPUtils.plainZipFiles(IOUtils.pathCombine(outputPath, dateString + "_work.zip"), generatedFiles);
-        } catch (IOException ie) {
-            if (verbose)
-                System.out.println(String.format("Exception while zipping work directory %s", ie.getMessage()));
+        if (archive) {
+            try {
+                ZIPUtils.plainZipFiles(IOUtils.pathCombine(outputPath, dateString + "_work.zip"), generatedFiles);
+            } catch (IOException ie) {
+                if (verbose)
+                    System.out.println(String.format("Exception while zipping work directory %s", ie.getMessage()));
+            }
         }
         if (cleanup) {
             generatedFiles.forEach(IOUtils::safeDeleteFile);
@@ -154,7 +167,7 @@ public class Pipeline {
         return steps.get(step).getActualOutput();
     }
 
-    void saxonTransform(String sourceFile, String xsltFile, String resultFile, String parameter) {
+    void saxonTransform(String sourceFile, String xsltFile, String resultFile, String... parameter) {
         saxon.transform(sourceFile, xsltFile, resultFile, parameter);
     }
 
@@ -170,7 +183,7 @@ public class Pipeline {
         generatedFiles.addAll(files);
     }
 
-    private static Step createStep(StepType type, Object input, Object output, Object additional, Object params)
+    private static Step createStep(StepType type, Object input, Object output, Object additional, String... params)
             throws IllegalArgumentException
     {
         Step step;
@@ -204,6 +217,15 @@ public class Pipeline {
                 break;
             case MD5_FILTER:
                 step = new MD5FilterStep(input, output, additional, params);
+                break;
+            case FILTER:
+                step = new FilterStep(input, output, additional, params);
+                break;
+            case FTP_UP:
+                step = new FTPUpStep(input, output, additional, params);
+                break;
+            case FTP_DOWN:
+                step = new FTPDownStep(input, output, additional, params);
                 break;
             default:
                 step = new EmptyStep(input, output, additional, params);
@@ -267,8 +289,9 @@ public class Pipeline {
 
     public static class PipelineBuilder {
 
-        private boolean verbose;
-        private boolean cleanup;
+        private boolean verbose = false;
+        private boolean archive = false;
+        private boolean cleanup = false;
         private String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         private String workPath = App.TEMP_FILE_PATH + File.separator + dateString;
         private String inputPath = workPath;
@@ -305,7 +328,7 @@ public class Pipeline {
             return this;
         }
 
-        public PipelineBuilder step(StepType type, Object input, Object output, Object additional, Object params) throws IllegalArgumentException {
+        public PipelineBuilder step(StepType type, Object input, Object output, Object additional, String... params) throws IllegalArgumentException {
             if (steps.size() == 0) {
                 if (StringUtils.isEmpty(input)) {
                     throw new IllegalArgumentException("Input of first argument must not be null!");
@@ -328,6 +351,16 @@ public class Pipeline {
 
         public PipelineBuilder verbose(boolean verbose) {
             this.verbose = verbose;
+            return this;
+        }
+
+        public PipelineBuilder archive() {
+            archive = true;
+            return this;
+        }
+
+        public PipelineBuilder archive(boolean archive) {
+            this.archive = archive;
             return this;
         }
 
@@ -354,7 +387,7 @@ public class Pipeline {
 
         private SubPipeline() {}
 
-        public SubPipeline step(StepType type, Object input, Object output, Object additional, Object... params) {
+        public SubPipeline step(StepType type, Object input, Object output, Object additional, String... params) {
             if (steps.size() == 0 && StringUtils.isEmpty(input))
                 throw new IllegalArgumentException("Input of first argument must not be null!");
             steps.add(Pipeline.createStep(type, input, output, additional, params));
@@ -368,7 +401,7 @@ public class Pipeline {
         Step getNext() {
             pointer += 1;
             return steps.size() >= pointer ? steps.get(pointer - 1) :
-                    Pipeline.createStep(StepType.NONE, null, null, null, null);
+                    Pipeline.createStep(StepType.NONE, null, null, null);
         }
 
         Object getOutput() {

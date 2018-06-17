@@ -9,7 +9,7 @@ import java.util.List;
 
 class CmdStep extends Step {
 
-    CmdStep(Object input, Object output, Object additional, Object params) {
+    CmdStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -19,7 +19,7 @@ class CmdStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         String cmdLine = ((String[]) parameters)[0];
         List<String> outputFiles = new ArrayList<>();
         int i = 0;

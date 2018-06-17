@@ -11,10 +11,10 @@ public abstract class Step {
     protected Object input;
     protected Object output;
     protected Object additional;
-    protected Object[] params;
+    protected String[] params;
     protected Object actualOutput;
 
-    Step(Object input, Object output, Object additional, Object... params) {
+    Step(Object input, Object output, Object additional, String... params) {
         this.input = input;
         this.output = output;
         this.additional = additional;
@@ -59,7 +59,7 @@ public abstract class Step {
         }
 
         Object additionalInput;
-        Object parameters;
+        String[] parameters;
         // execute possible sub pipes first
         if (additional instanceof Pipeline.SubPipeline) {
             Pipeline.SubPipeline optionalSub = (Pipeline.SubPipeline) additional;
@@ -68,32 +68,27 @@ public abstract class Step {
         } else {
             additionalInput = additional;
         }
-        if (params[0] instanceof Pipeline.SubPipeline) {
-            Pipeline.SubPipeline paramsSub = (Pipeline.SubPipeline) params[0];
-            pipe.execSubPipe(paramsSub);
-            parameters = paramsSub.getOutput();
-        } else {
-            parameters = params;
-        }
+        parameters = params;
         pipe.log("##   Input              : " + inputFiles);
         pipe.log("##   Additional Input   : " + additionalInput);
-        pipe.log("##   Parameters         : " + parameters);
+        pipe.log("##   Parameters         : " + String.join(" - ", parameters));
 
-        Object outputObject = execAction(inputFiles, additionalInput, parameters, pipe);
+        Object outputObject = execAction(pipe, inputFiles, additionalInput, parameters);
         pipe.log("##   Output             : " + outputObject);
         pipe.log("");
         return outputObject;
     }
 
-    abstract Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception;
+    abstract Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception;
 
-    static String pipedPath(Object fileName, Pipeline pipe) throws IllegalArgumentException {
-        if (!(fileName instanceof String)) {
+    static String pipedPath(Object fileNameObject, Pipeline pipe) throws IllegalArgumentException {
+        if (!(fileNameObject instanceof String)) {
             throw new IllegalArgumentException("Object is not a String");
         }
-        return ((String) fileName).startsWith("pipe:") ?
-                IOUtils.pathCombine(pipe.getWorkPath(), ((String) fileName).substring(5)) :
-                IOUtils.pathCombine(pipe.getInputPath(), (String) fileName);
+        String fileName = (String) fileNameObject;
+        return (fileName.startsWith("pipe:") ?
+                IOUtils.pathCombine(pipe.getWorkPath(), fileName.substring(5)) :
+                IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName));
     }
 
     String getStandardOutputFile(int step, Pipeline pipe) {

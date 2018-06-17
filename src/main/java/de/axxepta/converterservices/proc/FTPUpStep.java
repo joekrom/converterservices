@@ -10,7 +10,7 @@ import java.util.List;
 
 class FTPUpStep extends Step {
 
-    FTPUpStep(Object input, Object output, Object additional, Object... params) {
+    FTPUpStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -20,7 +20,7 @@ class FTPUpStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         String server = "";
         String user = "";
         String pwd = "";
@@ -28,13 +28,12 @@ class FTPUpStep extends Step {
         String base = pipe.getWorkPath();
         String path = "";
         boolean secure = false;
-        String[] params = (String[]) parameters;
 
-        for (String parameter : params) {
+        for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
             if (parts.length > 1) {
                 switch (parts[0].toLowerCase()) {
-                    case "server":
+                    case "server": case "host":
                         server = parts[1];
                         break;
                     case "user":
@@ -74,9 +73,9 @@ class FTPUpStep extends Step {
         List<String> uploadedFiles = new ArrayList<>();
 
         for (String file : uploadFiles) {
+            String relPath = IOUtils.pathCombine(path, IOUtils.relativePath(file, base)).replaceAll("\\\\", "/");
             try {
-                FTPUtils.upload(secure, user, pwd, server,
-                        ((path.endsWith("/")) ? path : path + "/") + IOUtils.relativePath(file, base), file);
+                FTPUtils.upload(secure, user, pwd, server, (relPath.startsWith("/") ? "" : "/") + relPath, file);
                 uploadedFiles.add(file);
             } catch (IOException ex) {
                 pipe.log(String.format("Error during FTP file transfer of file %s: %s", file, ex.getMessage()));

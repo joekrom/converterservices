@@ -4,7 +4,7 @@ import java.util.List;
 
 class EmptyStep extends Step {
 
-    EmptyStep(Object input, Object output, Object additional, Object params) {
+    EmptyStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -13,7 +13,7 @@ class EmptyStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         return null;
     }
 

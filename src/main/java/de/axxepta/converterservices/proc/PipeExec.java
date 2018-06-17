@@ -33,6 +33,7 @@ public class PipeExec {
     private final static String PARAM_ELEMENT = "param";
 
     private final static String VERBOSE = "verbose";
+    private final static String ARCHIVE = "archive";
     private final static String CLEANUP = "cleanup";
     private final static String WORK_PATH = "workPath";
     private final static String INPUT_PATH = "inputPath";
@@ -112,6 +113,10 @@ public class PipeExec {
                     if (att.getNodeValue().toLowerCase().equals("true"))
                         builder = builder.verbose();
                     break;
+                case ARCHIVE:
+                    if (att.getNodeValue().toLowerCase().equals("true"))
+                        builder = builder.archive();
+                    break;
                 case CLEANUP:
                     if (att.getNodeValue().toLowerCase().equals("true"))
                         builder = builder.cleanup();
@@ -144,7 +149,7 @@ public class PipeExec {
         Object input = assignParameter(step, xPath, INPUT_ELEMENT);
         Object output = assignParameter(step, xPath, OUTPUT_ELEMENT);
         Object additional = assignParameter(step, xPath, ADD_ELEMENT);
-        Object param = assignParameter(step, xPath, PARAM_ELEMENT);
+        String[] param = (String[]) assignParameter(step, xPath, PARAM_ELEMENT);
 
         return builder.step(type, input, output, additional, param);
     }
@@ -182,6 +187,9 @@ public class PipeExec {
                         break;
                     default: param = nodeContent;
                 }
+                if (path.equals(PARAM_ELEMENT)) {
+                    param = new String[] { (String) param };
+                }
             } else {
                 List<String> nodeContents = new ArrayList<>();
                 for (int i = 0; i < nodes.getLength(); i++) {
@@ -212,8 +220,14 @@ public class PipeExec {
                     default:
                         list.addAll(nodeContents);
                 }
-                param = list;
+                if (path.equals(PARAM_ELEMENT)) {
+                    param = list.toArray(new String[list.size()]);
+                } else {
+                    param = list;
+                }
             }
+        } else if (path.equals(PARAM_ELEMENT)) {
+            return new String[0];
         }
         return param;
     }

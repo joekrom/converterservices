@@ -344,7 +344,7 @@ public class ExcelUtils {
                     rowStarted = false;
                 } else {
                     try {
-                        builder.write(delimiter.getBytes(StandardCharsets.UTF_8));
+                        builder.write(delimiter.getBytes(StandardCharsets.ISO_8859_1));
                     } catch (IOException ex) {
                         LOGGER.error("Error converting XML to CSV: ", ex);
                     }
@@ -356,6 +356,7 @@ public class ExcelUtils {
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
             if (qName.equals(row)) {
+                builder.write((byte) '\r');
                 builder.write((byte) '\n');
                 rowStarted = false;
                 inRowElement = false;
@@ -369,7 +370,8 @@ public class ExcelUtils {
         public void characters(char[] ch, int start, int length) throws SAXException {
             if (inColumnElement) {
                 try {
-                    builder.write(new String(ch).getBytes(StandardCharsets.UTF_8));
+                    builder.write(new String(Arrays.copyOfRange(ch, start, start + length)).
+                            getBytes(StandardCharsets.ISO_8859_1));
                 } catch (IOException ex) {
                     LOGGER.error("Error converting XML to CSV: ", ex);
                 }

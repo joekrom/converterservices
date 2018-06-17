@@ -8,7 +8,7 @@ import java.util.List;
 
 class UnzipStep extends Step {
 
-    UnzipStep(Object input, Object output, Object additional, Object params) {
+    UnzipStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -17,9 +17,9 @@ class UnzipStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         List<String> outputFiles = new ArrayList<>();
-        if ((additionalInput instanceof String) && (Boolean) parameters) {
+        if ((additionalInput instanceof String) && (parameters.length > 0 && parameters[0].toLowerCase().contains("true"))) {
             String outputFile = (output instanceof String) ? (String) output : (String) additionalInput;
             ZIPUtils.unzipSingle(inputFiles.get(0), (String) additionalInput, pipe.getWorkPath(), outputFile);
             outputFiles.add(outputFile);

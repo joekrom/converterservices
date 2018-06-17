@@ -3,12 +3,11 @@ package de.axxepta.converterservices.proc;
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 class XSLTStep extends Step {
 
-    XSLTStep(Object input, Object output, Object additional, Object params) {
+    XSLTStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -17,12 +16,12 @@ class XSLTStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         String inputFile = inputFiles.get(0);
         String outputFile = pipe.getWorkPath() + (StringUtils.isEmpty(output) ?
                 Saxon.standardOutputFilename((String) additionalInput) : (String) output);
         pipe.saxonTransform(inputFile, pipe.getInputPath() + additionalInput,
-                outputFile, parameters instanceof String ? (String) parameters : "");
+                outputFile, parameters);
         pipe.logFileAddArray(pipe.getErrFileArray());
         pipe.finalLogFileAdd(inputFile + ": " + pipe.getErrFileArray().getSize() + " messages");
         pipe.incErrorCounter(pipe.getErrFileArray().getSize());
@@ -34,8 +33,9 @@ class XSLTStep extends Step {
 
     @Override
     protected boolean assertParameter(Parameter paramType, Object param) {
-        if (paramType.equals(Parameter.ADDITIONAL) && StringUtils.isEmpty(param))
+        return true;
+/*        if (paramType.equals(Parameter.ADDITIONAL) && StringUtils.isEmpty(param))
             return false;
-        return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);
+        return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);*/
     }
 }

@@ -10,7 +10,7 @@ import java.util.List;
 
 class FilterStep extends Step {
 
-    FilterStep(Object input, Object output, Object additional, Object params) {
+    FilterStep(Object input, Object output, Object additional, String... params) {
         super(input, output, additional, params);
     }
 
@@ -20,25 +20,22 @@ class FilterStep extends Step {
     }
 
     @Override
-    Object execAction(List<String> inputFiles, Object additionalInput, Object parameters, Pipeline pipe) throws Exception {
+    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
         List<String> outputFiles = new ArrayList<>();
         List<String> extension = new ArrayList<>();
         boolean recursive = false;
-        if (!(parameters instanceof String[])) {
-            throw new IllegalArgumentException("Parameter EXT expected in filter step.");
-        } else {
-            for (String parameter : (String[])parameters) {
-                String[] parts = parameter.split(" *= *");
-                if (parts[0].toLowerCase().startsWith("ext") && parts.length > 1) {
-                    extension.add(parts[1].toLowerCase());
-                } else if (parts[0].toLowerCase().startsWith("rec")) {
-                    recursive = true;
-                }
-            }
-            if (extension.size() < 1) {
-                throw new IllegalArgumentException("Parameter EXT expected in filter step.");
+        for (String parameter : parameters) {
+            String[] parts = parameter.split(" *= *");
+            if (parts[0].toLowerCase().startsWith("ext") && parts.length > 1) {
+                extension.add(parts[1].toLowerCase());
+            } else if (parts[0].toLowerCase().startsWith("rec") && parts.length > 1 && parts[1].toLowerCase().equals("true")) {
+                recursive = true;
             }
         }
+        if (extension.size() < 1) {
+            throw new IllegalArgumentException("Parameter EXT expected in filter step.");
+        }
+
         for (String inFile : inputFiles) {
             if (IOUtils.pathExists(inFile)) {
                 if (IOUtils.isDirectory(inFile)) {
@@ -73,10 +70,10 @@ class FilterStep extends Step {
     protected boolean assertParameter(Parameter paramType, Object param) {
         switch (paramType) {
             case INPUT:
-                return ((param instanceof String) && StringUtils.isEmpty(param) ) || (param instanceof Integer) ||
+                return ((param instanceof String) && !StringUtils.isEmpty(param) ) || (param instanceof Integer) ||
                         (param instanceof List && ((List) param).get(0) instanceof String);
             case PARAMS:
-                return param instanceof String[] && ((String[]) param).length > 0;
+                return ((String[]) param).length > 0;
             default: return true;
         }
     }

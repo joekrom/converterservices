@@ -91,26 +91,21 @@ public abstract class Step {
                 IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName));
     }
 
-    String getStandardOutputFile(int step, Pipeline pipe) {
-        return IOUtils.pathCombine(pipe.getWorkPath(),
-                StringUtils.isEmpty(output) ? "output_step_" + step + ".xml" : (String) output );
-    }
-
     static List<String> singleFileList(String file) {
         List<String> outputFiles = new ArrayList<>();
         outputFiles.add(file);
         return outputFiles;
     }
 
-    void assertParameters() throws IllegalArgumentException {
+    void assertParameters(int step) throws IllegalArgumentException {
         if (!assertParameter(Step.Parameter.INPUT, input))
-            throw new IllegalArgumentException("Wrong input type!");
+            throw new IllegalArgumentException(String.format("Wrong input type in step %s!", step));
         if (!assertParameter(Step.Parameter.OUTPUT, output))
-            throw new IllegalArgumentException("Wrong output type!");
+            throw new IllegalArgumentException(String.format("Wrong output type in step %s!", step));
         if (!assertParameter(Step.Parameter.ADDITIONAL, additional))
-            throw new IllegalArgumentException("Wrong additional input type!");
+            throw new IllegalArgumentException(String.format("Wrong additional input type in step %s!", step));
         if (!assertParameter(Step.Parameter.PARAMS, params))
-            throw new IllegalArgumentException("Wrong process parameter type!");
+            throw new IllegalArgumentException(String.format("Wrong process parameter type in step %s!", step));
     }
 
     protected static boolean assertStandardInput(Object param) {

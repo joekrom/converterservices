@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class CombineStep extends Step {

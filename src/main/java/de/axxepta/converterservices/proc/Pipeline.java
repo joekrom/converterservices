@@ -23,17 +23,17 @@ public class Pipeline {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Pipeline.class);
 
-    private boolean verbose;
-    private boolean archive;
-    private boolean cleanup;
-    private String dateString;
-    private String workPath;
-    private String inputPath;
-    private String outputPath;
-    private String inputFile;
-    private String logFileName;
-    private String logLevel;
-    private List<Step> steps;
+    private final boolean verbose;
+    private final boolean archive;
+    private final boolean cleanup;
+    private final String dateString;
+    private final String workPath;
+    private final String inputPath;
+    private final String outputPath;
+    private final String inputFile;
+    private final String logFileName;
+    private final String logLevel;
+    private final List<Step> steps;
 
     private int stepCounter = 0;
     private int errorCounter = 0;
@@ -185,7 +185,7 @@ public class Pipeline {
         generatedFiles.addAll(files);
     }
 
-    private static Step createStep(StepType type, Object input, Object output, Object additional, String... params)
+    private static Step createStep(StepType type, int no, Object input, Object output, Object additional, String... params)
             throws IllegalArgumentException
     {
         Step step;
@@ -235,7 +235,7 @@ public class Pipeline {
             default:
                 step = new EmptyStep(input, output, additional, params);
         }
-        step.assertParameters();
+        step.assertParameters(no);
         return step;
     }
 
@@ -283,9 +283,9 @@ public class Pipeline {
         logFileFinal.add("");
         logFileFinal.addFileArray(logFile);
 
-        if (errorCounter > 0) logFileName = logFileName + "_error";
+        String finalLogFileName = errorCounter > 0 ? logFileName + "_error" : logFileName;
         // special pipeline log file
-        logFileFinal.saveFileArray(workPath + "/" + logFileName);
+        logFileFinal.saveFileArray(workPath + "/" + finalLogFileName);
         // logger framework, could be sent to remote server by SocketAppender
         Logging.log(LOGGER, logLevel, String.join("\n", logFileFinal.getContent()) );
     }
@@ -347,7 +347,7 @@ public class Pipeline {
                     throw new IllegalArgumentException("Input of first argument must not be null!");
                 }
             }
-            steps.add(Pipeline.createStep(type, input, output, additional, params));
+            steps.add(Pipeline.createStep(type, steps.size(), input, output, additional, params));
             return this;
         }
 
@@ -397,7 +397,7 @@ public class Pipeline {
         public SubPipeline step(StepType type, Object input, Object output, Object additional, String... params) {
             if (steps.size() == 0 && StringUtils.isEmpty(input))
                 throw new IllegalArgumentException("Input of first argument must not be null!");
-            steps.add(Pipeline.createStep(type, input, output, additional, params));
+            steps.add(Pipeline.createStep(type, steps.size(), input, output, additional, params));
             return this;
         }
 
@@ -408,7 +408,7 @@ public class Pipeline {
         Step getNext() {
             pointer += 1;
             return steps.size() >= pointer ? steps.get(pointer - 1) :
-                    Pipeline.createStep(StepType.NONE, null, null, null);
+                    Pipeline.createStep(StepType.NONE, steps.size(), null, null, null);
         }
 
         Object getOutput() {

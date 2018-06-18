@@ -3,7 +3,6 @@ package de.axxepta.converterservices.proc;
 import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,9 +33,6 @@ class CmdStep extends Step {
             String outputFile = (inputFiles.size() == outSize) ?
                     IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
                     IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".step") ;
-/*            try (ByteArrayOutputStream os = CmdUtils.runExternal(String.format(cmdLine, inFile))) {
-                IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
-            }*/
             try {
                 List<String> lines = CmdUtils.exec(String.format(cmdLine, inFile));
                 IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size() - 1) : lines,

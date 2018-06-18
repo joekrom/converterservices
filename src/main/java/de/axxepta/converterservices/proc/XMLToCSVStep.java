@@ -62,6 +62,6 @@ class XMLToCSVStep extends Step {
 
     @Override
     protected boolean assertParameter(Parameter paramType, Object param) {
-        return paramType.equals(additional)|| assertStandardInput(param);
+        return paramType.equals(Parameter.ADDITIONAL)|| paramType.equals(Parameter.PARAMS)|| assertStandardInput(param);
     }
 }

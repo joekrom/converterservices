@@ -33,7 +33,8 @@ public class ZIPUtils {
         try(ZipOutputStream zipStream = new ZipOutputStream(new FileOutputStream(zipFileName))) {
             for (int i = 0; i < inputFiles.size(); i++) {
                 if (IOUtils.isDirectory(inputFiles.get(i))) {
-                    addDirToZipArchive(zipStream, inputFiles.get(i), IOUtils.dirFromPath(inputFiles.get(i)));
+                    //addDirToZipArchive(zipStream, inputFiles.get(i), IOUtils.dirFromPath(inputFiles.get(i)));
+                    addDirToZipArchive(zipStream, inputFiles.get(i), names.get(i), 0);
                 } else {
                     addToZipFile(zipStream, inputFiles.get(i), names.get(i));
                 }
@@ -41,20 +42,21 @@ public class ZIPUtils {
         }
     }
 
-    private static void addDirToZipArchive(ZipOutputStream zipStream, String fileName, String parentDirectoryName) throws IOException {
+    private static void addDirToZipArchive(ZipOutputStream zipStream, String fileName, String parentDirectoryName, int depth)
+            throws IOException
+    {
         File fileToZip = new File(fileName);
-        if (!fileToZip.exists()) {
-            return;
-        }
 
         String zipEntryName = fileToZip.getName();
-        if (parentDirectoryName!=null && !parentDirectoryName.isEmpty()) {
-            zipEntryName = IOUtils.relativePath(fileToZip.getCanonicalPath(), parentDirectoryName);
+        if (parentDirectoryName !=null && !parentDirectoryName.equals("") && depth > 0) {
+            //zipEntryName = IOUtils.relativePath(fileToZip.getCanonicalPath(), parentDirectoryName);
+            zipEntryName = parentDirectoryName + "/" + zipEntryName;
         }
 
         if (fileToZip.isDirectory()) {
             for (File file : fileToZip.listFiles()) {
-                addDirToZipArchive(zipStream, file.getCanonicalPath(), parentDirectoryName);
+                //addDirToZipArchive(zipStream, file.getCanonicalPath(), parentDirectoryName);
+                addDirToZipArchive(zipStream, file.getCanonicalPath(), zipEntryName, depth + 1);
             }
         } else {
             addToZipFile(zipStream, fileName, zipEntryName);

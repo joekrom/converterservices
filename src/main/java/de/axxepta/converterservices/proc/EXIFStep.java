@@ -34,9 +34,6 @@ class EXIFStep extends Step {
             String outputFile = (inputFiles.size() == outSize) ?
                     IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
                     IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".rdf") ;
-/*            try (ByteArrayOutputStream os = CmdUtils.exifPipe(compact, "-X", inFile)) {
-                IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
-            }*/
             try {
                 List<String> lines = CmdUtils.exifPipe(compact, "-X", inFile);
                 IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size() - 1) : lines,

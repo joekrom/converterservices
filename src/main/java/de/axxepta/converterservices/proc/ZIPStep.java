@@ -24,8 +24,8 @@ class ZIPStep extends Step {
                 StringUtils.isEmpty(output) ? "step" + pipe.getCounter() + ".zip" : (String) output);
         List<String> additionalInputs = new ArrayList<>();
         if ((additionalInput instanceof List) && ((List) additionalInput).get(0) instanceof String) {
-            inputFiles.addAll((List<String>) additionalInput);
-        } else if (additionalInput instanceof String) {
+            additionalInputs.addAll((List<String>) additionalInput);
+        } else if (additionalInput instanceof String && !additionalInput.equals("")) {
             additionalInputs.add((String) additionalInput);
         } else {
             for (String inputFile : inputFiles) {

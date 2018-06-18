@@ -4,6 +4,7 @@ import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,7 +21,7 @@ class CmdStep extends Step {
 
     @Override
     Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
-        String cmdLine = ((String[]) parameters)[0];
+        String cmdLine = parameters[0];
         List<String> outputFiles = new ArrayList<>();
         int i = 0;
         for (String inFile : inputFiles) {
@@ -29,12 +30,19 @@ class CmdStep extends Step {
             try {
                 outputs = (List) output;
                 outSize = outputs.size();
-            } catch (ClassCastException cc) {}
+            } catch (Exception cc) {}
             String outputFile = (inputFiles.size() == outSize) ?
                     IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
                     IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".step") ;
-            try (ByteArrayOutputStream os = CmdUtils.runExternal(String.format(cmdLine, inFile))) {
+/*            try (ByteArrayOutputStream os = CmdUtils.runExternal(String.format(cmdLine, inFile))) {
                 IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
+            }*/
+            try {
+                List<String> lines = CmdUtils.exec(String.format(cmdLine, inFile));
+                IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size() - 1) : lines,
+                        outputFile, false);
+            } catch (IOException ex) {
+                pipe.log(String.format("Error executing external command %s:\n %s", cmdLine, ex.getMessage()));
             }
             pipe.addGeneratedFile(outputFile);
             outputFiles.add(outputFile);

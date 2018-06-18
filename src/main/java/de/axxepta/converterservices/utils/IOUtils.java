@@ -59,10 +59,17 @@ public class IOUtils {
         }
     }
 
-    public static void saveStringArrayToFile(List<String> lines, String fileName) throws IOException {
+    public static void saveStringArrayToFile(List<String> lines, String fileName, boolean removeEmptyLines) throws IOException {
         try (FileWriter writer = new FileWriter(fileName)) {
+            int i = 1;
             for (String line : lines) {
-                writer.write(line);
+                if (!(removeEmptyLines && StringUtils.isEmpty(line))) {
+                    writer.write(line);
+                    if (i < lines.size()) {
+                        writer.write("\n");
+                    }
+                }
+                i++;
             }
         }
     }

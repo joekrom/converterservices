@@ -229,6 +229,9 @@ public class Pipeline {
             case FTP_DOWN:
                 step = new FTPDownStep(input, output, additional, params);
                 break;
+            case CMD:
+                step = new CmdStep(input, output, additional, params);
+                break;
             default:
                 step = new EmptyStep(input, output, additional, params);
         }
@@ -332,14 +335,16 @@ public class Pipeline {
 
         public PipelineBuilder step(StepType type, Object input, Object output, Object additional, String... params) throws IllegalArgumentException {
             if (steps.size() == 0) {
-                if (StringUtils.isEmpty(input)) {
-                    throw new IllegalArgumentException("Input of first argument must not be null!");
-                } else {
+                if ((input instanceof String && !input.equals("")) ||
+                        (input instanceof List && ((List) input).get(0) instanceof String) && !((List) input).get(0).equals("") )
+                {
                     if (input instanceof String) {
                         inputFile = (String) input;
                     } else if (input instanceof List && (((List) input).get(0) instanceof String)) {
                         inputFile = (String) ((List) input).get(0);
                     }
+                } else {
+                    throw new IllegalArgumentException("Input of first argument must not be null!");
                 }
             }
             steps.add(Pipeline.createStep(type, input, output, additional, params));

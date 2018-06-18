@@ -4,6 +4,7 @@ import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,12 +30,19 @@ class EXIFStep extends Step {
             try {
                 outputs = (List) output;
                 outSize = outputs.size();
-            } catch (ClassCastException cc) {}
+            } catch (Exception cc) {}
             String outputFile = (inputFiles.size() == outSize) ?
                     IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
                     IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".rdf") ;
-            try (ByteArrayOutputStream os = CmdUtils.exifPipe(compact, "-X", inFile)) {
+/*            try (ByteArrayOutputStream os = CmdUtils.exifPipe(compact, "-X", inFile)) {
                 IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
+            }*/
+            try {
+                List<String> lines = CmdUtils.exifPipe(compact, "-X", inFile);
+                IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size() - 1) : lines,
+                        outputFile, true);
+            } catch (IOException ex) {
+                pipe.log(String.format("Error executing external command %s:\n %s", "exif -X", ex.getMessage()));
             }
             pipe.addGeneratedFile(outputFile);
             outputFiles.add(outputFile);

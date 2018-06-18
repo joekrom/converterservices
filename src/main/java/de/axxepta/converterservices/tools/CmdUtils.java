@@ -22,7 +22,7 @@ public class CmdUtils {
                 cmdLine);
         try (BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()))) {
 
-            String line = null;
+            String line;
 
             while ((line = input.readLine()) != null) {
                 lines.add(line);
@@ -39,17 +39,18 @@ public class CmdUtils {
                 runExternal("exiftool", option, TEMP_FILE_PATH + "/" + file);
     }
 
-    public static ByteArrayOutputStream exifPipe(boolean compact, String option, String file) throws IOException, InterruptedException {
+    public static List<String> exifPipe(boolean compact, String option, String file) throws IOException, InterruptedException {
         return compact ?
-                runExternal("exiftool", "-e", option, file) :
-                runExternal("exiftool", option, file);
+                exec("exiftool -e " + option + " " + file) :
+                exec("exiftool " + option + " " + file);
     }
 
     public static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         try {
             byte[] buffer = new byte[1024];
-            Process process = Runtime.getRuntime().exec(command);
+            Process process = Runtime.getRuntime().
+                    exec((System.getProperty("os.name").startsWith("Windows") ? "cmd /c " : "") + command);
             try (InputStream is = process.getInputStream()) {
                 int n;
                 while ((n = is.read(buffer)) > -1) {

@@ -7,6 +7,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -103,7 +104,7 @@ public class ZIPUtils {
         else {
             Files.createDirectories(destinationPath.getParent());
             try (InputStream is = zipFile.getInputStream(entry)) {
-                Files.copy(is, destinationPath);
+                Files.copy(is, destinationPath, StandardCopyOption.REPLACE_EXISTING);
             }
         }
     }

@@ -37,6 +37,6 @@ class MD5FilterStep extends Step {
 
     @Override
     protected boolean assertParameter(Parameter paramType, Object param) {
-        return true;
+        return !paramType.equals(Parameter.INPUT)|| assertStandardInput(param);
     }
 }

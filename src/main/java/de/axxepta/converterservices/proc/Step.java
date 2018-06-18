@@ -113,6 +113,11 @@ public abstract class Step {
             throw new IllegalArgumentException("Wrong process parameter type!");
     }
 
+    protected static boolean assertStandardInput(Object param) {
+        return param == null || param instanceof String || param instanceof Integer ||
+                (param instanceof List && ((List) param).get(0) instanceof String);
+    }
+
     protected abstract boolean assertParameter(Parameter paramType, Object param);
 
     enum Parameter {

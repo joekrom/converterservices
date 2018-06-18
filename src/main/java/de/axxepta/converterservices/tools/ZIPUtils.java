@@ -48,12 +48,12 @@ public class ZIPUtils {
 
         String zipEntryName = fileToZip.getName();
         if (parentDirectoryName!=null && !parentDirectoryName.isEmpty()) {
-            zipEntryName = parentDirectoryName + "/" + fileToZip.getName();
+            zipEntryName = IOUtils.relativePath(fileToZip.getCanonicalPath(), parentDirectoryName);
         }
 
         if (fileToZip.isDirectory()) {
             for (File file : fileToZip.listFiles()) {
-                addDirToZipArchive(zipStream, file.getName(), zipEntryName);
+                addDirToZipArchive(zipStream, file.getCanonicalPath(), parentDirectoryName);
             }
         } else {
             addToZipFile(zipStream, fileName, zipEntryName);

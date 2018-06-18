@@ -89,7 +89,9 @@ public class Pipeline {
                     String path = (String) outputFile;
                     if (IOUtils.pathExists(path)) {
                         try {
-                            Files.copy(Paths.get(path), Paths.get(outputPath + IOUtils.filenameFromPath(path)), REPLACE_EXISTING);
+                            Files.copy(Paths.get(path),
+                                    Paths.get(IOUtils.pathCombine(outputPath, IOUtils.filenameFromPath(path))),
+                                    REPLACE_EXISTING);
                         } catch (IOException ie) {
                             log("Could not copy output file " + path);
                         }

@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,9 +68,7 @@ public class PipeExec {
             SAXException, XPathExpressionException
     {
         if (IOUtils.pathExists(file) && !IOUtils.isDirectory(file)) {
-            File xmlFile = new File(file);
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
-            Document dom = builder.parse(xmlFile);
+            Document dom = Saxon.loadDOM(file);
             return execProcess(dom);
         } else {
             throw new IllegalArgumentException("File does not exist");

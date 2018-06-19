@@ -12,8 +12,8 @@ public class AuthenticationDetails {
         return username;
     }
 
-    char[] getPassword() {
-        return password;
+    String getPassword() {
+        return new String(password);
     }
 
     public AuthenticationDetails(final String username, final String password) {

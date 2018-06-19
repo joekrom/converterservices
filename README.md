@@ -1,9 +1,23 @@
 # converterservices
 
 In this project a bunch of tools, especially for XML publication, is collected and wrapped in a Java toolbox for simple access.
+The list of supported tools contains
+
+
+* Saxon XSLT
+* Saxon XQuery
+* FOP XSL-FO
+* PDF splitting and merging
+* XSLX/CSV <-> XML
+* Zipping/unzipping
+* md5 hashing
+* exiftool meta data extraction
+* Upload and download by ftp and http
+
 
 *converterservices* can be used as library, can be started as web service, using [sparkjava](http://sparkjava.com/) as framework,
-or as a command line tool for pipeline processing.
+or as a command line tool for pipeline processing with error reporting (you can config the logger to send the reports to
+a remote server logging instance or by email).
 
 Check out the [Wiki] (https://github.com/axxepta/converterservices/wiki) to find out more about *converterservices*.
 

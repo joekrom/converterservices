@@ -5,6 +5,7 @@ import de.axxepta.converterservices.utils.StringUtils;
 import net.sf.saxon.lib.FeatureKeys;
 import net.sf.saxon.s9api.*;
 import org.w3c.dom.Document;
+import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
@@ -99,6 +100,12 @@ public class Saxon {
         } catch (ParserConfigurationException e) {
             throw new SaxonApiException(e);
         }
+    }
+
+    public static Document loadDOM(String file) throws ParserConfigurationException, SAXException, IOException {
+        File xmlFile = new File(file);
+        DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        return builder.parse(xmlFile);
     }
 
     private static List xqueryListOutput(XdmValue result, String type) throws SaxonApiException {

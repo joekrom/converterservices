@@ -100,7 +100,7 @@ public class Pipeline {
             }
         } catch (Exception ex) {
             errCode = -1;
-            log(String.format("--- Exception in process step %s: %s \n %s", stepCounter, ex.getMessage(), ex.getStackTrace()));
+            log(String.format("--- Exception in process step %s: %s", stepCounter, ex.getMessage()));
             if (verbose) {
                 ex.printStackTrace();
             }
@@ -231,6 +231,9 @@ public class Pipeline {
                 break;
             case CMD:
                 step = new CmdStep(input, output, additional, params);
+                break;
+            case LIST:
+                step = new ListStep(input, output, additional, params);
                 break;
             default:
                 step = new EmptyStep(input, output, additional, params);
@@ -426,7 +429,7 @@ public class Pipeline {
 
     public enum StepType {
         XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER, COMBINE, CMD,
-        FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, NONE
+        FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, NONE
     }
 
 }

@@ -5,7 +5,9 @@ import spark.Request;
 import spark.Response;
 import spark.utils.SparkUtils;
 
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 
 import static spark.Spark.halt;
 
@@ -20,12 +22,20 @@ import static spark.Spark.halt;
 public class BasicAuthenticationFilter extends FilterImpl {
 
     private static final String BASIC_AUTHENTICATION_TYPE = "Basic";
-
-    private static final int NUMBER_OF_AUTHENTICATION_FIELDS = 2;
-
     private static final String ACCEPT_ALL_TYPES = "*";
 
-    private final AuthenticationDetails authenticationDetails;
+    private final List<AuthenticationDetails> authenticationDetailList = new ArrayList<>();
+
+
+    public BasicAuthenticationFilter() {
+        super(SparkUtils.ALL_PATHS, ACCEPT_ALL_TYPES);
+        authenticationDetailList.addAll(CredentialsProvider.getCredentials());
+    }
+
+    public BasicAuthenticationFilter(final String path) {
+        super(path, ACCEPT_ALL_TYPES);
+        authenticationDetailList.addAll(CredentialsProvider.getCredentials());
+    }
 
     public BasicAuthenticationFilter(final AuthenticationDetails authenticationDetails) {
         this(SparkUtils.ALL_PATHS, authenticationDetails);
@@ -33,7 +43,7 @@ public class BasicAuthenticationFilter extends FilterImpl {
 
     public BasicAuthenticationFilter(final String path, final AuthenticationDetails authenticationDetails) {
         super(path, ACCEPT_ALL_TYPES);
-        this.authenticationDetails = authenticationDetails;
+        this.authenticationDetailList.add(authenticationDetails);
     }
 
     @Override
@@ -45,7 +55,7 @@ public class BasicAuthenticationFilter extends FilterImpl {
             authenticated = false;
         } else {
             String encodedHeader = request.headers("Authorization");
-            int pos = encodedHeader.indexOf("Basic");
+            int pos = encodedHeader.indexOf(BASIC_AUTHENTICATION_TYPE);
             authenticated = pos != -1 && authenticatedWith(credentialsFrom(encodedHeader.substring(pos + 5)));
         }
         if (!authenticated) {
@@ -71,8 +81,8 @@ public class BasicAuthenticationFilter extends FilterImpl {
     }
 
     private boolean authenticatedWith(final String[] credentials) {
-        return credentials[0].equals(authenticationDetails.getUsername()) &&
-                credentials[1].equals(new String(authenticationDetails.getPassword()));
+        return authenticationDetailList.stream().
+                anyMatch(a -> a.getUsername().equals(credentials[0]) &&a.getPassword().equals(credentials[1]));
     }
 
 }

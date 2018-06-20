@@ -14,7 +14,7 @@ public abstract class Step {
     protected String[] params;
     protected Object actualOutput;
 
-    Step(Object input, Object output, Object additional, String... params) {
+    Step(final Object input, final Object output, final Object additional, final String... params) {
         this.input = input;
         this.output = output;
         this.additional = additional;
@@ -27,7 +27,7 @@ public abstract class Step {
         return input;
     }
 
-    void setInput(Object input) {
+    void setInput(final Object input) {
         this.input = input;
     }
 
@@ -35,7 +35,7 @@ public abstract class Step {
         return actualOutput;
     }
 
-    Object exec(Pipeline pipe) throws Exception {
+    Object exec(final Pipeline pipe) throws Exception {
         if (StringUtils.isEmpty(input) && !(input instanceof Integer) && !(pipe.getLastOutput() instanceof List))
             throw new IllegalStateException("Last process step has wrong type!");
 
@@ -79,9 +79,10 @@ public abstract class Step {
         return outputObject;
     }
 
-    abstract Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception;
+    abstract Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput,
+                               final String... parameters) throws Exception;
 
-    static String pipedPath(Object fileNameObject, Pipeline pipe) throws IllegalArgumentException {
+    static String pipedPath(final Object fileNameObject, final Pipeline pipe) throws IllegalArgumentException {
         if (!(fileNameObject instanceof String)) {
             throw new IllegalArgumentException("Object is not a String");
         }
@@ -91,13 +92,13 @@ public abstract class Step {
                 IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName));
     }
 
-    static List<String> singleFileList(String file) {
+    static List<String> singleFileList(final String file) {
         List<String> outputFiles = new ArrayList<>();
         outputFiles.add(file);
         return outputFiles;
     }
 
-    void assertParameters(int step) throws IllegalArgumentException {
+    void assertParameters(final int step) throws IllegalArgumentException {
         if (!assertParameter(Step.Parameter.INPUT, input))
             throw new IllegalArgumentException(String.format("Wrong input type in step %s!", step));
         if (!assertParameter(Step.Parameter.OUTPUT, output))
@@ -108,12 +109,16 @@ public abstract class Step {
             throw new IllegalArgumentException(String.format("Wrong process parameter type in step %s!", step));
     }
 
-    protected static boolean assertStandardInput(Object param) {
+    protected static boolean assertStandardInput(final Object param) {
         return param == null || param instanceof String || param instanceof Integer ||
                 (param instanceof List && ((List) param).get(0) instanceof String);
     }
+    protected static boolean assertStandardOutput(final Object param) {
+        return param == null || param instanceof String ||
+                (param instanceof List && ((List) param).get(0) instanceof String);
+    }
 
-    protected abstract boolean assertParameter(Parameter paramType, Object param);
+    protected abstract boolean assertParameter(final Parameter paramType, final Object param);
 
     enum Parameter {
         INPUT, OUTPUT, ADDITIONAL, PARAMS

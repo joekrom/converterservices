@@ -16,7 +16,9 @@ class XSLTStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+            throws Exception
+    {
         String inputFile = inputFiles.get(0);
         String outputFile = pipe.getWorkPath() + (StringUtils.isEmpty(output) ?
                 Saxon.standardOutputFilename((String) additionalInput) : (String) output);
@@ -32,10 +34,7 @@ class XSLTStep extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
-        return true;
-/*        if (paramType.equals(Parameter.ADDITIONAL) && StringUtils.isEmpty(param))
-            return false;
-        return (param instanceof String) || ((param instanceof List) && ((List) param).get(0) instanceof String);*/
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
+        return !paramType.equals(Parameter.INPUT)|| assertStandardInput(param);
     }
 }

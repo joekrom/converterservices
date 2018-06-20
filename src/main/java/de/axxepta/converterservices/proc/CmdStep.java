@@ -19,7 +19,9 @@ class CmdStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+            throws Exception
+    {
         String cmdLine = parameters[0];
         List<String> outputFiles = new ArrayList<>();
         int i = 0;
@@ -49,7 +51,15 @@ class CmdStep extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
+        switch (paramType) {
+            case INPUT:
+                return assertStandardInput(param);
+            case OUTPUT:
+                return assertStandardOutput(param);
+            case PARAMS:
+                return ((String[]) param).length > 0;
+        }
         return true;
     }
 }

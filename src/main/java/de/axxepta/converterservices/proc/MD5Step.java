@@ -17,11 +17,12 @@ class MD5Step extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters) throws Exception {
         List<String> outputFiles = new ArrayList<>();
         String outputFile;
         for (String inFile : inputFiles) {
 
+            //ToDo:
             //outputFile = StringUtils.isEmpty(output) ? inFile + ".md5" : (String) output;
             // check directory, check length of output and type match List/String
 
@@ -36,7 +37,7 @@ class MD5Step extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
         return !paramType.equals(Parameter.INPUT)|| assertStandardInput(param);
     }
 }

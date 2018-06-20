@@ -88,15 +88,35 @@ public class HTTPUtils {
         return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
     }
 
-
-    public static String postXML(String protocol, String host, int port, String path, String user, String password,
+    public static String postJSONFile(String protocol, String host, int port, String path, String user, String password,
                                   String content) throws IOException
     {
+        return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
+    }
+
+    public static String postXML(String protocol, String host, int port, String path, String user, String password,
+                                  String file) throws IOException
+    {
+        String content = IOUtils.loadStringFromFile(file);
         return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
     }
 
-    public static String put(String protocol, String host, int port, String path, String user, String password,
-                             String content, ContentType... contentType) throws IOException
+    public static String postXMLFile(String protocol, String host, int port, String path, String user, String password,
+                                 String file) throws IOException
+    {
+        String content = IOUtils.loadStringFromFile(file);
+        return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
+    }
+
+    public static String postTextTypeFile(String protocol, String host, int port, String path, String user, String password,
+                                     String file, ContentType contentType) throws IOException
+    {
+        String content = IOUtils.loadStringFromFile(file);
+        return post(protocol, host, port, path, user, password, content, contentType);
+    }
+
+    public static String putString(String protocol, String host, int port, String path, String user, String password,
+                                   String content, ContentType... contentType) throws IOException
     {
         try (CloseableHttpClient httpClient = getClient(host, port, user, password)) {
             HttpPut httpPut = new HttpPut(protocol + "://" + host + ":" + Integer.toString(port) + path);
@@ -117,13 +137,27 @@ public class HTTPUtils {
     public static String putJSON(String protocol, String host, int port, String path, String user, String password,
                                  String content) throws IOException
     {
-        return put(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
+        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
+    }
+
+    public static String putJSONFile(String protocol, String host, int port, String path, String user, String password,
+                                 String file) throws IOException
+    {
+        String content = IOUtils.loadStringFromFile(file);
+        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
     }
 
     public static String putXML(String protocol, String host, int port, String path, String user, String password,
                                  String content) throws IOException
     {
-        return put(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
+        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
+    }
+
+    public static String putXMLFile(String protocol, String host, int port, String path, String user, String password,
+                                String file) throws IOException
+    {
+        String content = IOUtils.loadStringFromFile(file);
+        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
     }
 
     private static CloseableHttpClient getClient(String host, int port, String user, String password) {
@@ -149,4 +183,23 @@ public class HTTPUtils {
                 .setRetryHandler(new DefaultHttpRequestRetryHandler(3, true))
                 .build();
     }
+
+    public static boolean contentTypeIsTextType(String contentType) {
+        return contentType.toLowerCase().contains("xml") ||
+                contentType.toLowerCase().contains("javascript") ||
+                contentType.toLowerCase().contains("text") ||
+                contentType.toLowerCase().contains("json");
+    }
+
+    public static boolean fileTypeIsTextType(String fileType) {
+        return fileType.toLowerCase().equals("xml") ||
+                fileType.toLowerCase().equals("js") ||
+                fileType.toLowerCase().equals("txt") ||
+                fileType.toLowerCase().equals("csv") ||
+                fileType.toLowerCase().equals("css") ||
+                fileType.toLowerCase().equals("rdf") ||
+                fileType.toLowerCase().equals("md5") ||
+                fileType.toLowerCase().equals("json");
+    }
+
 }

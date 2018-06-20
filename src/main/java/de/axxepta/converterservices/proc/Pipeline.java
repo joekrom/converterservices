@@ -76,7 +76,7 @@ public class Pipeline {
      * Executes the pipeline
      * @return int value indicating no errors, -1 error occurred during execution
      */
-    public int exec() {
+    private int exec() {
         int errCode = 0;
         startLogging();
         try {
@@ -228,6 +228,9 @@ public class Pipeline {
                 break;
             case FTP_DOWN:
                 step = new FTPDownStep(input, output, additional, params);
+                break;
+            case HTTP_POST:
+                step = new HTTPPostStep(input, output, additional, params);
                 break;
             case CMD:
                 step = new CmdStep(input, output, additional, params);
@@ -384,8 +387,8 @@ public class Pipeline {
             return this;
         }
 
-        public Pipeline build() {
-            return new Pipeline(this);
+        public int exec() {
+            return new Pipeline(this).exec();
         }
     }
 

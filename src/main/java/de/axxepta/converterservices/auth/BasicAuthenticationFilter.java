@@ -56,7 +56,8 @@ public class BasicAuthenticationFilter extends FilterImpl {
         } else {
             String encodedHeader = request.headers("Authorization");
             int pos = encodedHeader.indexOf(BASIC_AUTHENTICATION_TYPE);
-            authenticated = pos != -1 && authenticatedWith(credentialsFrom(encodedHeader.substring(pos + 5)));
+            authenticated = pos != -1 &&
+                    authenticatedWith(credentialsFrom(encodedHeader.substring(pos + BASIC_AUTHENTICATION_TYPE.length() + 1)));
         }
         if (!authenticated) {
             response.header("WWW-Authenticate", BASIC_AUTHENTICATION_TYPE);
@@ -82,7 +83,7 @@ public class BasicAuthenticationFilter extends FilterImpl {
 
     private boolean authenticatedWith(final String[] credentials) {
         return authenticationDetailList.stream().
-                anyMatch(a -> a.getUsername().equals(credentials[0]) &&a.getPassword().equals(credentials[1]));
+                anyMatch(a -> a.getUsername().equals(credentials[0]) && a.passwordEquals(credentials[1]));
     }
 
 }

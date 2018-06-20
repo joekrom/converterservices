@@ -17,7 +17,9 @@ class UnzipStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+            throws Exception
+    {
         List<String> outputFiles = new ArrayList<>();
         if ((additionalInput instanceof String) && (parameters.length > 0 && parameters[0].toLowerCase().contains("true"))) {
             String outputFile = (output instanceof String) ? (String) output : (String) additionalInput;
@@ -32,7 +34,7 @@ class UnzipStep extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
         if (StringUtils.isEmpty(param))
             return true;
         if (paramType.equals(Parameter.PARAMS)) {

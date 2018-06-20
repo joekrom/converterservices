@@ -19,7 +19,9 @@ class ZIPStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+            throws Exception
+    {
         String outputFile = IOUtils.pathCombine(pipe.getWorkPath(),
                 StringUtils.isEmpty(output) ? "step" + pipe.getCounter() + ".zip" : (String) output);
         List<String> additionalInputs = new ArrayList<>();
@@ -43,7 +45,7 @@ class ZIPStep extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
         if (StringUtils.isEmpty(param))
             return true;
         return (paramType.equals(Parameter.ADDITIONAL) && (param instanceof Pipeline.SubPipeline)) ||

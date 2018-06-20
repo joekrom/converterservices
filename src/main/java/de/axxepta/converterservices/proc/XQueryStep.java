@@ -18,7 +18,7 @@ class XQueryStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters) throws Exception {
         String queryFile = pipedPath(additionalInput, pipe);
         String query = IOUtils.readTextFile(queryFile);
         Object queryOutput = pipe.saxonXQuery(query,
@@ -38,7 +38,7 @@ class XQueryStep extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
         switch (paramType) {
             case INPUT:
                 break;

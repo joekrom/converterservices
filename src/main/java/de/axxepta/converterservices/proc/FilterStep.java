@@ -20,7 +20,9 @@ class FilterStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+            throws Exception
+    {
         List<String> outputFiles = new ArrayList<>();
         List<String> extension = new ArrayList<>();
         boolean recursive = false;
@@ -51,23 +53,26 @@ class FilterStep extends Step {
         return outputFiles;
     }
 
-    private static void addSubDirFiles(List<String> output, String dir, String basisPath, List<String> extensions, boolean recursive)
+    private static void addSubDirFiles(final List<String> output, final String dir, final String basisPath,
+                                       final List<String> extensions, final boolean recursive)
             throws IOException
     {
         File directory = new File(dir);
         File[] filesList = directory.listFiles();
-        for (File file : filesList) {
-            if (file.isFile() &&
-                    (extensions.stream().anyMatch(e -> IOUtils.getFileExtension(file.getName()).toLowerCase().equals(e))) ) {
-                output.add(file.getCanonicalPath());
-            } else if (recursive) {
-                addSubDirFiles(output, file.getCanonicalPath(), basisPath, extensions, true);
+        if (filesList != null) {
+            for (File file : filesList) {
+                if (file.isFile() &&
+                        (extensions.stream().anyMatch(e -> IOUtils.getFileExtension(file.getName()).toLowerCase().equals(e)))) {
+                    output.add(file.getCanonicalPath());
+                } else if (recursive) {
+                    addSubDirFiles(output, file.getCanonicalPath(), basisPath, extensions, true);
+                }
             }
         }
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
         switch (paramType) {
             case INPUT:
                 return ((param instanceof String) && !StringUtils.isEmpty(param) ) || (param instanceof Integer) ||

@@ -15,7 +15,6 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -98,7 +97,7 @@ public class PipeExec {
             for (int s = 0; s < steps.getLength(); s++) {
                 pipelineBuilder = evalSteps(pipelineBuilder, steps.item(s), xPath);
             }
-            return pipelineBuilder.build().exec();
+            return pipelineBuilder.exec();
         } else {
             throw new XPathExpressionException("No pipeline defined in input.");
         }

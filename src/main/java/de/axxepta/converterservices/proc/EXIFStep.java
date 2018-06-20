@@ -3,7 +3,6 @@ package de.axxepta.converterservices.proc;
 import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,17 +19,29 @@ class EXIFStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, Object additionalInput, String... parameters) throws Exception {
-        boolean compact = (parameters.length > 0 && parameters[0].toLowerCase().contains("true"));
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+            throws Exception
+    {
+        boolean compact = false;
+        if (parameters.length > 0) {
+            String parameter = parameters[0].toLowerCase();
+            if (parameter.contains("short") && parameter.contains("true") ||
+                    parameter.contains("comp") && parameter.contains("false")) {
+                compact = true;
+            }
+        }
+
         List<String> outputFiles = new ArrayList<>();
         int i = 0;
         for (String inFile : inputFiles) {
             int outSize = 0;
-            List<String> outputs = new ArrayList<>();
+            List<String> outputs;
             try {
                 outputs = (List) output;
                 outSize = outputs.size();
-            } catch (Exception cc) {}
+            } catch (Exception cc) {
+                outputs = new ArrayList<>();
+            }
             String outputFile = (inputFiles.size() == outSize) ?
                     IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
                     IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".rdf") ;
@@ -50,8 +61,8 @@ class EXIFStep extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
-        return true;
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
+        return !paramType.equals(Parameter.INPUT) || assertStandardInput(param);
     }
 
 }

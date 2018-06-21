@@ -36,7 +36,7 @@ class CmdStep extends Step {
                     IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
                     IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".step") ;
             try {
-                List<String> lines = CmdUtils.exec(String.format(cmdLine, inFile));
+                List<String> lines = CmdUtils.exec(String.format(cmdLine, ("\"" + inFile + "\"") ));
                 IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size() - 1) : lines,
                         outputFile, false);
             } catch (IOException ex) {

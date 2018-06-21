@@ -100,13 +100,13 @@ public abstract class Step {
 
     void assertParameters(final int step) throws IllegalArgumentException {
         if (!assertParameter(Step.Parameter.INPUT, input))
-            throw new IllegalArgumentException(String.format("Wrong input type in step %s!", step));
+            throw new IllegalArgumentException(String.format("Wrong input type %s in step %s!", input.getClass(), step));
         if (!assertParameter(Step.Parameter.OUTPUT, output))
-            throw new IllegalArgumentException(String.format("Wrong output type in step %s!", step));
+            throw new IllegalArgumentException(String.format("Wrong output type %s in step %s!", output.getClass(), step));
         if (!assertParameter(Step.Parameter.ADDITIONAL, additional))
-            throw new IllegalArgumentException(String.format("Wrong additional input type in step %s!", step));
+            throw new IllegalArgumentException(String.format("Wrong additional input type %s in step %s!", additional.getClass(), step));
         if (!assertParameter(Step.Parameter.PARAMS, params))
-            throw new IllegalArgumentException(String.format("Wrong process parameter type in step %s!", step));
+            throw new IllegalArgumentException(String.format("Wrong process parameter type %s in step %s!", params.getClass(), step));
     }
 
     protected static boolean assertStandardInput(final Object param) {

@@ -1,7 +1,5 @@
 package de.axxepta.converterservices.proc;
 
-import de.axxepta.converterservices.utils.StringUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,7 +32,6 @@ class CombineStep extends Step {
 
     @Override
     protected boolean assertParameter(final Parameter paramType, final Object param) {
-        return (paramType.equals(Parameter.ADDITIONAL) && StringUtils.isEmpty(param)) ||
-                (!paramType.equals(Parameter.ADDITIONAL) && assertStandardInput(param));
+        return paramType.equals(Parameter.PARAMS) || assertStandardInput(param);
     }
 }

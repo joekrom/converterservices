@@ -110,9 +110,9 @@ public abstract class Step {
     }
 
     protected static boolean assertStandardInput(final Object param) {
-        return param == null || param instanceof String || param instanceof Integer ||
-                (param instanceof List && ((List) param).get(0) instanceof String);
+        return assertStandardOutput(param) || param instanceof Integer;
     }
+
     protected static boolean assertStandardOutput(final Object param) {
         return param == null || param instanceof String ||
                 (param instanceof List && ((List) param).get(0) instanceof String);

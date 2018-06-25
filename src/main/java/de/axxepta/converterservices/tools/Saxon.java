@@ -18,9 +18,7 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 import javax.xml.validation.Validator;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class Saxon {
@@ -93,7 +91,6 @@ public class Saxon {
     }
 
     private static Document getDOM() throws SaxonApiException {
-        Document dom;
         DocumentBuilderFactory dFactory = DocumentBuilderFactory.newInstance();
         try {
             return dFactory.newDocumentBuilder().newDocument();
@@ -199,10 +196,20 @@ public class Saxon {
         }
     }
 
-    public static void saveDOM(Document dom, String fileName) throws TransformerException, IOException {
-            Transformer transformer = TransformerFactory.newInstance().newTransformer();
-            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
-            StreamResult fileResult = new StreamResult(new FileWriter(fileName));
-            transformer.transform(new DOMSource(dom), fileResult);
+    public static void saveDOM(Document dom, String fileName, String... charset) throws TransformerException, IOException {
+        String encoding = (charset.length > 0) ? charset[0] : "UTF-8";
+        Transformer transformer = TransformerFactory.newInstance().newTransformer();
+        transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+        transformer.setOutputProperty(OutputKeys.ENCODING, encoding);
+        StreamResult fileResult = new StreamResult(new FileWriter(fileName));
+        transformer.transform(new DOMSource(dom), fileResult);
+
+/*        TransformerFactory tf = TransformerFactory.newInstance();
+        Transformer transformer = tf.newTransformer();
+        transformer.setOutputProperty(OutputKeys.ENCODING, "ISO-8859-1");
+        StringWriter stringWriter = new StringWriter();
+        transformer.transform(new DOMSource(dom), new StreamResult(stringWriter));
+        String domString = stringWriter.getBuffer().toString();
+        IOUtils.saveStringToFile(domString, fileName);*/
     }
 }

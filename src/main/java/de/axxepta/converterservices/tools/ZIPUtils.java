@@ -8,10 +8,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -89,21 +86,22 @@ public class ZIPUtils {
 
     public static List<String> unzip(String zipFileName, String destinationDir) throws IOException {
         List<String> extractedFiles = new ArrayList<>();
-        try ( ZipFile zipFile = new ZipFile(zipFileName) ) {
-            for ( ZipEntry entry : Collections.list( zipFile.entries() ) ) {
-                extractedFiles.add(entry.getName());
-                extractEntry( zipFile, entry, destinationDir );
+        try (ZipFile zipFile = new ZipFile(zipFileName)) {
+            for (ZipEntry entry : Collections.list(zipFile.entries())) {
+                System.out.println(entry.getName() + " " + entry.isDirectory());
+                extractEntry(zipFile, entry, destinationDir);
+                extractedFiles.add(IOUtils.pathCombine(destinationDir, entry.getName()));
             }
         }
         return extractedFiles;
     }
 
-    private static void extractEntry(ZipFile zipFile, ZipEntry entry, String destinationDir)
+    private static void extractEntry (ZipFile zipFile, ZipEntry entry, String destinationDir)
             throws IOException {
         Path destinationPath = Paths.get(destinationDir, entry.getName());
-        if (entry.isDirectory())
+        if (entry.isDirectory()) {
             Files.createDirectories(destinationPath);
-        else {
+        } else {
             Files.createDirectories(destinationPath.getParent());
             try (InputStream is = zipFile.getInputStream(entry)) {
                 Files.copy(is, destinationPath, StandardCopyOption.REPLACE_EXISTING);

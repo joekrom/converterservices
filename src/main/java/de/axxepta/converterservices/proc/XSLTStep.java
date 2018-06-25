@@ -3,6 +3,7 @@ package de.axxepta.converterservices.proc;
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class XSLTStep extends Step {
@@ -22,8 +23,7 @@ class XSLTStep extends Step {
         String inputFile = inputFiles.get(0);
         String outputFile = pipe.getWorkPath() + (StringUtils.isEmpty(output) ?
                 Saxon.standardOutputFilename((String) additionalInput) : (String) output);
-        pipe.saxonTransform(inputFile, pipe.getInputPath() + additionalInput,
-                outputFile, parameters);
+        pipe.saxonTransform(inputFile, pipedPath(additionalInput, pipe), outputFile, parameters);
         pipe.logFileAddArray(pipe.getErrFileArray());
         pipe.finalLogFileAdd(inputFile + ": " + pipe.getErrFileArray().getSize() + " messages");
         pipe.incErrorCounter(pipe.getErrFileArray().getSize());

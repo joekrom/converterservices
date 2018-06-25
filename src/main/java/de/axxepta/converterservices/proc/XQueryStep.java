@@ -25,8 +25,10 @@ class XQueryStep extends Step {
                 input.equals(Saxon.XQUERY_NO_CONTEXT) ? (String) input : inputFiles.get(0),
                 parameters);
         if (queryOutput instanceof Document) {
-            String outputFile = StringUtils.isEmpty(output) ? "output_step" + pipe.getCounter() + ".xml" : (String) output;
-            Saxon.saveDOM((Document) queryOutput, outputFile);
+            String outputFile = StringUtils.isEmpty(output) ?
+                    IOUtils.pathCombine(pipe.getWorkPath(),"output_step" + pipe.getCounter() + ".xml") :
+                    IOUtils.pathCombine(pipe.getWorkPath(), (String) output);
+            Saxon.saveDOM((Document) queryOutput, outputFile, "ISO-8859-1");
             pipe.addGeneratedFile(outputFile);
             actualOutput = outputFile;
             return singleFileList(outputFile);

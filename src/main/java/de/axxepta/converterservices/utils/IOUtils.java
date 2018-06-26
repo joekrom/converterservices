@@ -11,10 +11,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class IOUtils {
 
@@ -78,12 +79,54 @@ public class IOUtils {
         return new String(Files.readAllBytes(Paths.get(fileName)), StandardCharsets.UTF_8);
     }
 
-    public static String getResource(String name) throws IOException {
+    public static String getResourceAsString(String name) throws IOException {
+        return getResourceAsString(name, IOUtils.class);
+    }
+
+    public static String getResourceAsString(String name, Class referenceClass) throws IOException {
         final String resource = "/" + name;
-        final InputStream is = IOUtils.class.getResourceAsStream(resource);
+        final InputStream is = referenceClass.getResourceAsStream(resource);
         if(is == null) throw new IOException("Resource not found: " + resource);
         java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
         return s.hasNext() ? s.next() : "";
+    }
+
+    /**
+     * Copies resources from a folder in a jar file to a sub-directory on disk with the same name.
+     * If the target path does not exist it will be created.
+     * @param path Target base path
+     * @param resourcePath JAR/target folder name of the resources
+     * @param referenceClass Class in the jar file containing the resources
+     * @throws IOException Creation of directories or copying can throw an exception.
+     */
+    public static void copyResources(String path, String resourcePath, Class referenceClass) throws IOException {
+        IOUtils.safeCreateDirectory(path);
+        IOUtils.safeCreateDirectory(IOUtils.pathCombine(path, resourcePath));
+        File jarFile = new File(referenceClass.getProtectionDomain().getCodeSource().getLocation().getPath());
+        JarFile jar = new JarFile(jarFile);
+        final Enumeration<JarEntry> entries = jar.entries();
+        while(entries.hasMoreElements()) {
+            JarEntry entry = entries.nextElement();
+            String name = entry.getName();
+            if (name.startsWith(resourcePath)) {
+                if (entry.isDirectory()) {
+                    IOUtils.safeCreateDirectory(path + "/" + name);
+                } else {
+                    copyResource(name, path, referenceClass);
+                }
+            }
+        }
+        jar.close();
+    }
+
+    private static void copyResource(final String fileName, final String target, Class referenceClass) throws IOException {
+        String path = target + IOUtils.dirFromPath(fileName);
+        if (!Files.exists(Paths.get(path)))
+            new File(path).mkdirs();
+        InputStream is = referenceClass.getResourceAsStream("/" + fileName);
+        if(is == null) throw new IOException("Resource not found: " + fileName);
+        Files.copy(is, Paths.get(target + fileName), REPLACE_EXISTING );
+        is.close();
     }
 
     public static void safeCreateDirectory(String path) throws IOException {

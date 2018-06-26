@@ -8,4 +8,5 @@ public abstract class Api {
     }
 
     protected abstract void init(int version) throws IllegalStateException;
+
 }

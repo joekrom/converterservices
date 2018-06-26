@@ -68,10 +68,6 @@ public class Pipeline {
         return new PipelineBuilder();
     }
 
-    public static SubPipeline subPipeline() {
-        return new SubPipeline();
-    }
-
     /**
      * Executes the pipeline
      * @return int value indicating no errors, -1 error occurred during execution
@@ -169,6 +165,15 @@ public class Pipeline {
         return steps.get(step).getActualOutput();
     }
 
+    Object getStepOutput(String stepName) throws IllegalArgumentException {
+        for (Step step : steps) {
+            if (step.getName().equals(stepName)) {
+                return step.getActualOutput();
+            }
+        }
+        throw new IllegalArgumentException(String.format("Referenced step %s not defined.", stepName));
+    }
+
     void saxonTransform(String sourceFile, String xsltFile, String resultFile, String... parameter) {
         saxon.transform(sourceFile, xsltFile, resultFile, parameter);
     }
@@ -185,61 +190,64 @@ public class Pipeline {
         generatedFiles.addAll(files);
     }
 
-    private static Step createStep(StepType type, int no, Object input, Object output, Object additional, String... params)
-            throws IllegalArgumentException
+    private static Step createStep(final StepType type, String name, int no, final Object input, final Object output,
+                                   final Object additional, final String... params) throws IllegalArgumentException
     {
+        if (StringUtils.isEmpty(name)) {
+            name = Integer.toString(no);
+        }
         Step step;
         switch (type) {
             case XSLT:
-                step = new XSLTStep(input, output, additional, params);
+                step = new XSLTStep(name, input, output, additional, params);
                 break;
             case ZIP:
-                step = new ZIPStep(input, output, additional, params);
+                step = new ZIPStep(name, input, output, additional, params);
                 break;
             case UNZIP:
-                step = new UnzipStep(input, output, additional, params);
+                step = new UnzipStep(name, input, output, additional, params);
                 break;
             case XQUERY:
-                step = new XQueryStep(input, output, additional, params);
+                step = new XQueryStep(name, input, output, additional, params);
                 break;
             case XML_CSV:
-                step = new XMLToCSVStep(input, output, additional, params);
+                step = new XMLToCSVStep(name, input, output, additional, params);
                 break;
             case COMBINE:
-                step = new CombineStep(input, output, additional, params);
+                step = new CombineStep(name, input, output, additional, params);
                 break;
             case PDF_SPLIT:
-                step = new PDFSplitStep(input, output, additional, params);
+                step = new PDFSplitStep(name, input, output, additional, params);
                 break;
             case EXIF:
-                step = new EXIFStep(input, output, additional, params);
+                step = new EXIFStep(name, input, output, additional, params);
                 break;
             case MD5:
-                step = new MD5Step(input, output, additional, params);
+                step = new MD5Step(name, input, output, additional, params);
                 break;
             case MD5_FILTER:
-                step = new MD5FilterStep(input, output, additional, params);
+                step = new MD5FilterStep(name, input, output, additional, params);
                 break;
             case FILTER:
-                step = new FilterStep(input, output, additional, params);
+                step = new FilterStep(name, input, output, additional, params);
                 break;
             case FTP_UP:
-                step = new FTPUpStep(input, output, additional, params);
+                step = new FTPUpStep(name, input, output, additional, params);
                 break;
             case FTP_DOWN:
-                step = new FTPDownStep(input, output, additional, params);
+                step = new FTPDownStep(name, input, output, additional, params);
                 break;
             case HTTP_POST:
-                step = new HTTPPostStep(input, output, additional, params);
+                step = new HTTPPostStep(name, input, output, additional, params);
                 break;
             case CMD:
-                step = new CmdStep(input, output, additional, params);
+                step = new CmdStep(name, input, output, additional, params);
                 break;
             case LIST:
-                step = new ListStep(input, output, additional, params);
+                step = new ListStep(name, input, output, additional, params);
                 break;
             default:
-                step = new EmptyStep(input, output, additional, params);
+                step = new EmptyStep(name, input, output, additional, params);
         }
         step.assertParameters(no);
         return step;
@@ -250,12 +258,6 @@ public class Pipeline {
         log("## Process Step Number " + stepCounter + (mainPipe ? "" : "(side pipeline)"));
         log("##   Type               : " + step.getType());
         return step.exec(this);
-    }
-
-    void execSubPipe(SubPipeline subPipeline) throws Exception {
-        while (subPipeline.hasNext()) {
-            subPipeline.setOutput( stepExec(subPipeline.getNext(), false) );
-        }
     }
 
     private void startLogging() {
@@ -339,21 +341,23 @@ public class Pipeline {
             return this;
         }
 
-        public PipelineBuilder step(StepType type, Object input, Object output, Object additional, String... params) throws IllegalArgumentException {
+        public PipelineBuilder step(StepType type, String name, Object input, Object output, Object additional, String... params)
+                throws IllegalArgumentException
+        {
             if (steps.size() == 0) {
                 if ((input instanceof String && !input.equals("")) ||
                         (input instanceof List && ((List) input).get(0) instanceof String) && !((List) input).get(0).equals("") )
                 {
                     if (input instanceof String) {
                         inputFile = (String) input;
-                    } else if (input instanceof List && (((List) input).get(0) instanceof String)) {
+                    } else {
                         inputFile = (String) ((List) input).get(0);
                     }
                 } else {
                     throw new IllegalArgumentException("Input of first argument must not be null!");
                 }
             }
-            steps.add(Pipeline.createStep(type, steps.size(), input, output, additional, params));
+            steps.add(Pipeline.createStep(type, name, steps.size(), input, output, additional, params));
             return this;
         }
 
@@ -389,43 +393,6 @@ public class Pipeline {
 
         public int exec() {
             return new Pipeline(this).exec();
-        }
-    }
-
-
-    public static class SubPipeline {
-        private List<Step> steps = new ArrayList<>();
-        private Object output = null;
-        private int pointer = 0;
-
-        private SubPipeline() {}
-
-        public SubPipeline step(StepType type, Object input, Object output, Object additional, String... params) {
-            if (steps.size() == 0 && StringUtils.isEmpty(input))
-                throw new IllegalArgumentException("Input of first argument must not be null!");
-            steps.add(Pipeline.createStep(type, steps.size(), input, output, additional, params));
-            return this;
-        }
-
-        boolean hasNext() {
-            return steps.size() > pointer;
-        }
-
-        Step getNext() {
-            pointer += 1;
-            return steps.size() >= pointer ? steps.get(pointer - 1) :
-                    Pipeline.createStep(StepType.NONE, steps.size(), null, null, null);
-        }
-
-        Object getOutput() {
-            return output;
-        }
-
-        private void setOutput(Object output) {
-            this.output = output;
-            if (pointer < steps.size() && StringUtils.isEmpty( steps.get(pointer).getInput() )) {
-                steps.get(pointer).setInput(output);
-            }
         }
     }
 

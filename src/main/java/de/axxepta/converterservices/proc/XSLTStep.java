@@ -3,13 +3,12 @@ package de.axxepta.converterservices.proc;
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.StringUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 
 class XSLTStep extends Step {
 
-    XSLTStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    XSLTStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     Pipeline.StepType getType() {
@@ -17,13 +16,13 @@ class XSLTStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String inputFile = inputFiles.get(0);
-        String outputFile = pipe.getWorkPath() + (StringUtils.isEmpty(output) ?
-                Saxon.standardOutputFilename((String) additionalInput) : (String) output);
-        pipe.saxonTransform(inputFile, pipedPath(additionalInput, pipe), outputFile, parameters);
+        String outputFile = pipe.getWorkPath() + (StringUtils.isNoStringOrEmpty(output) ?
+                Saxon.standardOutputFilename((String) additional) : (String) output);
+        pipe.saxonTransform(inputFile, pipedPath(additional, pipe), outputFile, parameters);
         pipe.logFileAddArray(pipe.getErrFileArray());
         pipe.finalLogFileAdd(inputFile + ": " + pipe.getErrFileArray().getSize() + " messages");
         pipe.incErrorCounter(pipe.getErrFileArray().getSize());

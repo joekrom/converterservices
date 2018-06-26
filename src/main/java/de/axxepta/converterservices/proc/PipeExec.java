@@ -27,6 +27,7 @@ public class PipeExec {
 
     private final static String PIPE_ELEMENT = "pipeline";
     private final static String STEP_ELEMENT = "step";
+    private final static String NAME_ELEMENT = "name";
     private final static String INPUT_ELEMENT = "input";
     private final static String OUTPUT_ELEMENT = "output";
     private final static String ADD_ELEMENT = "add";
@@ -144,12 +145,20 @@ public class PipeExec {
     {
         Pipeline.StepType type = evalStepType(step.getAttributes().getNamedItem(TYPE));
 
+        String stepName;
+        Node nameNode = (Node) xPath.compile("./" + NAME_ELEMENT).evaluate(step, XPathConstants.NODE);
+        if (nameNode == null) {
+            stepName = "";
+        } else {
+            stepName = nameNode.getTextContent();
+        }
+
         Object input = assignParameter(step, xPath, INPUT_ELEMENT);
         Object output = assignParameter(step, xPath, OUTPUT_ELEMENT);
         Object additional = assignParameter(step, xPath, ADD_ELEMENT);
         String[] param = (String[]) assignParameter(step, xPath, PARAM_ELEMENT);
 
-        return builder.step(type, input, output, additional, param);
+        return builder.step(type, stepName, input, output, additional, param);
     }
 
     private static Object assignParameter(Node step, XPath xPath, String path)

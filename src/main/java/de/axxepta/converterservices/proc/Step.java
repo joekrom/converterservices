@@ -8,13 +8,25 @@ import java.util.List;
 
 public abstract class Step {
 
+    private String name;
     protected Object input;
     protected Object output;
     protected Object additional;
     protected String[] params;
     protected Object actualOutput;
 
-    Step(final Object input, final Object output, final Object additional, final String... params) {
+    /**
+     * "Protocol" identifier prefix for inputs to be taken from working directory
+     */
+    public static final String WORK_DIR = "pipe://";
+
+    /**
+     * "Protocol" identifier prefix for inputs to be taken from previously executed named step
+     */
+    public static final String NAMED_STEP = "step://";
+
+    Step(String name,  final Object input, final Object output, final Object additional, final String... params) {
+        this.name = name;
         this.input = input;
         this.output = output;
         this.additional = additional;
@@ -22,6 +34,10 @@ public abstract class Step {
     }
 
     abstract Pipeline.StepType getType();
+
+    String getName() {
+        return name;
+    }
 
     Object getInput() {
         return input;
@@ -36,60 +52,64 @@ public abstract class Step {
     }
 
     Object exec(final Pipeline pipe) throws Exception {
-        if (StringUtils.isEmpty(input) && !(input instanceof Integer) && !(pipe.getLastOutput() instanceof List))
+        if (StringUtils.isNoStringOrEmpty(input) && !(input instanceof Integer) && !(pipe.getLastOutput() instanceof List))
             throw new IllegalStateException("Last process step has wrong type!");
 
-        List<String> inputFiles;
-        if (StringUtils.isEmpty(input)) {
-            inputFiles = (List) pipe.getLastOutput();
-        } else if (input instanceof Integer) {
-            Object oldOutput = pipe.getStepOutput((Integer) input);
-            if (!(oldOutput instanceof List) || !(((List) oldOutput).get(0) instanceof String))
-                throw new IllegalStateException("Last process step has wrong type!");
-            inputFiles = (List) pipe.getStepOutput((Integer) input);
-        } else {
-            inputFiles = new ArrayList<>();
-            if (input instanceof String) {
-                inputFiles.add(pipedPath(input, pipe));
-            } else {
-                for (Object inFile : (List) input) {
-                    inputFiles.add(pipedPath(inFile, pipe));
-                }
-            }
-        }
+        List<String> inputFiles = resolveInput(input, pipe);
 
         Object additionalInput;
         String[] parameters;
-        // execute possible sub pipes first
-        if (additional instanceof Pipeline.SubPipeline) {
-            Pipeline.SubPipeline optionalSub = (Pipeline.SubPipeline) additional;
-            pipe.execSubPipe(optionalSub);
-            additionalInput = optionalSub.getOutput();
-        } else {
-            additionalInput = additional;
-        }
+
         parameters = params;
         pipe.log("##   Input              : " + inputFiles);
-        pipe.log("##   Additional Input   : " + additionalInput);
+        pipe.log("##   Additional Input   : " + additional);
         pipe.log("##   Parameters         : " + String.join(" - ", parameters));
 
-        Object outputObject = execAction(pipe, inputFiles, additionalInput, parameters);
+        Object outputObject = execAction(pipe, inputFiles, parameters);
         pipe.log("##   Output             : " + outputObject);
         pipe.log("");
         return outputObject;
     }
 
-    abstract Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput,
-                               final String... parameters) throws Exception;
+    abstract Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception;
+
+    private static List outputList(Object oldOutput) {
+        if (!(oldOutput instanceof List) ||
+                (((List) oldOutput).size() > 0 && !(((List) oldOutput).get(0) instanceof String)) )
+            throw new IllegalStateException("Referenced process step has wrong type!");
+        return (List) oldOutput;
+    }
+
+    static List<String> resolveInput(Object in, Pipeline pipe) {
+        List<String> inputFiles;
+        if (in == null || (in instanceof String && StringUtils.isEmpty((String) in))  ) {
+            inputFiles = outputList( pipe.getLastOutput() );
+        } else if (in instanceof Integer) {
+            Object oldOutput = pipe.getStepOutput((Integer) in);
+            inputFiles = outputList(oldOutput);
+        } else if (in instanceof String && ((String) in).startsWith(NAMED_STEP)) {
+            inputFiles = outputList( pipe.getStepOutput(((String) in).substring(NAMED_STEP.length())) );
+        } else {
+            inputFiles = new ArrayList<>();
+            if (in instanceof String) {
+                inputFiles.add(pipedPath(in, pipe));
+            } else {
+                for (Object inFile : (List) in) {
+                    inputFiles.add(pipedPath(inFile, pipe));
+                }
+            }
+        }
+        return inputFiles;
+    }
 
     static String pipedPath(final Object fileNameObject, final Pipeline pipe) throws IllegalArgumentException {
         if (!(fileNameObject instanceof String)) {
             throw new IllegalArgumentException("Object is not a String");
         }
         String fileName = (String) fileNameObject;
-        return (fileName.startsWith("pipe:") ?
-                IOUtils.pathCombine(pipe.getWorkPath(), fileName.substring(5)) :
-                IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName));
+        return fileName.startsWith(WORK_DIR) ?
+                IOUtils.pathCombine(pipe.getWorkPath(), fileName.substring(WORK_DIR.length())) :
+                IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName);
     }
 
     static List<String> singleFileList(final String file) {

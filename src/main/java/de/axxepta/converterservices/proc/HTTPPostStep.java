@@ -11,8 +11,8 @@ import java.util.List;
 
 class HTTPPostStep extends Step {
 
-    HTTPPostStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    HTTPPostStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -21,7 +21,7 @@ class HTTPPostStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String server = "";

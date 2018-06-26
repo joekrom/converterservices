@@ -9,8 +9,8 @@ import java.util.stream.Collectors;
 
 class ListStep extends Step {
 
-    ListStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    ListStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -19,7 +19,7 @@ class ListStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         boolean xml = false;
@@ -30,7 +30,7 @@ class ListStep extends Step {
             }
         }
         String outputFile = IOUtils.pathCombine(pipe.getWorkPath(),
-                StringUtils.isEmpty(output) ? "list_step" + pipe.getCounter() + (xml ? ".xml" : ".txt") : (String) output);
+                StringUtils.isNoStringOrEmpty(output) ? "list_step" + pipe.getCounter() + (xml ? ".xml" : ".txt") : (String) output);
 
         if (xml) {
             List<String> xmlLines = new ArrayList<>();

@@ -7,8 +7,8 @@ import java.util.List;
 
 class MD5Step extends Step {
 
-    MD5Step(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    MD5Step(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -17,7 +17,7 @@ class MD5Step extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
         List<String> outputFiles = new ArrayList<>();
         String outputFile;
         for (String inFile : inputFiles) {

@@ -9,8 +9,8 @@ import java.util.List;
 
 class EXIFStep extends Step {
 
-    EXIFStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    EXIFStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -19,7 +19,7 @@ class EXIFStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         boolean compact = false;

@@ -10,8 +10,8 @@ import java.util.List;
 
 class FilterStep extends Step {
 
-    FilterStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    FilterStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -20,7 +20,7 @@ class FilterStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         List<String> outputFiles = new ArrayList<>();
@@ -75,7 +75,7 @@ class FilterStep extends Step {
     protected boolean assertParameter(final Parameter paramType, final Object param) {
         switch (paramType) {
             case INPUT:
-                return ((param instanceof String) && !StringUtils.isEmpty(param) ) || (param instanceof Integer) ||
+                return ((param instanceof String) && !StringUtils.isNoStringOrEmpty(param) ) || (param instanceof Integer) ||
                         (param instanceof List && ((List) param).get(0) instanceof String);
             case PARAMS:
                 return ((String[]) param).length > 0;

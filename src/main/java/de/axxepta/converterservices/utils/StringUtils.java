@@ -6,8 +6,12 @@ public class StringUtils {
         return nlList.split("\\r?\\n");
     }
 
-    public static boolean isEmpty(Object s) {
+    public static boolean isNoStringOrEmpty(Object s) {
         return (s == null) || !(s instanceof String) ||(s.equals(""));
+    }
+
+    public static boolean isEmpty(String s) {
+        return (s == null) || (s.equals(""));
     }
 
     public static boolean isInt(String str)

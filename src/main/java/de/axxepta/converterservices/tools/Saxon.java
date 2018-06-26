@@ -168,7 +168,7 @@ public class Saxon {
     }
 
     public Object xquery(String query, String contextFile, List<String> bindingStrings, String outputType) throws SaxonApiException{
-        if (StringUtils.isEmpty(outputType)) {
+        if (StringUtils.isNoStringOrEmpty(outputType)) {
             outputType = NODE;
         }
         Map<QName, XdmItem> bindings = new HashMap<>();

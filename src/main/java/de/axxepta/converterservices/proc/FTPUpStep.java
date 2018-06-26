@@ -10,8 +10,8 @@ import java.util.List;
 
 class FTPUpStep extends Step {
 
-    FTPUpStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    FTPUpStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -20,7 +20,7 @@ class FTPUpStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String server = "";

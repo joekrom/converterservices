@@ -63,7 +63,7 @@ public class IOUtils {
         try (FileWriter writer = new FileWriter(fileName)) {
             int i = 1;
             for (String line : lines) {
-                if (!(removeEmptyLines && StringUtils.isEmpty(line))) {
+                if (!(removeEmptyLines && StringUtils.isNoStringOrEmpty(line))) {
                     writer.write(line);
                     if (i < lines.size()) {
                         writer.write("\n");

@@ -9,17 +9,17 @@ import java.util.List;
 
 class CmdStep extends Step {
 
-    CmdStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    CmdStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
     Pipeline.StepType getType() {
-        return null;
+        return Pipeline.StepType.CMD;
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String cmdLine = parameters[0];

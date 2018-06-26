@@ -8,8 +8,8 @@ import java.util.List;
 
 class UnzipStep extends Step {
 
-    UnzipStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    UnzipStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     Pipeline.StepType getType() {
@@ -17,13 +17,13 @@ class UnzipStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         List<String> outputFiles = new ArrayList<>();
-        if ((additionalInput instanceof String) && (parameters.length > 0 && parameters[0].toLowerCase().contains("true"))) {
-            String outputFile = (output instanceof String) ? (String) output : (String) additionalInput;
-            ZIPUtils.unzipSingle(inputFiles.get(0), (String) additionalInput, pipe.getWorkPath(), outputFile);
+        if ((additional instanceof String) && (parameters.length > 0 && parameters[0].toLowerCase().contains("true"))) {
+            String outputFile = (output instanceof String) ? (String) output : (String) additional;
+            ZIPUtils.unzipSingle(inputFiles.get(0), (String) additional, pipe.getWorkPath(), outputFile);
             outputFiles.add(outputFile);
         } else {
             outputFiles.addAll(ZIPUtils.unzip(inputFiles.get(0), pipe.getWorkPath()));
@@ -35,7 +35,7 @@ class UnzipStep extends Step {
 
     @Override
     protected boolean assertParameter(final Parameter paramType, final Object param) {
-        if (StringUtils.isEmpty(param))
+        if (StringUtils.isNoStringOrEmpty(param))
             return true;
         if (paramType.equals(Parameter.PARAMS)) {
             return param instanceof Boolean;

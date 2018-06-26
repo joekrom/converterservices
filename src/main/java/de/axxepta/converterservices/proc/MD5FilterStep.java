@@ -7,8 +7,8 @@ import java.util.List;
 
 class MD5FilterStep extends Step {
 
-    MD5FilterStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    MD5FilterStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -17,7 +17,7 @@ class MD5FilterStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String extension = ".md5";

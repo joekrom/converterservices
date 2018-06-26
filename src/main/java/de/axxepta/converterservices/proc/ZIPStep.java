@@ -10,8 +10,8 @@ import java.util.List;
 
 class ZIPStep extends Step {
 
-    ZIPStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    ZIPStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     Pipeline.StepType getType() {
@@ -19,16 +19,16 @@ class ZIPStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String outputFile = IOUtils.pathCombine(pipe.getWorkPath(),
-                StringUtils.isEmpty(output) ? "step" + pipe.getCounter() + ".zip" : (String) output);
+                StringUtils.isNoStringOrEmpty(output) ? "step" + pipe.getCounter() + ".zip" : (String) output);
         List<String> additionalInputs = new ArrayList<>();
-        if ((additionalInput instanceof List) && ((List) additionalInput).get(0) instanceof String) {
-            additionalInputs.addAll((List<String>) additionalInput);
-        } else if (additionalInput instanceof String && !additionalInput.equals("")) {
-            additionalInputs.add((String) additionalInput);
+        if ((additional instanceof List) && ((List) additional).get(0) instanceof String) {
+            additionalInputs.addAll((List<String>) additional);
+        } else if (additional instanceof String && !additional.equals("")) {
+            additionalInputs.add((String) additional);
         } else {
             for (String inputFile : inputFiles) {
                 additionalInputs.add(IOUtils.relativePath(inputFile, pipe.getWorkPath()));
@@ -46,9 +46,14 @@ class ZIPStep extends Step {
 
     @Override
     protected boolean assertParameter(final Parameter paramType, final Object param) {
-        if (StringUtils.isEmpty(param))
-            return true;
-        return (paramType.equals(Parameter.ADDITIONAL) && (param instanceof Pipeline.SubPipeline)) ||
-            assertStandardInput(param);
+        switch (paramType) {
+            case INPUT:
+                return assertStandardInput(param);
+            case OUTPUT:
+                return param == null || param instanceof String;
+            case ADDITIONAL:
+                return assertStandardInput(param);
+            default: return true;
+        }
     }
 }

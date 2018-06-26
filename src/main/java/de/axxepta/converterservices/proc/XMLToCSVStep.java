@@ -10,8 +10,8 @@ import java.util.List;
 
 class XMLToCSVStep extends Step {
 
-    XMLToCSVStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    XMLToCSVStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     @Override
@@ -20,7 +20,7 @@ class XMLToCSVStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String row = "tr";
@@ -45,7 +45,7 @@ class XMLToCSVStep extends Step {
         for (String inFile : inputFiles) {
             if ((output instanceof List) && (((List) output).size() == inputFiles.size())) {
                 outputFile = IOUtils.pathCombine(pipe.getWorkPath(), (String) ((List) output).get(i));
-            } else if (StringUtils.isEmpty(output)) {
+            } else if (StringUtils.isNoStringOrEmpty(output)) {
                 outputFile = IOUtils.filenameFromPath(inFile) + ".csv";
             } else {
                 outputFile = IOUtils.pathCombine(pipe.getWorkPath(), (String) output);

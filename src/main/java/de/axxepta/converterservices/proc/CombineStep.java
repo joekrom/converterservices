@@ -5,8 +5,8 @@ import java.util.List;
 
 class CombineStep extends Step {
 
-    CombineStep(Object input, Object output, Object additional, String... params) {
-        super(input, output, additional, params);
+    CombineStep(String name, Object input, Object output, Object additional, String... params) {
+        super(name, input, output, additional, params);
     }
 
     Pipeline.StepType getType() {
@@ -14,15 +14,15 @@ class CombineStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final Object additionalInput, final String... parameters)
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         List<String> outputFiles = new ArrayList<>();
         outputFiles.addAll(inputFiles);
-        if (additionalInput instanceof String) {
-            outputFiles.add(pipedPath(additionalInput, pipe));
+        if (additional instanceof String) {
+            outputFiles.add(pipedPath(additional, pipe));
         } else {
-            for (Object inFile : (List) additionalInput) {
+            for (Object inFile : (List) additional) {
                 outputFiles.add(pipedPath(inFile, pipe));
             }
         }

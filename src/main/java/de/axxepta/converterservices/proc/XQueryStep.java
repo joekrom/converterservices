@@ -20,7 +20,9 @@ class XQueryStep extends Step {
     @Override
     Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
         String queryFile = pipedPath(additional, pipe);
+
         String query = IOUtils.readTextFile(queryFile);
+
         Object queryOutput = pipe.saxonXQuery(query,
                 input.equals(Saxon.XQUERY_NO_CONTEXT) ? (String) input : inputFiles.get(0),
                 parameters);

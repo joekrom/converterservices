@@ -16,9 +16,7 @@ class XSLTStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
-            throws Exception
-    {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
         String inputFile = inputFiles.get(0);
         String outputFile = pipe.getWorkPath() + (StringUtils.isNoStringOrEmpty(output) ?
                 Saxon.standardOutputFilename((String) additional) : (String) output);

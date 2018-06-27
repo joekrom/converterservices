@@ -69,7 +69,8 @@ public class Pipeline {
     }
 
     /**
-     * Executes the pipeline
+     * Executes the pipeline from the builder. This "consumes" the pipeline, no actual instance of it is returned.
+     * You can execute a new one from the last returned builder.
      * @return int value indicating no errors, -1 error occurred during execution
      */
     private int exec() {
@@ -77,10 +78,11 @@ public class Pipeline {
         startLogging();
         try {
             IOUtils.safeCreateDirectory(workPath);
+            IOUtils.safeCreateDirectory(outputPath);
             for (Step step : steps) {
                 lastOutput = stepExec(step, true);
             }
-            if (lastOutput instanceof List && ((List) lastOutput).size() >0 && ((List) lastOutput).get(0) instanceof String) {
+            if (lastOutput instanceof List && ((List) lastOutput).size() > 0 && ((List) lastOutput).get(0) instanceof String) {
                 for (Object outputFile : (List) lastOutput) {
                     String path = (String) outputFile;
                     if (IOUtils.pathExists(path)) {
@@ -200,6 +202,9 @@ public class Pipeline {
         switch (type) {
             case XSLT:
                 step = new XSLTStep(name, input, output, additional, params);
+                break;
+            case XSL_FO:
+                step = new FOPStep(name, input, output, additional, params);
                 break;
             case ZIP:
                 step = new ZIPStep(name, input, output, additional, params);

@@ -125,7 +125,9 @@ public class IOUtils {
             new File(path).mkdirs();
         InputStream is = referenceClass.getResourceAsStream("/" + fileName);
         if(is == null) throw new IOException("Resource not found: " + fileName);
-        Files.copy(is, Paths.get(target + fileName), REPLACE_EXISTING );
+        Files.copy(is,
+                Paths.get(target + (target.endsWith("/") || target.endsWith("\\") ? "" : "/") + fileName),
+                REPLACE_EXISTING );
         is.close();
     }
 

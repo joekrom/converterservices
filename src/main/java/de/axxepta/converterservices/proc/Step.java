@@ -113,7 +113,7 @@ public abstract class Step {
     }
 
     static List<String> singleFileList(final String file) {
-        List<String> outputFiles = new ArrayList<>();
+        final List<String> outputFiles = new ArrayList<>();
         outputFiles.add(file);
         return outputFiles;
     }
@@ -129,16 +129,16 @@ public abstract class Step {
             throw new IllegalArgumentException(String.format("Wrong process parameter type %s in step %s!", params.getClass(), step));
     }
 
-    protected static boolean assertStandardInput(final Object param) {
+    static boolean assertStandardInput(final Object param) {
         return assertStandardOutput(param) || param instanceof Integer;
     }
 
-    protected static boolean assertStandardOutput(final Object param) {
+    static boolean assertStandardOutput(final Object param) {
         return param == null || param instanceof String ||
                 (param instanceof List && ((List) param).get(0) instanceof String);
     }
 
-    protected abstract boolean assertParameter(final Parameter paramType, final Object param);
+    abstract boolean assertParameter(final Parameter paramType, final Object param);
 
     enum Parameter {
         INPUT, OUTPUT, ADDITIONAL, PARAMS

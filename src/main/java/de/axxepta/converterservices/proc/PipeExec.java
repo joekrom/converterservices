@@ -21,6 +21,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Can be called as command line pipeline processing tool.
+ * Provide an XML pipeline description file as first parameter (see in the Wiki for more information).
+ */
 public class PipeExec {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PipeExec.class);
@@ -63,6 +67,17 @@ public class PipeExec {
         }
     }
 
+    /**
+     * Executes a pipeline described in a passed file. Look in the wiki for further information.
+     * @param file XML pipeline description input file name
+     * @return Pipeline process execution code as returned by PipelineBuilder.exec()
+     * @throws IllegalArgumentException if the pipeline description contains invalid components
+     * @throws NullPointerException if the step type attribute is missing
+     * @throws ParserConfigurationException if the XML description structure is not valid XML
+     * @throws IOException if no XML DOM can be build from the description
+     * @throws SAXException if a XSLT step fails
+     * @throws XPathExpressionException if the XPath processing for pipeline parsing fails
+     */
     public static int execProcessFile(String file)
             throws IllegalArgumentException, NullPointerException, ParserConfigurationException, IOException,
             SAXException, XPathExpressionException
@@ -75,6 +90,17 @@ public class PipeExec {
         }
     }
 
+    /**
+     * Executes a pipeline described in a passed String. Look in the wiki for further information.
+     * @param xmlString Pipeline description input XML String
+     * @return Pipeline process execution code as returned by PipelineBuilder.exec()
+     * @throws IllegalArgumentException if the pipeline description contains invalid components
+     * @throws NullPointerException if the step type attribute is missing
+     * @throws ParserConfigurationException if the XML description structure is not valid XML
+     * @throws IOException if no XML DOM can be build from the description
+     * @throws SAXException if a XSLT step fails
+     * @throws XPathExpressionException if the XPath processing for pipeline parsing fails
+     */
     public static int execProcessString(String xmlString)
             throws IllegalArgumentException, NullPointerException, ParserConfigurationException, IOException,
             SAXException, XPathExpressionException
@@ -86,6 +112,14 @@ public class PipeExec {
         return execProcess(dom);
     }
 
+    /**
+     * Executes a pipeline described in a passed XML DOM. Look in the wiki for further information.
+     * @param dom Pipeline description as XML DOM
+     * @return Pipeline process execution code as returned by PipelineBuilder.exec()
+     * @throws XPathExpressionException - if the XPath processing for pipeline parsing fails
+     * @throws NullPointerException - if the step type attribute is missing
+     * @throws IllegalArgumentException - if the pipeline description contains invalid components
+     */
     public static int execProcess(Document dom) throws XPathExpressionException, NullPointerException, IllegalArgumentException {
         XPathFactory factory = XPathFactory.newInstance();
         XPath xPath = factory.newXPath();

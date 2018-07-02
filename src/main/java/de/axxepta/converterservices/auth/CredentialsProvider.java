@@ -22,9 +22,6 @@ class CredentialsProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CredentialsProvider.class);
 
-    private static final String USER = "ONKEL_HOTTE";
-    private static final String PWD = "Märchenstunde";
-
     private static final String AUTH_FILE = "credentials.xml";
 
     private static final String CREDENTIALS_TAG = "credentials";
@@ -41,9 +38,6 @@ class CredentialsProvider {
             } catch (Exception ex) {
                 LOGGER.error("Error while loading Basic Auth credentials file: " + ex.getMessage());
             }
-        }
-        if (credentialsList.size() == 0) {
-            credentialsList.add(new AuthenticationDetails(USER, PWD));
         }
         return credentialsList;
     }

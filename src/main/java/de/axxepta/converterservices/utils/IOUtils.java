@@ -54,9 +54,10 @@ public class IOUtils {
         }
     }
 
-    public static void saveStringToFile(String line, String fileName) throws IOException {
-        try (FileWriter writer = new FileWriter(fileName)) {
-            writer.write(line);
+    public static void saveStringToFile(String line, String fileName, String... characterSet) throws IOException {
+        String charset = characterSet.length > 0 ? characterSet[0] : "UTF-8";
+        try (PrintWriter writer = new PrintWriter(fileName, charset)) {
+            writer.print(line);
         }
     }
 

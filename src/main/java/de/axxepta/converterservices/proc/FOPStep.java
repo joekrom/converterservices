@@ -29,7 +29,7 @@ class FOPStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
         String inputFile = inputFiles.get(0);
 
         String outputFile = pipe.getWorkPath() +
@@ -69,7 +69,7 @@ class FOPStep extends Step {
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
         return true;
     }
 

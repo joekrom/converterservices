@@ -14,12 +14,12 @@ class FTPDownStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, String... parameters) throws Exception {
+    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
         return null;
     }
 
     @Override
-    protected boolean assertParameter(Parameter paramType, Object param) {
+    protected boolean assertParameter(final Parameter paramType, final Object param) {
         return true;
     }
 }

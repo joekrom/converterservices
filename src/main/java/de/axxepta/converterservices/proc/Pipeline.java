@@ -251,6 +251,9 @@ public class Pipeline {
             case LIST:
                 step = new ListStep(name, input, output, additional, params);
                 break;
+            case REPLACE:
+                step = new ReplaceStep(name, input, output, additional, params);
+                break;
             default:
                 step = new EmptyStep(name, input, output, additional, params);
         }
@@ -404,7 +407,7 @@ public class Pipeline {
 
     public enum StepType {
         XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER, COMBINE, CMD,
-        FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, NONE
+        FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE, NONE
     }
 
 }

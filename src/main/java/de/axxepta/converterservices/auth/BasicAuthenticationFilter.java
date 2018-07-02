@@ -82,7 +82,8 @@ public class BasicAuthenticationFilter extends FilterImpl {
     }
 
     private boolean authenticatedWith(final String[] credentials) {
-        return authenticationDetailList.stream().
+        return authenticationDetailList.size() == 0 ||
+                authenticationDetailList.stream().
                 anyMatch(a -> a.getUsername().equals(credentials[0]) && a.passwordEquals(credentials[1]));
     }
 

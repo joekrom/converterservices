@@ -26,21 +26,40 @@ public class BasicAuthenticationFilter extends FilterImpl {
 
     private final List<AuthenticationDetails> authenticationDetailList = new ArrayList<>();
 
-
+    /**
+     * Create Basic Authentication filter instance that applies to all paths, tries to load credentials from a file
+     * credentials.xml in the active directory (see Wiki for file structure), accepts requests with arbitrary
+     * user/password Basic Authorization field if file is not found during startup of the application.
+     */
     public BasicAuthenticationFilter() {
         super(SparkUtils.ALL_PATHS, ACCEPT_ALL_TYPES);
         authenticationDetailList.addAll(CredentialsProvider.getCredentials());
     }
 
+    /**
+     * Create Basic Authentication filter instance that applies to the provided path, tries to load credentials from a file
+     * credentials.xml in the active directory (see Wiki for file structure), accepts requests with arbitrary
+     * user/password Basic Authorization field if file is not found during startup of the application.
+     * @param path HTTP paths that the filter applies to
+     */
     public BasicAuthenticationFilter(final String path) {
         super(path, ACCEPT_ALL_TYPES);
         authenticationDetailList.addAll(CredentialsProvider.getCredentials());
     }
 
+    /**
+     * Create Basic Authentication filter instance that applies for all paths.
+     * @param authenticationDetails Authorization data for HTTP request
+     */
     public BasicAuthenticationFilter(final AuthenticationDetails authenticationDetails) {
         this(SparkUtils.ALL_PATHS, authenticationDetails);
     }
 
+    /**
+     * Create Basic Authentication filter instance that applies to the provided with the given credentials.
+     * @param path HTTP paths that the filter applies to
+     * @param authenticationDetails Authorization data for HTTP request
+     */
     public BasicAuthenticationFilter(final String path, final AuthenticationDetails authenticationDetails) {
         super(path, ACCEPT_ALL_TYPES);
         this.authenticationDetailList.add(authenticationDetails);

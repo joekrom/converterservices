@@ -36,7 +36,9 @@ class FOPStep extends Step {
                 (StringUtils.isNoStringOrEmpty(output) ?
                 "step_" + pipe.getCounter() + ".pdf" : (String) output);
 
-        String configFile = pipedPath(additional, pipe);
+
+        String configFile = resolveNotEmptyInput(additional, pipe).get(0);
+        //String configFile = pipedPath(additional, pipe);
 
         String outputType = MimeConstants.MIME_PDF;
         for (String parameter : parameters) {
@@ -70,7 +72,16 @@ class FOPStep extends Step {
 
     @Override
     protected boolean assertParameter(final Parameter paramType, final Object param) {
-        return true;
+        switch (paramType) {
+            case INPUT:
+                return assertStandardInput(param);
+            case OUTPUT:
+                return assertStandardOutput(param);
+            case ADDITIONAL:
+                return assertNotEmptyInput(param);
+            default:
+                return true;
+        }
     }
 
 }

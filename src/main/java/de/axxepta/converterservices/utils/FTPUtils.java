@@ -13,7 +13,7 @@ public class FTPUtils {
 
     private static final int BUFFER_SIZE = 4096;
 
-    public static String list(String user, String pwd, String server, int port, String path) throws IOException {
+    public static String list(boolean secure, String user, String pwd, String server, int port, String path) throws IOException {
         FTPClient ftpClient = new FTPClient();
         StringBuilder builder = new StringBuilder();
         IOException ex = null;
@@ -36,7 +36,7 @@ public class FTPUtils {
         return builder.toString();
     }
 
-    public static String download(boolean secure, String user, String pwd, String server, String path, String storePath)
+    public static String download(boolean secure, String user, String pwd, String server, int port, String path, String storePath)
             throws IOException
     {
         if (secure) {
@@ -60,7 +60,7 @@ public class FTPUtils {
         }
     }
 
-    private static ByteArrayOutputStream download(boolean secure, String user, String pwd, String server, String path)
+    private static ByteArrayOutputStream download(boolean secure, String user, String pwd, String server, int port, String path)
             throws IOException
     {
         URL url = new URL((secure ? "sftp://" : "ftp://") + user + ":" + pwd + "@" + server + path);
@@ -76,7 +76,7 @@ public class FTPUtils {
     }
 
 
-    public static String upload(boolean secure, String user, String pwd, String server, String port, String serverBase,
+    public static String upload(boolean secure, String user, String pwd, String server, int port, String serverBase,
                                 String localBase, String sourcePath)
             throws IOException, JSchException, SftpException
     {
@@ -87,7 +87,7 @@ public class FTPUtils {
             relPath = IOUtils.dirFromPath(relPath).replaceAll("\\\\", "/");
             String path = relPath.startsWith("/") ? relPath.substring(1) : relPath;
             JSch jsch = new JSch();
-            Session session = jsch.getSession(user, server, Integer.valueOf(port));
+            Session session = jsch.getSession(user, server, port);
             try {
                 session.setPassword(pwd);
                 java.util.Properties config = new java.util.Properties();

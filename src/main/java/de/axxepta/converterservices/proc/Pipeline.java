@@ -64,6 +64,10 @@ public class Pipeline {
         saxon.setErrorListener(err);
     }
 
+    /**
+     * Creates a PipelineBuilder instance which can be used to define an XML processing pipeline.
+     * @return Empty PipelineBuilder
+     */
     public static PipelineBuilder builder() {
         return new PipelineBuilder();
     }
@@ -205,6 +209,9 @@ public class Pipeline {
                 break;
             case XSL_FO:
                 step = new FOPStep(name, input, output, additional, params);
+                break;
+            case JSON_XML:
+                step = new JSONtoXMLStep(name, input, output, additional, params);
                 break;
             case ZIP:
                 step = new ZIPStep(name, input, output, additional, params);
@@ -349,6 +356,28 @@ public class Pipeline {
             return this;
         }
 
+        /**
+         * Defines steps of an XML processing pipeline, will add the step to a list to be executed, but does not actually
+         * perform the processing.
+         * @param type Type of transformation or processing
+         * @param name Optional name, can be null or empty String. Can be referenced from later steps in the definition
+         *             of inputs or additional inputs with a prepended <i>step://</i> to the parameters to feed the output
+         *             of this step at the corresponding later point.
+         * @param input Input file(s) as String or List of Strings, relative to the input path of the pipe, can be null
+         *             or empty String if the output of the previous step shall be used.
+         *             An Integer with value <i>n</i> will reference the output files of the <i>n</i>th step in the pipe.
+         *             A prepended <i>pipe://</i> will reference file names relative to the work path of the pipe, a
+         *             prepended <i>step://</i> will reference all output files of a previous named step.
+         * @param output String or List of String, optional output file name(s), can be null or empty String
+         *              (standard values will be generated).
+         *              Provided file names have to be relative to the working path.
+         * @param additional Possible additional file names which can be relative to the input path, output path (if
+         *                   prepended with <i>step://</i>, <i>pipe://</i> or provided as Integer (see input) or relative
+         *                   to other references (e.g. path on FTP server or in ZIP file). See in the Wiki for more details.
+         * @param params (Optional) parameters, see in the Wiki for possible values for different StepTypes
+         * @return Pipeline builder with current step appended to step list
+         * @throws IllegalArgumentException
+         */
         public PipelineBuilder step(StepType type, String name, Object input, Object output, Object additional, String... params)
                 throws IllegalArgumentException
         {
@@ -407,7 +436,7 @@ public class Pipeline {
 
     public enum StepType {
         XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER, COMBINE, CMD,
-        FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE, NONE
+        JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE, NONE
     }
 
 }

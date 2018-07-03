@@ -2,7 +2,6 @@ package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.utils.IOUtils;
-import de.axxepta.converterservices.utils.StringUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
@@ -39,27 +38,23 @@ class XMLToCSVStep extends Step {
             }
         }
 
-        List<String> outputFiles = new ArrayList<>();
-        String outputFile;
+        List<String> providedOutputNames = listifyOutput(pipe);
+        List<String> usedOutputFiles = new ArrayList<>();
         int i = 0;
         for (String inFile : inputFiles) {
-            if ((output instanceof List) && (((List) output).size() == inputFiles.size())) {
-                outputFile = IOUtils.pathCombine(pipe.getWorkPath(), (String) ((List) output).get(i));
-            } else if (StringUtils.isNoStringOrEmpty(output)) {
-                outputFile = IOUtils.filenameFromPath(inFile) + ".csv";
-            } else {
-                outputFile = IOUtils.pathCombine(pipe.getWorkPath(), (String) output);
-            }
+            String outputFile = providedOutputNames.size() > i && !providedOutputNames.get(i).equals("") ?
+                    IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(i)) :
+                    IOUtils.pathCombine(pipe.getWorkPath(),IOUtils.filenameFromPath(inFile) + ".csv");
 
             try (ByteArrayOutputStream os = ExcelUtils.XMLToCSV(inFile, row, column, delimiter)) {
                 IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
             }
             pipe.addGeneratedFile(outputFile);
-            outputFiles.add(outputFile);
+            usedOutputFiles.add(outputFile);
             i++;
         }
-        actualOutput = outputFiles;
-        return outputFiles;
+        actualOutput = usedOutputFiles;
+        return usedOutputFiles;
     }
 
     @Override

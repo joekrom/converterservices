@@ -177,8 +177,13 @@ public class IOUtils {
     }
 
     public static String filenameFromPath(String path) {
-        String[] components = path.split("/|\\\\");
-        return components[components.length - 1];
+        String[] parts = path.split("/|\\\\");
+        return parts[parts.length - 1];
+    }
+
+    public static String strippedFilename(String path) {
+        String[] fileParts = filenameFromPath(path).split("\\.");
+        return fileParts[0];
     }
 
     public static String getFileExtension(String path) {
@@ -186,8 +191,7 @@ public class IOUtils {
         if (sepPos == -1) {
             return "";
         } else {
-            String[] parts = path.split("\\.");
-            return parts[parts.length - 1];
+            return path.substring(sepPos + 1);
         }
     }
 

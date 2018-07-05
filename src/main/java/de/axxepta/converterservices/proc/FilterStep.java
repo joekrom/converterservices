@@ -28,7 +28,7 @@ class FilterStep extends Step {
         boolean recursive = false;
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
-            if (parts[0].toLowerCase().startsWith("ext") && parts.length > 1) {
+            if (parts[0].toLowerCase().startsWith("ext") || parts[0].toLowerCase().equals("type") && parts.length > 1) {
                 extension.add(parts[1].toLowerCase());
             } else if (parts[0].toLowerCase().startsWith("rec") && parts.length > 1 && parts[1].toLowerCase().equals("true")) {
                 recursive = true;

@@ -73,7 +73,7 @@ public class Pipeline {
     }
 
     /**
-     * Executes the pipeline from the builder. This "consumes" the pipeline, no actual instance of it is returned.
+     * Executes the pipeline defined by the builder. This "consumes" the pipeline, no actual instance of it is returned.
      * You can execute a new one from the last returned builder.
      * @return int value indicating no errors, -1 error occurred during execution
      */
@@ -86,7 +86,8 @@ public class Pipeline {
             for (Step step : steps) {
                 lastOutput = stepExec(step, true);
             }
-            if (lastOutput instanceof List && ((List) lastOutput).size() > 0 && ((List) lastOutput).get(0) instanceof String) {
+            if (!outputPath.equals("") && lastOutput instanceof List && ((List) lastOutput).size() > 0
+                    && ((List) lastOutput).get(0) instanceof String) {
                 for (Object outputFile : (List) lastOutput) {
                     String path = (String) outputFile;
                     if (IOUtils.pathExists(path)) {
@@ -246,9 +247,9 @@ public class Pipeline {
             case FTP_UP:
                 step = new FTPUpStep(name, input, output, additional, params);
                 break;
-            case FTP_DOWN:
+/*            case FTP_DOWN:
                 step = new FTPDownStep(name, input, output, additional, params);
-                break;
+                break;*/
             case HTTP_POST:
                 step = new HTTPPostStep(name, input, output, additional, params);
                 break;
@@ -323,7 +324,7 @@ public class Pipeline {
         private String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         private String workPath = App.TEMP_FILE_PATH + File.separator + dateString;
         private String inputPath = workPath;
-        private String outputPath = workPath;
+        private String outputPath = "";
         private String inputFile = "";
         private String logFileName = dateString + ".log";
         private String logLevel = Logging.NONE;

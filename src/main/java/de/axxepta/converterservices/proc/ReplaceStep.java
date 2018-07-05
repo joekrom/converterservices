@@ -22,6 +22,8 @@ class ReplaceStep extends Step {
         List<String> with = new ArrayList<>();
         String fileReplace = "";    // don't use replace if not set as parameter
         String fileWith = "";
+        String charset = "UTF-8";
+        boolean inPlace = false;
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
             if (parts.length > 1) {
@@ -39,23 +41,31 @@ class ReplaceStep extends Step {
                     case "filewith":
                         fileWith = regExp;
                         break;
+                    case "charset": case "encoding":
+                        charset = regExp;
+                        break;
+                    case "inplace":
+                        if (regExp.toLowerCase().equals("true"))
+                            inPlace = true;
+                        break;
                 }
             }
         }
+
         int nReplaceDefs = Math.min(replace.size(), with.size());
         if (replace.size() != with.size()) {
             pipe.log("Unequal number of REPLACE/WITH parameters in replacement step " + pipe.getCounter());
         }
 
-        List<String> outputNames = getOutputNames(inputFiles, fileReplace, fileWith, pipe);
+        List<String> outputNames = getOutputNames(inputFiles, fileReplace, fileWith, inPlace, pipe);
 
         for (int i = 0; i < inputFiles.size(); i++) {
             String inFile = inputFiles.get(i);
-            String text = IOUtils.readTextFile(inFile);
+            String text = IOUtils.loadStringFromFile(inFile, charset);
             for (int r = 0; r < nReplaceDefs; r++) {
                 text = text.replace(replace.get(r), with.get(r));
             }
-            IOUtils.saveStringToFile(text, outputNames.get(i));
+            IOUtils.saveStringToFile(text, outputNames.get(i), charset);
             pipe.addGeneratedFile(outputNames.get(i));
         }
 
@@ -64,23 +74,35 @@ class ReplaceStep extends Step {
     }
 
     private List<String> getOutputNames(final List<String> inputFiles, final String fileReplace, final String fileWith,
-                                        final Pipeline pipe)
+                                        final boolean inPlace, final Pipeline pipe)
     {
         List<String> outputNames = new ArrayList<>();
         if (!fileReplace.equals("")) {
             for (String inFile: inputFiles) {
-                outputNames.add(IOUtils.pathCombine(pipe.getWorkPath(),
-                        IOUtils.filenameFromPath(inFile).replaceAll(fileReplace, fileWith)));
+                outputNames.add(
+                        IOUtils.pathCombine(inPlace ? IOUtils.dirFromPath(inFile) : pipe.getWorkPath(),
+                                IOUtils.filenameFromPath(inFile).replaceAll(fileReplace, fileWith))
+                );
             }
         } else if (inputFiles.size() == 1 && output instanceof String) {
-            outputNames.add(IOUtils.pathCombine(pipe.getWorkPath(), (String) output));
+            outputNames.add(
+                    IOUtils.pathCombine(inPlace ? IOUtils.dirFromPath(inputFiles.get(0)) : pipe.getWorkPath(),
+                            (String) output)
+            );
         } else if (output instanceof List && ((List) output).size() == inputFiles.size()) {
+            int i = 0;
             for (Object outFile : (List)output) {
-                outputNames.add(IOUtils.pathCombine(pipe.getWorkPath(), (String) outFile));
+                outputNames.add(
+                        IOUtils.pathCombine(inPlace ? IOUtils.dirFromPath(inputFiles.get(i)) : pipe.getWorkPath(),
+                                (String) outFile)
+                );
+                i++;
             }
         } else {
             for (String inFile : inputFiles) {
-                outputNames.add(IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile)));
+                outputNames.add(inPlace ? inFile :
+                        IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile))
+                );
             }
         }
         return outputNames;

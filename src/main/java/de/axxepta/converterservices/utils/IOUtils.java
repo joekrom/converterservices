@@ -76,8 +76,9 @@ public class IOUtils {
         }
     }
 
-    public static String loadStringFromFile(String fileName) throws IOException {
-        return new String(Files.readAllBytes(Paths.get(fileName)), StandardCharsets.UTF_8);
+    public static String loadStringFromFile(String fileName, String... charset) throws IOException {
+        String encoding = charset.length > 0 ? charset[0] : "UTF-8";
+        return new String(Files.readAllBytes(Paths.get(fileName)), encoding);
     }
 
     public static String getResourceAsString(String name) throws IOException {
@@ -192,19 +193,6 @@ public class IOUtils {
             return "";
         } else {
             return path.substring(sepPos + 1);
-        }
-    }
-
-    public static String readTextFile(String fileName) throws IOException {
-        try(BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            StringBuilder sb = new StringBuilder();
-            String line = br.readLine();
-            while (line != null) {
-                sb.append(line);
-                sb.append(System.lineSeparator());
-                line = br.readLine();
-            }
-            return sb.toString();
         }
     }
 

@@ -1,11 +1,16 @@
 package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.utils.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 class ReplaceStep extends Step {
+
+    private static Logger LOGGER = LoggerFactory.getLogger(ReplaceStep.class);
 
     ReplaceStep(String name, Object input, Object output, Object additional, String... params) {
         super(name, input, output, additional, params);
@@ -59,14 +64,22 @@ class ReplaceStep extends Step {
 
         List<String> outputNames = getOutputNames(inputFiles, fileReplace, fileWith, inPlace, pipe);
 
-        for (int i = 0; i < inputFiles.size(); i++) {
-            String inFile = inputFiles.get(i);
-            String text = IOUtils.loadStringFromFile(inFile, charset);
-            for (int r = 0; r < nReplaceDefs; r++) {
-                text = text.replace(replace.get(r), with.get(r));
+        int i = 0;
+        for (String inFile : inputFiles) {
+            try {
+                String text = IOUtils.loadStringFromFile(inFile, charset);
+                for (int r = 0; r < nReplaceDefs; r++) {
+                    text = text.replace(replace.get(r), with.get(r));
+                }
+                IOUtils.saveStringToFile(text, outputNames.get(i), charset);
+                if (!inPlace) {
+                    pipe.addGeneratedFile(outputNames.get(i));
+                }
+            } catch (IOException ex) {
+                pipe.log("Text replacement or file operation failed at file " + inFile);
+                LOGGER.warn("Text replacement or file operation failed at file " + inFile, ex);
             }
-            IOUtils.saveStringToFile(text, outputNames.get(i), charset);
-            pipe.addGeneratedFile(outputNames.get(i));
+            i++;
         }
 
         actualOutput = outputNames;

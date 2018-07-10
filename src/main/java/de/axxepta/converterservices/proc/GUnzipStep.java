@@ -52,7 +52,7 @@ class GUnzipStep extends Step {
     private String getCurrentOutputFile(final List<String> providedOutputNames, final int current, final Pipeline pipe) {
         return providedOutputNames.size() > current && !providedOutputNames.get(current).equals("") ?
                 IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(current)) :
-                IOUtils.pathCombine(pipe.getWorkPath(),"step_" + pipe.getCounter() + ".unzip");
+                IOUtils.pathCombine(pipe.getWorkPath(),"step_" + pipe.getCounter() + "_" + current + ".unzip");
     }
 
     @Override

@@ -40,7 +40,7 @@ class Base64DecodeStep extends Step {
     private String getCurrentOutputFile(final List<String> providedOutputNames, final int current, final Pipeline pipe) {
         return providedOutputNames.size() > current && !providedOutputNames.get(current).equals("") ?
                 IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(current)) :
-                IOUtils.pathCombine(pipe.getWorkPath(),"step_" + pipe.getCounter() + ".txt");
+                IOUtils.pathCombine(pipe.getWorkPath(),"step_" + pipe.getCounter() + "_" + current + ".b64");
     }
 
     @Override

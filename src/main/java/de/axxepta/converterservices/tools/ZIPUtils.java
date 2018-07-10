@@ -10,9 +10,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
+import java.util.zip.*;
 
 public class ZIPUtils {
 
@@ -115,6 +113,43 @@ public class ZIPUtils {
         try (InputStream is = zipFile.getInputStream(entry)) {
             IOUtils.copyStreamToFile(is,
                     IOUtils.pathCombine(destinationDir, (unpackName.length > 0) ? unpackName[0] : contentFile));
+        }
+    }
+
+    // unzip for gzip zLib style (special headers)
+    public static byte[] zUnzipByteArray(final byte[] inputArray) throws IOException {
+        try (ByteArrayInputStream bin = new ByteArrayInputStream(inputArray)) {
+            try (InflaterInputStream gzIn = new InflaterInputStream(bin)) {
+                try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream()) {
+                    int res = 0;
+                    byte buf[] = new byte[1024];
+                    while (res >= 0) {
+                        res = gzIn.read(buf, 0, buf.length);
+                        if (res > 0) {
+                            byteOut.write(buf, 0, res);
+                        }
+                    }
+                    return byteOut.toByteArray();
+                }
+            }
+        }
+    }
+
+    public static byte[] gUnzipByteArray(final byte[] inputArray) throws IOException {
+        try (ByteArrayInputStream bin = new ByteArrayInputStream(inputArray)) {
+            try (GZIPInputStream gzIn = new GZIPInputStream(bin)) {
+                try (ByteArrayOutputStream byteOut = new ByteArrayOutputStream()) {
+                    int res = 0;
+                    byte buf[] = new byte[1024];
+                    while (res >= 0) {
+                        res = gzIn.read(buf, 0, buf.length);
+                        if (res > 0) {
+                            byteOut.write(buf, 0, res);
+                        }
+                    }
+                    return byteOut.toByteArray();
+                }
+            }
         }
     }
 

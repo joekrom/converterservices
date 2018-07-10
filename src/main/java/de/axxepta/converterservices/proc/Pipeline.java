@@ -220,6 +220,9 @@ public class Pipeline {
             case UNZIP:
                 step = new UnzipStep(name, input, output, additional, params);
                 break;
+            case GUNZIP:
+                step = new GUnzipStep(name, input, output, additional, params);
+                break;
             case XQUERY:
                 step = new XQueryStep(name, input, output, additional, params);
                 break;
@@ -261,6 +264,9 @@ public class Pipeline {
                 break;
             case REPLACE:
                 step = new ReplaceStep(name, input, output, additional, params);
+                break;
+            case BASE64_ENC:
+                step = new Base64DecodeStep(name, input, output, additional, params);
                 break;
             default:
                 step = new EmptyStep(name, input, output, additional, params);
@@ -436,8 +442,9 @@ public class Pipeline {
 
 
     public enum StepType {
-        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER, COMBINE, CMD,
-        JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE, NONE
+        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, GZIP, GUNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER,
+        COMBINE, CMD, JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE,
+        BASE64_ENC, BASE64_DEC, NONE
     }
 
 }

@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,7 +41,13 @@ public class IOUtils {
         }
     }
 
-    public static void ByteArrayOutputStreamToFile(ByteArrayOutputStream os, String destination) throws IOException {
+    public static void byteArrayToFile(byte[] ba, String destination) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream(destination)) {
+            fos.write(ba);
+        }
+    }
+
+    public static void byteArrayOutputStreamToFile(ByteArrayOutputStream os, String destination) throws IOException {
         try(OutputStream outputStream = new FileOutputStream(destination)) {
             os.writeTo(outputStream);
         }
@@ -74,6 +79,11 @@ public class IOUtils {
                 i++;
             }
         }
+    }
+
+    public static byte[] loadByteArrayFromFile(String fileName) throws IOException {
+        Path fileLocation = Paths.get(fileName);
+        return Files.readAllBytes(fileLocation);
     }
 
     public static String loadStringFromFile(String fileName, String... charset) throws IOException {

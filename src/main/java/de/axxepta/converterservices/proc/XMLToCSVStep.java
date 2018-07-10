@@ -42,12 +42,10 @@ class XMLToCSVStep extends Step {
         List<String> usedOutputFiles = new ArrayList<>();
         int i = 0;
         for (String inFile : inputFiles) {
-            String outputFile = providedOutputNames.size() > i && !providedOutputNames.get(i).equals("") ?
-                    IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(i)) :
-                    IOUtils.pathCombine(pipe.getWorkPath(),IOUtils.filenameFromPath(inFile) + ".csv");
+            String outputFile = getCurrentOutputFile(providedOutputNames, i, inFile, pipe);
 
             try (ByteArrayOutputStream os = ExcelUtils.XMLToCSV(inFile, row, column, delimiter)) {
-                IOUtils.ByteArrayOutputStreamToFile(os, outputFile);
+                IOUtils.byteArrayOutputStreamToFile(os, outputFile);
             }
             pipe.addGeneratedFile(outputFile);
             usedOutputFiles.add(outputFile);
@@ -55,6 +53,12 @@ class XMLToCSVStep extends Step {
         }
         actualOutput = usedOutputFiles;
         return usedOutputFiles;
+    }
+
+    private String getCurrentOutputFile(List<String> providedOutputNames, int current, String inputFile, Pipeline pipe) {
+        return providedOutputNames.size() > current && !providedOutputNames.get(current).equals("") ?
+                IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(current)) :
+                IOUtils.pathCombine(pipe.getWorkPath(),IOUtils.filenameFromPath(inputFile) + ".csv");
     }
 
     @Override

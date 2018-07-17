@@ -6,7 +6,7 @@ import de.axxepta.converterservices.utils.StringUtils;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Step {
+abstract class Step {
 
     private String name;
     Object input;
@@ -14,16 +14,6 @@ public abstract class Step {
     Object additional;
     String[] params;
     Object actualOutput;
-
-    /**
-     * "Protocol" identifier prefix for inputs to be taken from working directory
-     */
-    public static final String WORK_DIR = "pipe://";
-
-    /**
-     * "Protocol" identifier prefix for inputs to be taken from previously executed named step
-     */
-    public static final String NAMED_STEP = "step://";
 
     Step(String name,  final Object input, final Object output, final Object additional, final String... params) {
         this.name = name;
@@ -96,8 +86,8 @@ public abstract class Step {
         if (in instanceof Integer) {
             Object oldOutput = pipe.getStepOutput((Integer) in);
             inputFiles = outputList(oldOutput);
-        } else if (in instanceof String && ((String) in).startsWith(NAMED_STEP)) {
-            inputFiles = outputList( pipe.getStepOutput(((String) in).substring(NAMED_STEP.length())) );
+        } else if (in instanceof String && ((String) in).startsWith(Pipeline.NAMED_STEP)) {
+            inputFiles = outputList( pipe.getStepOutput(((String) in).substring(Pipeline.NAMED_STEP.length())) );
         } else {
             inputFiles = new ArrayList<>();
             if (in instanceof String) {
@@ -116,9 +106,11 @@ public abstract class Step {
             throw new IllegalArgumentException("Object is not a String");
         }
         String fileName = (String) fileNameObject;
-        return fileName.startsWith(WORK_DIR) ?
-                IOUtils.pathCombine(pipe.getWorkPath(), fileName.substring(WORK_DIR.length())) :
-                IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName);
+        return fileName.startsWith(Pipeline.FILE_INPUT) ?
+                fileName.substring(Pipeline.FILE_INPUT.length()) :
+                (fileName.startsWith(Pipeline.WORK_DIR) ?
+                    IOUtils.pathCombine(pipe.getWorkPath(), fileName.substring(Pipeline.WORK_DIR.length())) :
+                    IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName) );
     }
 
     // transform output parameter to List of Strings, if List provided, none-String elements will be converted to empty String

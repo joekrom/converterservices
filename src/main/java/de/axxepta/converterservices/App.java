@@ -1,10 +1,13 @@
 package de.axxepta.converterservices;
 
+import de.axxepta.converterservices.proc.PipeExec;
 import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.tools.ImageUtils;
 import de.axxepta.converterservices.tools.PDFUtils;
+import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.ServletUtils;
+import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -17,6 +20,7 @@ import javax.servlet.http.Part;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static spark.Spark.*;
@@ -25,7 +29,9 @@ public class App {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
 
-    private static final String STATIC_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
+    private static final List<String> activeDirectories = new ArrayList<>();
+
+    public static final String STATIC_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
     public static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
 
     private static final String PATH_HELLO              = "/hello";
@@ -35,6 +41,7 @@ public class App {
     private static final String PATH_META               = "/file/metadata";
     private static final String PATH_SPLIT              = "/pdf/split";
     private static final String PATH_EXCEL              = "/excel";
+    private static final String PATH_PIPELINE           = "/pipeline";
     private static final String PATH_DOWNLOAD           = "/static";
     private static final String PATH_UPLOAD             = "/upload";
     private static final String PATH_UPLOAD_THUMB       = "/form/thumb";
@@ -65,6 +72,7 @@ public class App {
     private static final String PARAM_VAL_PNG           = "png";
     private static final String PARAM_VAL_SINGLE        = "single";
     private static final String PARAM_VAL_MULTI         = "multi";
+    private static final String PARAM_CLEANUP           = "cleanup";
 
     private static final String HELLO_PAGE              = "static/hello.html";
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
@@ -73,12 +81,13 @@ public class App {
     private static final String PDFSPLIT_UPLOAD_FORM    = "static/form_pdfsplit.html";
     private static final String EXCEL_UPLOAD_FORM       = "static/form_excel.html";
 
-    private static final String TYPE_JPEG               = "image/jpeg";
-    private static final String TYPE_PNG                = "image/png";
-    private static final String TYPE_PDF                = "application/pdf";
-    private static final String TYPE_XLSX               = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    private static final String TYPE_CSV                = "text/csv";
-    private static final String TYPE_XML                = "text/xml";
+    public static final String TYPE_JPEG               = "image/jpeg";
+    public static final String TYPE_PNG                = "image/png";
+    public static final String TYPE_PDF                = "application/pdf";
+    public static final String TYPE_XLSX               = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String TYPE_CSV                = "text/csv";
+    public static final String TYPE_XML                = "application/xml";
+    public static final String TYPE_OCTET              = "application/octet-stream";
 
     private static final String FILE_PART               = "FILE";
     private static final String AS_PNG                  = "AS_PNG";
@@ -98,19 +107,29 @@ public class App {
         if (args.length > 0)
             pwd = args[0];
 
+        init("");
+
+    }
+
+//########################################################
+
+    static void init(String basePath) {
+
         try {
             de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(TEMP_FILE_PATH);
         } catch (IOException ie) {
             LOGGER.error("Couldn't create directory for temporary files!");
         }
 
-        get(PATH_HELLO, (request, response) ->
-                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(HELLO_PAGE), PATH_THUMB, PATH_THUMBS,
-                        PATH_META, PATH_SPLIT, PATH_UPLOAD_THUMB, PATH_UPLOAD_THUMBS, PATH_UPLOAD_META,
-                        PATH_UPLOAD_SPLIT, PATH_UPLOAD_EXCEL, PATH_STOP)
+        get(basePath + PATH_HELLO, (request, response) ->
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(HELLO_PAGE),
+                        basePath + PATH_THUMB, basePath + PATH_THUMBS,
+                        basePath + PATH_META, basePath + PATH_SPLIT, basePath + PATH_UPLOAD_THUMB,
+                        basePath + PATH_UPLOAD_THUMBS, basePath + PATH_UPLOAD_META,
+                        basePath + PATH_UPLOAD_SPLIT, basePath + PATH_UPLOAD_EXCEL, basePath + PATH_STOP)
         );
 
-        get(PATH_DOWNLOAD + "/" + PARAM_NAME, (request, response) -> {
+        get(basePath + PATH_DOWNLOAD + "/" + PARAM_NAME, (request, response) -> {
             HttpServletResponse raw = ServletUtils.singleFileResponse(response, request.params(PARAM_NAME));
             File file = new File(STATIC_FILE_PATH + "/" + request.params(PARAM_NAME));
             if (file.exists()) {
@@ -126,40 +145,43 @@ public class App {
             return raw;
         });
 
-        get(PATH_UPLOAD_THUMB, (request, response) ->
-                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(THUMB_UPLOAD_FORM), PATH_THUMB, FILE_PART)
+        get(basePath + PATH_UPLOAD_THUMB, (request, response) ->
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(THUMB_UPLOAD_FORM),
+                        basePath + PATH_THUMB, FILE_PART)
         );
 
-        get(PATH_UPLOAD_THUMBS, (request, response) ->
-                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(THUMBS_UPLOAD_FORM), PATH_THUMBS, FILE_PART)
+        get(basePath + PATH_UPLOAD_THUMBS, (request, response) ->
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(THUMBS_UPLOAD_FORM),
+                        basePath + PATH_THUMBS, FILE_PART)
         );
 
-        get(PATH_UPLOAD_META, (request, response) ->
+        get(basePath + PATH_UPLOAD_META, (request, response) ->
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(META_UPLOAD_FORM),
-                        PATH_META, PARAM_COMPACT, FILE_PART)
+                        basePath + PATH_META, PARAM_COMPACT, FILE_PART)
         );
 
-        get(PATH_UPLOAD_SPLIT, (request, response) ->
+        get(basePath + PATH_UPLOAD_SPLIT, (request, response) ->
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(PDFSPLIT_UPLOAD_FORM),
-                        PARAM_VAL_PNG, PARAM_VAL_PDF, PATH_SPLIT, PARAM_AS, FILE_PART, AS_PNG)
+                        PARAM_VAL_PNG, PARAM_VAL_PDF, basePath + PATH_SPLIT, PARAM_AS, FILE_PART, AS_PNG)
         );
 
-        get(PATH_UPLOAD_EXCEL, (request, response) ->
+        get(basePath + PATH_UPLOAD_EXCEL, (request, response) ->
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(EXCEL_UPLOAD_FORM),
-                        PATH_EXCEL, PARAM_AS, PARAM_CUSTOM_XML, PARAM_INDENT, PARAM_FIRST_ROW_NAME, PARAM_FIRST_COL_ID,
+                        basePath + PATH_EXCEL, PARAM_AS, PARAM_CUSTOM_XML, PARAM_INDENT, PARAM_FIRST_ROW_NAME, PARAM_FIRST_COL_ID,
                         PARAM_COLUMN_FIRST, PARAM_SHEET_TAG, PARAM_ROW_TAG, PARAM_COLUMN_TAG, PARAM_SHEET_NAME,
                         PARAM_ATT_SHEET_NAME, PARAM_SEPARATOR, FILE_PART)
         );
 
-        post(PATH_THUMB + "/*/*", MULTIPART_FORM_DATA, App::singleImageHandling);
 
-        post(PATH_THUMB + "/*", MULTIPART_FORM_DATA, App::singleImageHandling);
+        post(basePath + PATH_THUMB + "/*/*", MULTIPART_FORM_DATA, App::singleImageHandling);
 
-        post(PATH_THUMBS + "/*/*", MULTIPART_FORM_DATA, App::imageHandling);
+        post(basePath + PATH_THUMB + "/*", MULTIPART_FORM_DATA, App::singleImageHandling);
 
-        post(PATH_THUMBS + "/*", MULTIPART_FORM_DATA, App::imageHandling);
+        post(basePath + PATH_THUMBS + "/*/*", MULTIPART_FORM_DATA, App::imageHandling);
 
-        post(PATH_UPLOAD, MULTIPART_FORM_DATA, (request, response) -> {
+        post(basePath + PATH_THUMBS + "/*", MULTIPART_FORM_DATA, App::imageHandling);
+
+        post(basePath + PATH_UPLOAD, MULTIPART_FORM_DATA, (request, response) -> {
             MultipartConfigElement multipartConfigElement = new MultipartConfigElement(STATIC_FILE_PATH);
             request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
 
@@ -181,7 +203,7 @@ public class App {
             return builder.append("</body></html>").toString();
         });
 
-        post(PATH_META, (request, response) -> {
+        post(basePath + PATH_META, (request, response) -> {
             boolean compact = ServletUtils.checkQueryParameter(request, PARAM_COMPACT, false, "true", true);
             List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new ArrayList<>());
             try {
@@ -197,7 +219,7 @@ public class App {
             }
         });
 
-        post(PATH_SPLIT, MULTIPART_FORM_DATA, (request, response) -> {
+        post(basePath + PATH_SPLIT, MULTIPART_FORM_DATA, (request, response) -> {
             boolean as_png = ServletUtils.checkQueryParameter(request, PARAM_AS, false, PARAM_VAL_PNG, false);
             List<String> files;
             List<String> outputFiles;
@@ -235,85 +257,11 @@ public class App {
             }
         });
 
-        post(PATH_EXCEL, (request, response) -> {
-            String sheetName = ServletUtils.getQueryParameter(request, PARAM_SHEET_NAME, "");
-            String attSheetName = ServletUtils.getQueryParameter(request, PARAM_ATT_SHEET_NAME, "");
-            String as = ServletUtils.getQueryParameter(request, PARAM_AS);
-            String responseType = ServletUtils.getQueryParameter(request, PARAM_RESPONSE, PARAM_VAL_MULTI);
-            boolean customXMLMapping = ServletUtils.checkQueryParameter(request, PARAM_CUSTOM_XML, false, "true", false);
-            boolean indent = !ServletUtils.checkQueryParameter(request, PARAM_INDENT, false, "false", false);
-            boolean firstRowName = !ServletUtils.checkQueryParameter(request, PARAM_FIRST_ROW_NAME, false, "false", false);
-            boolean firstColumnId = ServletUtils.checkQueryParameter(request, PARAM_FIRST_COL_ID, false, "true", false);
-            boolean columnFirst = ServletUtils.checkQueryParameter(request, PARAM_COLUMN_FIRST, false, "true", false);
-            String sheet = ServletUtils.getQueryParameter(request, PARAM_SHEET_TAG, ExcelUtils.SHEET_EL);
-            String row = ServletUtils.getQueryParameter(request, PARAM_ROW_TAG, ExcelUtils.ROW_EL);
-            String column = ServletUtils.getQueryParameter(request, PARAM_COLUMN_TAG, ExcelUtils.COL_EL);
-            String separator = ServletUtils.getQueryParameter(request, PARAM_SEPARATOR, ExcelUtils.DEF_SEPARATOR);
+        post(basePath + PATH_EXCEL, App::excelHandling);
 
-            List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new ArrayList<>());
-            List<String> convertedFiles = new ArrayList<>();
-            for (String file : files) {
-                if (de.axxepta.converterservices.utils.IOUtils.isXLSX(file)) {
-                    convertedFiles.addAll(ExcelUtils.fromExcel(file,
-                            as.toLowerCase().equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
-                            customXMLMapping, sheetName, separator, indent, columnFirst,
-                            firstRowName, firstColumnId, "", sheet, row, column, attSheetName));
-                }
-                if (de.axxepta.converterservices.utils.IOUtils.isCSV(file)) {
-                    convertedFiles.add(ExcelUtils.CSVToExcel(file,
-                            (sheetName.equals("")) ? ExcelUtils.DEF_SHEET_NAME : sheetName, separator));
-                }
-                if (de.axxepta.converterservices.utils.IOUtils.isXML(file)) {
-                    convertedFiles.add(ExcelUtils.XMLToExcel(file));
-                }
-            }
+        post(basePath + PATH_PIPELINE, TYPE_XML, App::pipelineHandling);
 
-            if (files.size() > 0) {
-                try {
-                    HttpServletResponse raw = responseType.toLowerCase().equals(PARAM_VAL_SINGLE.toLowerCase()) ?
-                            ServletUtils.singleFileResponse(response, convertedFiles.get(0)) :
-                            ServletUtils.multiPartResponse(response);
-                    int fileCounter = 0;
-                    for (String fileName : convertedFiles) {
-                        File file = new File(TEMP_FILE_PATH + "/" + fileName);
-                        if (file.exists()) {
-                            files.add(fileName);
-                            if (responseType.toLowerCase().equals(PARAM_VAL_SINGLE.toLowerCase())) {
-                                if (fileCounter == 0) {
-                                    try (InputStream is = new FileInputStream(file)) {
-                                        de.axxepta.converterservices.utils.IOUtils.copyStreams(is, raw.getOutputStream());
-                                        raw.getOutputStream().close();
-                                    }
-                                }
-                            } else {
-                                String outputType;
-                                if (de.axxepta.converterservices.utils.IOUtils.isXLSX(fileName))
-                                    outputType = TYPE_XLSX;
-                                else if (de.axxepta.converterservices.utils.IOUtils.isXML(fileName))
-                                    outputType = TYPE_XML;
-                                else
-                                    outputType = TYPE_CSV;
-                                try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                    ServletUtils.addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
-                                }
-                            }
-                            fileCounter++;
-                        }
-                    }
-                    if (responseType.toLowerCase().equals(PARAM_VAL_MULTI.toLowerCase()))
-                        ServletUtils.multiPartClose(raw.getOutputStream());
-                    return raw;
-                } catch (IOException ex) {
-                    return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
-                } finally {
-                    cleanTemp(files);
-                }
-            } else {
-                return NO_SUCH_FILE;
-            }
-        });
-
-        get(PATH_STOP, (request, response) -> {
+        get(basePath + PATH_STOP, (request, response) -> {
             if (ServletUtils.getQueryParameter(request, PARAM_PWD).equals(pwd)) {
                 stop();
                 return "Services stopped.";
@@ -325,7 +273,138 @@ public class App {
 
     }
 
-//########################################################
+
+    private static Object pipelineHandling(Request request, Response response) {
+        boolean cleanup = false;
+        try {
+            String pipelineString = request.body();
+            Map<String, String> parameters = request.params();
+            if (parameters.containsKey(PARAM_CLEANUP)) {
+                if (parameters.get(PARAM_CLEANUP).equals("true"))
+                    cleanup = true;
+            }
+            Object result = PipeExec.execProcessString(pipelineString);
+            if (result instanceof Integer && result.equals(-1)) {
+                response.status(500);
+                return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+            } else if (result instanceof String) {
+                if (IOUtils.isFile((String) result)) {
+                    return ServletUtils.buildSingleFileResponse(response, (String) result);
+                } else {
+                    return HTML_OPEN + result + HTML_CLOSE;
+                }
+            } else if (result instanceof List && ((List)result).get(0) instanceof String) {
+                List<String> results = (List)result;
+                if (IOUtils.isFile(results.get(0))) {
+                    HttpServletResponse raw = ServletUtils.multiPartResponse(response);
+                    for (String fileName : results) {
+                        if (IOUtils.isFile(fileName)) {
+                            try (InputStream is = new BufferedInputStream(new FileInputStream(fileName))) {
+                                String outputType = IOUtils.contentTypeByFileName(fileName);
+                                ServletUtils.addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
+                            }
+                        }
+                    }
+                    ServletUtils.multiPartClose(raw.getOutputStream());
+                    return raw;
+                } else {
+                    StringBuilder responseBuilder = new StringBuilder(HTML_OPEN);
+                    for (String fileName : results) {
+                        responseBuilder = responseBuilder.append("<div>").append(fileName).append("</div>");
+                    }
+                    return responseBuilder.append(HTML_CLOSE).toString();
+                }
+            } else {
+                return HTML_OPEN + result + HTML_CLOSE;
+            }
+        } catch (Exception ex) {
+            response.status(500);
+            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+        } finally {
+            if (cleanup) {
+                // ToDo:
+            }
+        }
+    }
+
+    private static Object excelHandling(Request request, Response response) {
+        String sheetName = ServletUtils.getQueryParameter(request, PARAM_SHEET_NAME, "");
+        String attSheetName = ServletUtils.getQueryParameter(request, PARAM_ATT_SHEET_NAME, "");
+        String as = ServletUtils.getQueryParameter(request, PARAM_AS);
+        String responseType = ServletUtils.getQueryParameter(request, PARAM_RESPONSE, PARAM_VAL_MULTI);
+        boolean customXMLMapping = ServletUtils.checkQueryParameter(request, PARAM_CUSTOM_XML, false, "true", false);
+        boolean indent = !ServletUtils.checkQueryParameter(request, PARAM_INDENT, false, "false", false);
+        boolean firstRowName = !ServletUtils.checkQueryParameter(request, PARAM_FIRST_ROW_NAME, false, "false", false);
+        boolean firstColumnId = ServletUtils.checkQueryParameter(request, PARAM_FIRST_COL_ID, false, "true", false);
+        boolean columnFirst = ServletUtils.checkQueryParameter(request, PARAM_COLUMN_FIRST, false, "true", false);
+        String sheet = ServletUtils.getQueryParameter(request, PARAM_SHEET_TAG, ExcelUtils.SHEET_EL);
+        String row = ServletUtils.getQueryParameter(request, PARAM_ROW_TAG, ExcelUtils.ROW_EL);
+        String column = ServletUtils.getQueryParameter(request, PARAM_COLUMN_TAG, ExcelUtils.COL_EL);
+        String separator = ServletUtils.getQueryParameter(request, PARAM_SEPARATOR, ExcelUtils.DEF_SEPARATOR);
+
+        List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new ArrayList<>());
+        List<String> convertedFiles = new ArrayList<>();
+        for (String file : files) {
+            if (de.axxepta.converterservices.utils.IOUtils.isXLSX(file)) {
+                convertedFiles.addAll(ExcelUtils.fromExcel(file,
+                        as.toLowerCase().equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
+                        customXMLMapping, sheetName, separator, indent, columnFirst,
+                        firstRowName, firstColumnId, "", sheet, row, column, attSheetName));
+            }
+            if (de.axxepta.converterservices.utils.IOUtils.isCSV(file)) {
+                convertedFiles.add(ExcelUtils.CSVToExcel(file,
+                        (sheetName.equals("")) ? ExcelUtils.DEF_SHEET_NAME : sheetName, separator));
+            }
+            if (de.axxepta.converterservices.utils.IOUtils.isXML(file)) {
+                convertedFiles.add(ExcelUtils.XMLToExcel(file));
+            }
+        }
+
+        if (files.size() > 0) {
+            try {
+                HttpServletResponse raw = responseType.toLowerCase().equals(PARAM_VAL_SINGLE) ?
+                        ServletUtils.singleFileResponse(response, convertedFiles.get(0)) :
+                        ServletUtils.multiPartResponse(response);
+                int fileCounter = 0;
+                for (String fileName : convertedFiles) {
+                    File file = new File(TEMP_FILE_PATH + "/" + fileName);
+                    if (file.exists()) {
+                        files.add(fileName);
+                        if (responseType.toLowerCase().equals(PARAM_VAL_SINGLE)) {
+                            if (fileCounter == 0) {
+                                try (InputStream is = new FileInputStream(file)) {
+                                    de.axxepta.converterservices.utils.IOUtils.copyStreams(is, raw.getOutputStream());
+                                    raw.getOutputStream().close();
+                                }
+                            }
+                        } else {
+                            String outputType;
+                            if (de.axxepta.converterservices.utils.IOUtils.isXLSX(fileName))
+                                outputType = TYPE_XLSX;
+                            else if (de.axxepta.converterservices.utils.IOUtils.isXML(fileName))
+                                outputType = TYPE_XML;
+                            else
+                                outputType = TYPE_CSV;
+                            try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
+                                ServletUtils.addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
+                            }
+                        }
+                        fileCounter++;
+                    }
+                }
+                if (responseType.toLowerCase().equals(PARAM_VAL_MULTI.toLowerCase()))
+                    ServletUtils.multiPartClose(raw.getOutputStream());
+                return raw;
+            } catch (IOException ex) {
+                return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+            } finally {
+                cleanTemp(files);
+            }
+        } else {
+            return NO_SUCH_FILE;
+        }
+    }
+
 
     private static Object singleImageHandling(Request request, Response response) {
         List<String> files;
@@ -427,6 +506,38 @@ public class App {
             } catch (IOException ex) {
                 if (LOGGER != null) LOGGER.error(ex.getMessage());
             }
+        }
+    }
+
+
+    public static String setTemPath() {
+        String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+        synchronized (activeDirectories) {
+            if (activeDirectories.contains(dateString)) {
+                dateString += "__" + Integer.toString(activeDirectories.size());
+            }
+            activeDirectories.add(dateString);
+        }
+        try {
+            IOUtils.safeCreateDirectory(IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString));
+        } catch (IOException ex) {
+            return "";
+        }
+        return dateString;
+    }
+
+    private static void cleanup(String dateString) {
+        try {
+            FileUtils.deleteDirectory(new File(IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString)));
+        } catch (IOException ex) {
+            LOGGER.warn("Error while deleting directory: ", ex);
+        }
+        releaseTemporaryDir(dateString);
+    }
+
+    public static void releaseTemporaryDir(String dateString) {
+        synchronized (activeDirectories) {
+            activeDirectories.remove(dateString);
         }
     }
 

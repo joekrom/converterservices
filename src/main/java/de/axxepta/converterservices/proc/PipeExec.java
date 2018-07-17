@@ -57,8 +57,12 @@ public class PipeExec {
     public static void main(String[] args) {
         if (args.length != 0) {
             try {
-                int r = execProcessFile(args[0]);
-                System.out.println(String.format("Pipeline execution finished with return code %s", r));
+                Object result = execProcessFile(args[0]);
+                if (result instanceof Integer && result.equals(-1)) {
+                    System.out.println("Pipeline execution was not successful. See in the log file for details.");
+                } else if (result instanceof String || (result instanceof List && ((List)result).get(0) instanceof String)) {
+                    System.out.println("Pipeline output: " + result);
+                }
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
             }
@@ -70,7 +74,7 @@ public class PipeExec {
     /**
      * Executes a pipeline described in a passed file. Look in the wiki for further information.
      * @param file XML pipeline description input file name
-     * @return Pipeline process execution code as returned by PipelineBuilder.exec()
+     * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
      * @throws IllegalArgumentException if the pipeline description contains invalid components
      * @throws NullPointerException if the step type attribute is missing
      * @throws ParserConfigurationException if the XML description structure is not valid XML
@@ -78,7 +82,7 @@ public class PipeExec {
      * @throws SAXException if a XSLT step fails
      * @throws XPathExpressionException if the XPath processing for pipeline parsing fails
      */
-    public static int execProcessFile(String file)
+    public static Object execProcessFile(String file)
             throws IllegalArgumentException, NullPointerException, ParserConfigurationException, IOException,
             SAXException, XPathExpressionException
     {
@@ -93,15 +97,15 @@ public class PipeExec {
     /**
      * Executes a pipeline described in a passed String. Look in the wiki for further information.
      * @param xmlString Pipeline description input XML String
-     * @return Pipeline process execution code as returned by PipelineBuilder.exec()
+     * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
      * @throws IllegalArgumentException if the pipeline description contains invalid components
      * @throws NullPointerException if the step type attribute is missing
      * @throws ParserConfigurationException if the XML description structure is not valid XML
      * @throws IOException if no XML DOM can be build from the description
-     * @throws SAXException if a XSLT step fails
+     * @throws SAXException if an XSLT step fails
      * @throws XPathExpressionException if the XPath processing for pipeline parsing fails
      */
-    public static int execProcessString(String xmlString)
+    public static Object execProcessString(String xmlString)
             throws IllegalArgumentException, NullPointerException, ParserConfigurationException, IOException,
             SAXException, XPathExpressionException
     {
@@ -115,12 +119,12 @@ public class PipeExec {
     /**
      * Executes a pipeline described in a passed XML DOM. Look in the wiki for further information.
      * @param dom Pipeline description as XML DOM
-     * @return Pipeline process execution code as returned by PipelineBuilder.exec()
+     * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
      * @throws XPathExpressionException - if the XPath processing for pipeline parsing fails
-     * @throws NullPointerException - if the step type attribute is missing
-     * @throws IllegalArgumentException - if the pipeline description contains invalid components
+     * @throws NullPointerException if the step type attribute is missing
+     * @throws IllegalArgumentException if the pipeline description contains invalid components
      */
-    public static int execProcess(Document dom) throws XPathExpressionException, NullPointerException, IllegalArgumentException {
+    public static Object execProcess(Document dom) throws XPathExpressionException, NullPointerException, IllegalArgumentException {
         XPathFactory factory = XPathFactory.newInstance();
         XPath xPath = factory.newXPath();
         Node pipeNode = (Node) xPath.compile("//" + PIPE_ELEMENT).evaluate(dom, XPathConstants.NODE);

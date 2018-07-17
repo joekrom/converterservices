@@ -26,7 +26,7 @@ class XSLTStep extends Step {
         pipe.incErrorCounter(pipe.getErrFileArray().getSize());
         pipe.addLogSectionXsl(inputFile, pipe.getErrFileArray());
         pipe.addGeneratedFile(outputFile);
-        actualOutput = outputFile;
+        actualOutput = singleFileList(outputFile);
         return singleFileList(outputFile);
     }
 

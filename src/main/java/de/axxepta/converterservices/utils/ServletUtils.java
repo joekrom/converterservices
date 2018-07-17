@@ -14,10 +14,7 @@ import spark.Response;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -52,6 +49,17 @@ public class ServletUtils {
             } else {
                 return val.toLowerCase().equals(value.toLowerCase());
             }
+        }
+    }
+
+
+    public static Object buildSingleFileResponse(Response response, String fileName) throws IOException {
+        HttpServletResponse raw = ServletUtils.singleFileResponse(response, IOUtils.filenameFromPath(fileName));
+        File file = new File(fileName);
+        try (InputStream is = new FileInputStream(file)) {
+            IOUtils.copyStreams(is, raw.getOutputStream());
+            raw.getOutputStream().close();
+            return raw;
         }
     }
 

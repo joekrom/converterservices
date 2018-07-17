@@ -8,7 +8,6 @@ import net.sf.saxon.s9api.SaxonApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -21,19 +20,41 @@ import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class Pipeline {
 
+    /**
+     * "Protocol" identifier prefix for inputs to be taken from working directory
+     */
+    public static final String WORK_DIR = "pipe://";
+
+    /**
+     * "Protocol" identifier prefix for inputs to be taken from previously executed named step
+     */
+    public static final String NAMED_STEP = "step://";
+
+    /**
+     * "Protocol" identifier prefix for inputs to be interpreted as absolute paths
+     */
+    public static final String FILE_INPUT = "file://";
+
+    /**
+     * "Protocol" identifier prefix for inputs in the input path to be expanded as glob
+     */
+    public static final String GLOB_INPUT = "glob://";
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Pipeline.class);
 
     private final boolean verbose;
     private final boolean archive;
     private final boolean cleanup;
     private final String dateString;
-    private final String workPath;
+    private String workPath;
     private final String inputPath;
     private final String outputPath;
     private final String inputFile;
-    private final String logFileName;
+    private String logFileName;
     private final String logLevel;
     private final List<Step> steps;
+
+    private String temporaryWorkPath = "";
 
     private int stepCounter = 0;
     private int errorCounter = 0;
@@ -50,7 +71,6 @@ public class Pipeline {
         this.verbose = builder.verbose;
         this.archive = builder.archive;
         this.cleanup = builder.cleanup;
-        this.dateString = builder.dateString;
         this.workPath = builder.workPath;
         this.inputPath = builder.inputPath;
         this.outputPath = builder.outputPath;
@@ -62,6 +82,18 @@ public class Pipeline {
         saxon = new Saxon();
         err = new LoggingErrorListener();
         saxon.setErrorListener(err);
+
+        if (workPath.equals("")) {
+            temporaryWorkPath = App.setTemPath();
+            dateString = temporaryWorkPath;
+            workPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, temporaryWorkPath);
+        } else {
+            dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+        }
+
+        if (logFileName.equals("")) {
+            logFileName = dateString + ".log";
+        }
     }
 
     /**
@@ -72,13 +104,11 @@ public class Pipeline {
         return new PipelineBuilder();
     }
 
-    /**
-     * Executes the pipeline defined by the builder. This "consumes" the pipeline, no actual instance of it is returned.
-     * You can execute a new one from the last returned builder.
-     * @return int value indicating no errors, -1 error occurred during execution
+    /*
+     * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
      */
-    private int exec() {
-        int errCode = 0;
+    private Object exec() {
+        Integer errCode = 0;
         startLogging();
         try {
             IOUtils.safeCreateDirectory(workPath);
@@ -107,6 +137,10 @@ public class Pipeline {
             if (verbose) {
                 ex.printStackTrace();
             }
+        } finally {
+            if (!temporaryWorkPath.equals("")) {
+                App.releaseTemporaryDir(temporaryWorkPath);
+            }
         }
         finishLogging();
         if (archive) {
@@ -120,7 +154,7 @@ public class Pipeline {
         if (cleanup) {
             generatedFiles.forEach(IOUtils::safeDeleteFile);
         }
-        return errCode;
+        return errCode.equals(0) ? lastOutput : errCode;
     }
 
     void log(String text) {
@@ -327,12 +361,11 @@ public class Pipeline {
         private boolean verbose = false;
         private boolean archive = false;
         private boolean cleanup = false;
-        private String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
-        private String workPath = App.TEMP_FILE_PATH + File.separator + dateString;
+        private String workPath = "";
         private String inputPath = workPath;
         private String outputPath = "";
         private String inputFile = "";
-        private String logFileName = dateString + ".log";
+        private String logFileName = "";
         private String logLevel = Logging.NONE;
         private List<Step> steps = new ArrayList<>();
 
@@ -383,7 +416,8 @@ public class Pipeline {
          *                   to other references (e.g. path on FTP server or in ZIP file). See in the Wiki for more details.
          * @param params (Optional) parameters, see in the Wiki for possible values for different StepTypes
          * @return Pipeline builder with current step appended to step list
-         * @throws IllegalArgumentException
+         * @throws IllegalArgumentException If one of the provided arguments does not fit the expected type. This prevents
+         *          the pipe from being executed with false parameters.
          */
         public PipelineBuilder step(StepType type, String name, Object input, Object output, Object additional, String... params)
                 throws IllegalArgumentException
@@ -435,7 +469,14 @@ public class Pipeline {
             return this;
         }
 
-        public int exec() {
+        //ToDo: build?
+
+        /**
+         * Executes the pipeline defined by the builder. This "consumes" the pipeline, no actual instance of it is returned.
+         * You can execute a new one from the last returned builder.
+         * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
+         */
+        public Object exec() {
             return new Pipeline(this).exec();
         }
     }

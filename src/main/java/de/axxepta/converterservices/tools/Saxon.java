@@ -152,7 +152,8 @@ public class Saxon {
      *               a binding definition in the form <code>varName = value as type</code>,
      *               the optional output definition in the form <code>Saxon.XQUERY_OUTPUT as type</code>.
      *               The standard output type is DOM, denoted by Saxon.NODE.
-     * @throws SaxonApiException
+     * @return Result of the query, this can be a list of the basic types String, Integer, Boolean, or an XML DOM
+     * @throws SaxonApiException If the query is not a valid XQuery or the input does not match the expected types
      */
     public Object xquery(String query, String contextFile, String... params) throws SaxonApiException{
         List<String> bindings = new ArrayList<>(Arrays.asList(params));

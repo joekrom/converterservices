@@ -19,6 +19,8 @@ The list of supported tools contains
 or as a command line tool for pipeline processing with error reporting (you can config the logger to send the reports to
 a remote server logging instance or by email).
 
+*converterservices* requires Java 8.
+
 Check out the [Wiki] (https://github.com/axxepta/converterservices/wiki) to find out more about *converterservices*.
 
 Some wrapped external tools have to be installed independently and made accessible (ImageMagick, exiftool) if they shall be used,

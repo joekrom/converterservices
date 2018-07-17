@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.utils;
 
+import de.axxepta.converterservices.App;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,11 @@ public class IOUtils {
     public static boolean pathExists(String path) {
         File f = new File(path);
         return f.exists();
+    }
+
+    public static boolean isFile(String path) {
+        File f = new File(path);
+        return (f.exists() && f.isFile());
     }
 
     public static boolean isDirectory(String path) {
@@ -218,6 +224,18 @@ public class IOUtils {
         return fileName.toLowerCase().endsWith(".xml");
     }
 
+    public static String contentTypeByFileName(String fileName) {
+        switch (IOUtils.getFileExtension(fileName).toLowerCase()) {
+            case "jpg": return App.TYPE_JPEG;
+            case "png": return App.TYPE_PNG;
+            case "pdf": return App.TYPE_PDF;
+            case "xlsx": return App.TYPE_XLSX;
+            case "csv": return App.TYPE_CSV;
+            case "xml": return App.TYPE_XML;
+            default: return App.TYPE_OCTET;
+        }
+    }
+
     public static String pathCombine(String stComp, String ndComp) {
         String[] startDirs = stComp.split("\\\\|/");
         String[] endDirs = ndComp.split("\\\\|/");
@@ -291,7 +309,7 @@ public class IOUtils {
      * Recursively collect all files in a list of files and paths with sub-directories with absolute paths
      * @param input List of file or directory names
      * @return All absolute file names including all files in sub-directories
-     * @throws IOException
+     * @throws IOException if a provided input element corresponds not to an existing directory or file
      */
     public static List<String> collectFiles(List<String> input) throws IOException {
         List<String> output = new ArrayList<>();

@@ -3,8 +3,9 @@ version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
-sourceCompatibility = 1.8
+sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
 
 repositories {
@@ -13,6 +14,7 @@ repositories {
 
 configurations {
     releaseJars
+    deployerJars
 }
 
 dependencies {
@@ -55,6 +57,8 @@ dependencies {
     releaseJars 'commons-net:commons-net:3.6'
     releaseJars 'com.jcraft:jsch:0.1.54'
     releaseJars 'org.json:json:20171018'
+
+    deployerJars 'org.apache.maven.wagon:wagon-ssh:3.1.0'
 }
 
 task copyToLib( type: Copy ) {
@@ -90,4 +94,33 @@ task createPom << {
             version version
         }
     }.writeTo("pom.xml")
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "sftp://5.189.146.89/var/www/html/maven"
+            credentials {
+                username = mavenUser
+                password = mavenPassword
+            }
+        }
+    }
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            configuration = configurations.deployerJars
+            pom.version = '0.1.1'
+            repository(url: mavenUrl) {
+                authentication(userName: mavenUser, password: mavenPassword)
+            }
+        }
+    }
 }

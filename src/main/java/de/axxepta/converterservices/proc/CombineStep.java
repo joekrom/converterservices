@@ -26,7 +26,6 @@ class CombineStep extends Step {
                 outputFiles.add(pipedPath(inFile, pipe));
             }
         }
-        actualOutput = outputFiles;
         return outputFiles;
     }
 

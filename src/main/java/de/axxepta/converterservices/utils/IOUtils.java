@@ -60,7 +60,7 @@ public class IOUtils {
     }
 
     public static void copyStreamToFile(InputStream is, String destination) throws IOException {
-        try (OutputStream os = new FileOutputStream(destination)) {
+        try (OutputStream os = new BufferedOutputStream(new FileOutputStream(destination))) {
             copyStreams(is, os);
         }
     }
@@ -163,6 +163,14 @@ public class IOUtils {
         }
     }
 
+    public static boolean renameFile(String oldName, String newName) throws IOException {
+        File fileOld = new File(oldName);
+        File fileNew = new File(newName);
+        if (fileNew.exists())
+            throw new java.io.IOException(String.format("File %s already exists", newName));
+        return fileOld.renameTo(fileNew);
+    }
+
     public static String relativePath(File file, String basePath) throws IOException {
         return relativePath(file.getCanonicalFile(), basePath);
     }
@@ -189,7 +197,7 @@ public class IOUtils {
     }
 
     public static String dirFromPath(String path) {
-        int sepPos = path.lastIndexOf(File.separator);
+        int sepPos = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
         return path.substring(0, Math.max(0, sepPos));
     }
 

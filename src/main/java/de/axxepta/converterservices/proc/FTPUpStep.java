@@ -83,7 +83,6 @@ class FTPUpStep extends Step {
             }
         }
 
-        actualOutput = uploadedFiles;
         return uploadedFiles;
     }
 

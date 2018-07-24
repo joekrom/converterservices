@@ -29,7 +29,6 @@ class UnzipStep extends Step {
             outputFiles.addAll(ZIPUtils.unzip(inputFiles.get(0), pipe.getWorkPath()));
         }
         pipe.addGeneratedFiles(outputFiles);
-        actualOutput = outputFiles;
         return outputFiles;
     }
 

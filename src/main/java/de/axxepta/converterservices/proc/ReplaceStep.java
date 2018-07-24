@@ -82,7 +82,6 @@ class ReplaceStep extends Step {
             i++;
         }
 
-        actualOutput = outputNames;
         return outputNames;
     }
 

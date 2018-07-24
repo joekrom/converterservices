@@ -263,6 +263,9 @@ public class Pipeline {
             case XML_CSV:
                 step = new XMLToCSVStep(name, input, output, additional, params);
                 break;
+            case XLSX_XML:
+                step = new XLSXToXMLStep(name, input, output, additional, params);
+                break;
             case COMBINE:
                 step = new CombineStep(name, input, output, additional, params);
                 break;
@@ -284,11 +287,14 @@ public class Pipeline {
             case FTP_UP:
                 step = new FTPUpStep(name, input, output, additional, params);
                 break;
-/*            case FTP_DOWN:
+            case FTP_DOWN:
                 step = new FTPDownStep(name, input, output, additional, params);
-                break;*/
+                break;
             case HTTP_POST:
                 step = new HTTPPostStep(name, input, output, additional, params);
+                break;
+            case HTTP_GET:
+                step = new HTTPGetStep(name, input, output, additional, params);
                 break;
             case CMD:
                 step = new CmdStep(name, input, output, additional, params);
@@ -485,7 +491,7 @@ public class Pipeline {
     public enum StepType {
         XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, GZIP, GUNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER,
         COMBINE, CMD, JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE,
-        BASE64_ENC, BASE64_DEC, NONE
+        BASE64_ENC, BASE64_DEC, XLSX_XML, NONE
     }
 
 }

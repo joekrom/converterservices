@@ -43,7 +43,6 @@ class ListStep extends Step {
         }
 
         pipe.addGeneratedFile(outputFile);
-        actualOutput = outputFile;
         return singleFileList(outputFile);
     }
 

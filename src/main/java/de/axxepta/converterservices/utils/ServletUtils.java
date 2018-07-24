@@ -84,7 +84,7 @@ public class ServletUtils {
         os.println("Content-Disposition: attachment; filename=\"" + name + "\"");
         os.println("Content-Type: " + contentType);
         os.println();
-        de.axxepta.converterservices.utils.IOUtils.copyStreams(is, os);
+        IOUtils.copyStreams(is, os);
         os.println("--" + MULTI_PART_BOUNDARY);     // ?
         os.flush();
     }

@@ -46,7 +46,6 @@ class CmdStep extends Step {
             outputFiles.add(outputFile);
             i++;
         }
-        actualOutput = outputFiles;
         return outputFiles;
     }
 

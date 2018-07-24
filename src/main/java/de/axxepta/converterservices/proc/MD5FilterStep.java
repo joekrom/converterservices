@@ -51,7 +51,6 @@ class MD5FilterStep extends Step {
                 }
             }
         }
-        actualOutput = outputFiles;
         return outputFiles;
     }
 

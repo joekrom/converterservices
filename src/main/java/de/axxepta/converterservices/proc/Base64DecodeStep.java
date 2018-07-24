@@ -33,7 +33,6 @@ class Base64DecodeStep extends Step {
             i++;
         }
 
-        actualOutput = usedOutputFiles;
         return usedOutputFiles;
     }
 

@@ -51,7 +51,6 @@ class XMLToCSVStep extends Step {
             usedOutputFiles.add(outputFile);
             i++;
         }
-        actualOutput = usedOutputFiles;
         return usedOutputFiles;
     }
 

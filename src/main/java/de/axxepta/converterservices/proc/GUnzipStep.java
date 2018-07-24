@@ -45,7 +45,6 @@ class GUnzipStep extends Step {
             i++;
         }
 
-        actualOutput = usedOutputFiles;
         return usedOutputFiles;
     }
 

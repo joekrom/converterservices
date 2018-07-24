@@ -66,7 +66,6 @@ class FOPStep extends Step {
             transformer.transform(src, res);
         }
 
-        actualOutput = outputFile;
         return singleFileList(outputFile);
     }
 

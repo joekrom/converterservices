@@ -42,7 +42,6 @@ class JSONtoXMLStep extends Step {
         }
 
         pipe.addGeneratedFiles(usedOutputFiles);
-        actualOutput = usedOutputFiles;
         return usedOutputFiles;
     }
 

@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.utils;
 
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -18,10 +19,12 @@ import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class HTTPUtils {
 
-    public static String getJSON(String protocol, String host, int port, String path, String user, String password,
+    public static String getString(String protocol, String host, int port, String path, String user, String password,
                                  String... accept) throws IOException
     {
         try (CloseableHttpClient httpClient = getClient(host, port, user, password)) {
@@ -36,16 +39,37 @@ public class HTTPUtils {
         }
     }
 
+    public static List<String> get(String protocol, String host, int port, String path, String user, String password, String file,
+                                   String... accept) throws IOException
+    {
+        List<String> responseFile = new ArrayList<>();
+        //ToDo: Multipart
+        try (CloseableHttpClient httpClient = getClient(host, port, user, password)) {
+            HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + Integer.toString(port) + path);
+            if (accept.length > 0) {
+                httpget.setHeader("Accept", accept[0]);
+            }
+            try (CloseableHttpResponse response = httpClient.execute(httpget))
+            {
+                HttpEntity entity = response.getEntity();
+                Header responseContentHeader = entity.getContentType();
+                IOUtils.byteArrayToFile(EntityUtils.toByteArray(entity), file);
+                responseFile.add(file);
+                return responseFile;
+            }
+        }
+    }
+
     public static String getJSON(String protocol, String host, int port, String path, String user, String password)
             throws IOException
     {
-        return getJSON(protocol, host, port, path, user, password, "application/json");
+        return getString(protocol, host, port, path, user, password, "application/json");
     }
 
     public static String getXML(String protocol, String host, int port, String path, String user, String password)
             throws IOException
     {
-        return getJSON(protocol, host, port, path, user, password, "application/xml");
+        return getString(protocol, host, port, path, user, password, "application/xml");
     }
 
     public static String getXmlFromJSON(String protocol, String host, int port, String path, String user, String password)

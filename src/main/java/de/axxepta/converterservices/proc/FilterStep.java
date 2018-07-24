@@ -49,7 +49,6 @@ class FilterStep extends Step {
                 }
             }
         }
-        actualOutput = outputFiles;
         return outputFiles;
     }
 

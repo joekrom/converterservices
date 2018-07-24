@@ -42,6 +42,7 @@ public class App {
     private static final String PATH_SPLIT              = "/pdf/split";
     private static final String PATH_EXCEL              = "/excel";
     private static final String PATH_PIPELINE           = "/pipeline";
+    private static final String PATH_PIPELINE_MULTI     = "/pipeline-multi";
     private static final String PATH_DOWNLOAD           = "/static";
     private static final String PATH_UPLOAD             = "/upload";
     private static final String PATH_UPLOAD_THUMB       = "/form/thumb";
@@ -49,6 +50,7 @@ public class App {
     private static final String PATH_UPLOAD_META        = "/form/meta";
     private static final String PATH_UPLOAD_SPLIT       = "/form/pdfsplit";
     private static final String PATH_UPLOAD_EXCEL       = "/form/excel";
+    private static final String PATH_UPLOAD_PIPELINE    = "/form/pipeline";
 
     private static final String PARAM_NAME              = ":name";
     private static final String PARAM_COMPACT           = "compact";
@@ -80,14 +82,15 @@ public class App {
     private static final String META_UPLOAD_FORM        = "static/form_meta.html";
     private static final String PDFSPLIT_UPLOAD_FORM    = "static/form_pdfsplit.html";
     private static final String EXCEL_UPLOAD_FORM       = "static/form_excel.html";
+    private static final String PIPELINE_UPLOAD_FORM    = "static/form_pipeline.html";
 
-    public static final String TYPE_JPEG               = "image/jpeg";
-    public static final String TYPE_PNG                = "image/png";
-    public static final String TYPE_PDF                = "application/pdf";
-    public static final String TYPE_XLSX               = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    public static final String TYPE_CSV                = "text/csv";
-    public static final String TYPE_XML                = "application/xml";
-    public static final String TYPE_OCTET              = "application/octet-stream";
+    public static final String TYPE_JPEG                = "image/jpeg";
+    public static final String TYPE_PNG                 = "image/png";
+    public static final String TYPE_PDF                 = "application/pdf";
+    public static final String TYPE_XLSX                = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    public static final String TYPE_CSV                 = "text/csv";
+    public static final String TYPE_XML                 = "application/xml";
+    public static final String TYPE_OCTET               = "application/octet-stream";
 
     private static final String FILE_PART               = "FILE";
     private static final String AS_PNG                  = "AS_PNG";
@@ -125,8 +128,8 @@ public class App {
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(HELLO_PAGE),
                         basePath + PATH_THUMB, basePath + PATH_THUMBS,
                         basePath + PATH_META, basePath + PATH_SPLIT, basePath + PATH_UPLOAD_THUMB,
-                        basePath + PATH_UPLOAD_THUMBS, basePath + PATH_UPLOAD_META,
-                        basePath + PATH_UPLOAD_SPLIT, basePath + PATH_UPLOAD_EXCEL, basePath + PATH_STOP)
+                        basePath + PATH_UPLOAD_THUMBS, basePath + PATH_UPLOAD_META, basePath + PATH_UPLOAD_SPLIT,
+                        basePath + PATH_UPLOAD_EXCEL, basePath + PATH_UPLOAD_PIPELINE, basePath + PATH_STOP)
         );
 
         get(basePath + PATH_DOWNLOAD + "/" + PARAM_NAME, (request, response) -> {
@@ -170,6 +173,12 @@ public class App {
                         basePath + PATH_EXCEL, PARAM_AS, PARAM_CUSTOM_XML, PARAM_INDENT, PARAM_FIRST_ROW_NAME, PARAM_FIRST_COL_ID,
                         PARAM_COLUMN_FIRST, PARAM_SHEET_TAG, PARAM_ROW_TAG, PARAM_COLUMN_TAG, PARAM_SHEET_NAME,
                         PARAM_ATT_SHEET_NAME, PARAM_SEPARATOR, FILE_PART)
+        );
+
+
+        get(basePath + PATH_UPLOAD_PIPELINE, (request, response) ->
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(PIPELINE_UPLOAD_FORM),
+                        basePath + PATH_PIPELINE_MULTI, FILE_PART)
         );
 
 
@@ -261,6 +270,8 @@ public class App {
 
         post(basePath + PATH_PIPELINE, TYPE_XML, App::pipelineHandling);
 
+        post(basePath + PATH_PIPELINE_MULTI, MULTIPART_FORM_DATA, App::pipelineHandlingMultipart);
+
         get(basePath + PATH_STOP, (request, response) -> {
             if (ServletUtils.getQueryParameter(request, PARAM_PWD).equals(pwd)) {
                 stop();
@@ -283,18 +294,61 @@ public class App {
                 if (parameters.get(PARAM_CLEANUP).equals("true"))
                     cleanup = true;
             }
-            Object result = PipeExec.execProcessString(pipelineString);
-            if (result instanceof Integer && result.equals(-1)) {
-                response.status(500);
-                return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
-            } else if (result instanceof String) {
-                if (IOUtils.isFile((String) result)) {
-                    return ServletUtils.buildSingleFileResponse(response, (String) result);
+            return processPipeline(response, pipelineString);
+        } catch (Exception ex) {
+            response.status(500);
+            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+        } finally {
+            if (cleanup) {
+                // ToDo:
+            }
+        }
+    }
+
+    private static Object pipelineHandlingMultipart(Request request, Response response) {
+        boolean cleanup = false;
+        String dateString = setTemPath();
+        try {
+            String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
+            List<String> parts = new ArrayList<>();
+            List<String> submittedFiles =
+                    ServletUtils.parseMultipartRequest(request, FILE_PART, parts, tempPath);
+            String pipelineString = IOUtils.loadStringFromFile(IOUtils.pathCombine(tempPath, submittedFiles.get(0)));
+
+            Map<String, String> parameters = request.params();
+            if (parameters.containsKey(PARAM_CLEANUP)) {
+                if (parameters.get(PARAM_CLEANUP).equals("true"))
+                    cleanup = true;
+            }
+            return processPipeline(response, pipelineString);
+        } catch (Exception ex) {
+            response.status(500);
+            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+        } finally {
+            cleanup(dateString);
+        }
+    }
+
+    private static Object processPipeline(Response response, String pipelineString) throws Exception {
+        Object result = PipeExec.execProcessString(pipelineString);
+        if (result instanceof Integer && result.equals(-1)) {
+            response.status(500);
+            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+        } else {
+            List<String> results = new ArrayList<>();
+            if (result instanceof String) {
+                results.add((String) result);
+            }
+            if (result instanceof List && ((List) result).get(0) instanceof String) {
+                results.addAll( (List<String>) result );
+            }
+            if (results.size() == 1) {
+                if (IOUtils.isFile(results.get(0))) {
+                    return ServletUtils.buildSingleFileResponse(response, results.get(0));
                 } else {
                     return HTML_OPEN + result + HTML_CLOSE;
                 }
-            } else if (result instanceof List && ((List)result).get(0) instanceof String) {
-                List<String> results = (List)result;
+            } else if (results.size() > 1) {
                 if (IOUtils.isFile(results.get(0))) {
                     HttpServletResponse raw = ServletUtils.multiPartResponse(response);
                     for (String fileName : results) {
@@ -316,13 +370,6 @@ public class App {
                 }
             } else {
                 return HTML_OPEN + result + HTML_CLOSE;
-            }
-        } catch (Exception ex) {
-            response.status(500);
-            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
-        } finally {
-            if (cleanup) {
-                // ToDo:
             }
         }
     }
@@ -346,7 +393,7 @@ public class App {
         List<String> convertedFiles = new ArrayList<>();
         for (String file : files) {
             if (de.axxepta.converterservices.utils.IOUtils.isXLSX(file)) {
-                convertedFiles.addAll(ExcelUtils.fromExcel(file,
+                convertedFiles.addAll(ExcelUtils.fromTempExcel(file,
                         as.toLowerCase().equals("xml") ? ExcelUtils.FileType.XML : ExcelUtils.FileType.CSV,
                         customXMLMapping, sheetName, separator, indent, columnFirst,
                         firstRowName, firstColumnId, "", sheet, row, column, attSheetName));

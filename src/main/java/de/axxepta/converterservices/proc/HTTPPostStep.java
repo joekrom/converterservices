@@ -76,7 +76,7 @@ class HTTPPostStep extends Step {
                 if (HTTPUtils.contentTypeIsTextType(contentTypeString) ||
                         HTTPUtils.fileTypeIsTextType(IOUtils.getFileExtension(file))) {
                     ContentType currentContent = determineContentType(contentTypeString, IOUtils.getFileExtension(file));
-                    HTTPUtils.postTextTypeFile(secure ? "https" : "https", server, port, path, user, pwd, file, currentContent);
+                    HTTPUtils.postTextTypeFile(secure ? "https" : "http", server, port, path, user, pwd, file, currentContent);
                     uploadedFiles.add(file);
                 }
             } catch (IOException ex) {
@@ -84,7 +84,6 @@ class HTTPPostStep extends Step {
             }
         }
 
-        actualOutput = uploadedFiles;
         return uploadedFiles;
     }
 

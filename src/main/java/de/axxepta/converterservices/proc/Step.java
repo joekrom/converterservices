@@ -47,7 +47,6 @@ abstract class Step {
 
         List<String> inputFiles = resolveInput(input, pipe);
 
-        Object additionalInput;
         String[] parameters;
 
         parameters = params;
@@ -55,10 +54,10 @@ abstract class Step {
         pipe.log("##   Additional Input   : " + additional);
         pipe.log("##   Parameters         : " + String.join(" - ", parameters));
 
-        Object outputObject = execAction(pipe, inputFiles, parameters);
-        pipe.log("##   Output             : " + outputObject);
+        actualOutput = execAction(pipe, inputFiles, parameters);
+        pipe.log("##   Output             : " + actualOutput);
         pipe.log("");
-        return outputObject;
+        return actualOutput;
     }
 
     abstract Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception;

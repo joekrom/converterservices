@@ -32,7 +32,6 @@ class MD5Step extends Step {
             pipe.addGeneratedFile(outputFile);
             outputFiles.add(outputFile);
         }
-        actualOutput = outputFiles;
         return outputFiles;
     }
 

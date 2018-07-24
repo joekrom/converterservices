@@ -8,44 +8,107 @@ import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.Arrays;
+import java.util.Vector;
 
 public class FTPUtils {
 
+    public static final String DIR_ENTRY    = "dir ";
+    public static final String FILE_ENTRY   = "file ";
+
     private static final int BUFFER_SIZE = 4096;
 
-    public static String list(boolean secure, String user, String pwd, String server, int port, String path) throws IOException {
-        FTPClient ftpClient = new FTPClient();
+    public static String list(boolean secure, String user, String pwd, String server, int port, String path) throws Exception {
         StringBuilder builder = new StringBuilder();
-        IOException ex = null;
-        try {
-            ftpClient.enterLocalPassiveMode();
-            ftpClient.connect(server, port);
-            ftpClient.login(user, pwd);
-            FTPFile[] dirs  = ftpClient.listDirectories(path);
-            FTPFile[] files = ftpClient.listFiles(path);
-            Arrays.stream(dirs).forEach(e->builder.append("dir ").append(e.getName()).append("\n"));
-            Arrays.stream(files).forEach(e->builder.append("file ").append(e.getName()).append("\n"));
-        } catch (IOException e) {
-            ex = e;
-        } finally {
-            ftpClient.logout();
-            ftpClient.disconnect();
+
+        // ToDo: same format for sftp and ftp
+        if (secure) {
+            String relPath = path.startsWith("/") ? path.substring(1) : path;
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(user, server, port);
+            try {
+                ChannelSftp channel = getSftpChannel(session, pwd);
+                channel.connect();
+                try {
+                    Vector<ChannelSftp.LsEntry> fileList = channel.ls(relPath);
+                    Arrays.stream(fileList.toArray())
+                            .filter(e -> ((ChannelSftp.LsEntry) e).getAttrs().isDir())
+                            .forEach(e -> builder.append(DIR_ENTRY).append(((ChannelSftp.LsEntry) e).getFilename()).append("\n"));
+                    Arrays.stream(fileList.toArray())
+                            .filter(e -> !((ChannelSftp.LsEntry) e).getAttrs().isDir())
+                            .forEach(e -> builder.append(FILE_ENTRY).append(((ChannelSftp.LsEntry) e).getFilename()).append("\n"));
+                } catch (SftpException se) {
+                    channel.exit();
+                    throw se;
+                }
+                channel.exit();
+            } catch (JSchException | SftpException js) {
+                session.disconnect();
+                throw js;
+            }
+            session.disconnect();
+        } else {
+            FTPClient ftpClient = new FTPClient();
+            IOException ex = null;
+            try {
+                ftpClient.enterLocalPassiveMode();
+                ftpClient.connect(server, port);
+                ftpClient.login(user, pwd);
+                FTPFile[] dirs = ftpClient.listDirectories(path);
+                FTPFile[] files = ftpClient.listFiles(path);
+                Arrays.stream(dirs).forEach(e -> builder.append(DIR_ENTRY).append(e.getName()).append("\n"));
+                Arrays.stream(files).forEach(e -> builder.append(FILE_ENTRY).append(e.getName()).append("\n"));
+            } catch (IOException e) {
+                ex = e;
+            } finally {
+                ftpClient.logout();
+                ftpClient.disconnect();
+            }
+            if (ex != null)
+                throw ex;
         }
-        if (ex != null)
-            throw ex;
         return builder.toString();
     }
 
     public static String download(boolean secure, String user, String pwd, String server, int port, String path, String storePath)
-            throws IOException
+            throws Exception
     {
         if (secure) {
-            //
+            String relPath = path.startsWith("/") ? path.substring(1) : path;
+
+            JSch jsch = new JSch();
+            Session session = jsch.getSession(user, server, port);
+            try {
+                ChannelSftp channel = getSftpChannel(session, pwd);
+                channel.connect();
+                try {
+                    channel.cd(IOUtils.dirFromPath(relPath));
+                    try (BufferedInputStream is = new BufferedInputStream(channel.get(IOUtils.filenameFromPath(path)))) {
+                        IOUtils.copyStreamToFile(is, storePath);
+                    }
+                } catch (SftpException se) {
+                    channel.exit();
+                    throw se;
+                }
+                channel.exit();
+            } catch (JSchException | SftpException | IOException js) {
+                session.disconnect();
+                throw js;
+            }
+            session.disconnect();
         } else {
-            URL url = new URL((secure ? "sftp://" : "ftp://") + user + ":" + pwd + "@" + server + path);
+            URL url = new URL(("ftp://") + user + ":" + pwd + "@" + server + (path.startsWith("/") ? "" : "/") + path);
             save(url, storePath);
         }
         return storePath;
+    }
+
+    private static ChannelSftp getSftpChannel(Session session, String pwd) throws JSchException {
+        session.setPassword(pwd);
+        java.util.Properties config = new java.util.Properties();
+        config.put("StrictHostKeyChecking", "no");
+        session.setConfig(config);
+        session.connect();
+        return  (ChannelSftp) session.openChannel("sftp");
     }
 
     private static void save(URL url, String fileName) throws IOException {
@@ -89,12 +152,7 @@ public class FTPUtils {
             JSch jsch = new JSch();
             Session session = jsch.getSession(user, server, port);
             try {
-                session.setPassword(pwd);
-                java.util.Properties config = new java.util.Properties();
-                config.put("StrictHostKeyChecking", "no");
-                session.setConfig(config);
-                session.connect();
-                ChannelSftp channel = (ChannelSftp) session.openChannel("sftp");
+                ChannelSftp channel = getSftpChannel(session, pwd);
                 channel.connect();
                 try {
                     channel.cd(path);

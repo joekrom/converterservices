@@ -32,11 +32,9 @@ class XQueryStep extends Step {
                     IOUtils.pathCombine(pipe.getWorkPath(), (String) output);
             Saxon.saveDOM((Document) queryOutput, outputFile, "ISO-8859-1");
             pipe.addGeneratedFile(outputFile);
-            actualOutput = outputFile;
             return singleFileList(outputFile);
         } else {
             // ToDo: check cases, assure correct feeding in pipe
-            actualOutput = queryOutput;
             return queryOutput;
         }
     }

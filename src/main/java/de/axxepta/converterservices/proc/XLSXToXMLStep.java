@@ -36,11 +36,23 @@ class XLSXToXMLStep extends Step {
             String[] parts = parameter.split(" *= *");
             if (parts.length > 1) {
                 switch (parts[0].toLowerCase()) {
+                    case "file":
+                        fileEl = parts[1];
+                        break;
                     case "root":
                         root = parts[1];
                         break;
-                    case "sheetname": case "sheet":
+                    case "sheet": case "sheetelement":
+                        sheetEl = parts[1];
+                        break;
+                    case "sheetname":
                         sheetName = parts[1];
+                        break;
+                    case "column": case "col":
+                        colEl = parts[1];
+                        break;
+                    case "row":
+                        rowEl = parts[1];
                         break;
                     case "firstrowhead":
                         if (parts[1].toLowerCase().equals("false")) {

@@ -55,7 +55,7 @@ class HTTPGetStep extends Step {
                             port = Integer.valueOf(parts[1]);
                         }
                         break;
-                    case "content": case "contenttype":
+                    case "content": case "contenttype": case "accept":
                         contentTypeString = parts[1];
                         break;
                 }

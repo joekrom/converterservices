@@ -14,7 +14,7 @@ class Base64DecodeStep extends Step {
 
     @Override
     Pipeline.StepType getType() {
-        return Pipeline.StepType.BASE64_ENC;
+        return Pipeline.StepType.BASE64_DEC;
     }
 
     @Override

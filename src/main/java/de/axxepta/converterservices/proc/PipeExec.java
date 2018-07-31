@@ -17,6 +17,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.xpath.*;
 import java.io.IOException;
 import java.io.StringReader;
+import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,6 +46,8 @@ public class PipeExec {
     private final static String OUTPUT_PATH = "outputPath";
     private final static String LOG_FILE = "logFile";
     private final static String LOG_LEVEL = "logLevel";
+
+    private final static String CLASS_ATT = "class";
 
     /**
      * Attribute name for step type (can have the values of Pipeline.StepType) and for step parameter types.
@@ -129,8 +132,10 @@ public class PipeExec {
         XPath xPath = factory.newXPath();
         Node pipeNode = (Node) xPath.compile("//" + PIPE_ELEMENT).evaluate(dom, XPathConstants.NODE);
         if (pipeNode != null) {
-            Pipeline.PipelineBuilder pipelineBuilder = Pipeline.builder();
             NamedNodeMap pipeAttributes = pipeNode.getAttributes();
+            Pipeline.PipelineBuilder pipelineBuilder = pipeHasClassDef(pipeAttributes) ?
+                    classedPipeBuilder(pipeAttributes.getNamedItem(CLASS_ATT).getNodeValue()) :
+                    Pipeline.builder();
             pipelineBuilder = evalSettings(pipelineBuilder, pipeAttributes);
             NodeList steps = (NodeList) xPath.compile("./" + STEP_ELEMENT).evaluate(pipeNode, XPathConstants.NODESET);
             for (int s = 0; s < steps.getLength(); s++) {
@@ -139,6 +144,26 @@ public class PipeExec {
             return pipelineBuilder.exec();
         } else {
             throw new XPathExpressionException("No pipeline defined in input.");
+        }
+    }
+
+    private static boolean pipeHasClassDef(NamedNodeMap settings) {
+        return settings.getNamedItem(CLASS_ATT) != null;
+    }
+
+    private static Pipeline.PipelineBuilder classedPipeBuilder(String className) {
+        try {
+            Class<?> builderClass = Class.forName(className);
+            if (Pipeline.PipelineBuilder.class.isAssignableFrom(builderClass)) {
+                Constructor<?> constructor = builderClass.getConstructor();
+                return (Pipeline.PipelineBuilder) constructor.newInstance();
+            } else {
+                LOGGER.warn("Referenced class does not extend Pipeline.PipelineBuilder");
+                return Pipeline.builder();
+            }
+        } catch (Exception ce) {
+            LOGGER.warn("Could not create instance of referenced class", ce);
+            return Pipeline.builder();
         }
     }
 

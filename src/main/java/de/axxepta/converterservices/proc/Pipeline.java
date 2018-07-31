@@ -305,7 +305,7 @@ public class Pipeline {
             case REPLACE:
                 step = new ReplaceStep(name, input, output, additional, params);
                 break;
-            case BASE64_ENC:
+            case BASE64_DEC:
                 step = new Base64DecodeStep(name, input, output, additional, params);
                 break;
             default:
@@ -374,8 +374,6 @@ public class Pipeline {
         private String logFileName = "";
         private String logLevel = Logging.NONE;
         private List<Step> steps = new ArrayList<>();
-
-        private PipelineBuilder() {}
 
         public PipelineBuilder setWorkPath(String workPath) {
             this.workPath = workPath;

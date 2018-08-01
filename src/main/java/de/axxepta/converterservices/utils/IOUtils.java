@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -257,6 +258,16 @@ public class IOUtils {
         List<String> remain = Arrays.asList(endDirs).subList(up, endDirs.length);
         compList.addAll(remain);
         return String.join(File.separator, compList);
+    }
+
+    public static String jarPath() {
+        String path;
+        try {
+            path = new File(IOUtils.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getPath();
+        } catch (URISyntaxException ue) {
+            path = IOUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath();
+        }
+        return dirFromPath(path);
     }
 
     public static boolean isWin() {

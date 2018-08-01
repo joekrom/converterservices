@@ -1,4 +1,4 @@
-package de.axxepta.converterservices.auth;
+package de.axxepta.converterservices.security;
 
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.IOUtils;
@@ -32,9 +32,10 @@ class CredentialsProvider {
 
     static  List<AuthenticationDetails> getCredentials() {
         final List<AuthenticationDetails> credentialsList = new ArrayList<>();
-        if (IOUtils.pathExists(AUTH_FILE)) {
+        String path = IOUtils.jarPath();
+        if (IOUtils.pathExists(IOUtils.pathCombine(path, AUTH_FILE))) {
             try {
-                loadCredentialFile(credentialsList);
+                loadCredentialFile(credentialsList, IOUtils.pathCombine(path, AUTH_FILE));
             } catch (Exception ex) {
                 LOGGER.error("Error while loading Basic Auth credentials file: " + ex.getMessage());
             }
@@ -42,10 +43,10 @@ class CredentialsProvider {
         return credentialsList;
     }
 
-    private static void loadCredentialFile(final List<AuthenticationDetails> credentialsList)
+    private static void loadCredentialFile(final List<AuthenticationDetails> credentialsList, String authFile)
             throws SAXException, IOException, ParserConfigurationException, XPathExpressionException
     {
-        Document dom = Saxon.loadDOM(AUTH_FILE);
+        Document dom = Saxon.loadDOM(authFile);
         XPathFactory factory = XPathFactory.newInstance();
         XPath xPath = factory.newXPath();
         NodeList credentialNodes = (NodeList) xPath.compile("//" + CREDENTIALS_TAG).evaluate(dom, XPathConstants.NODESET);

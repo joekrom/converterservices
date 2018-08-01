@@ -2,6 +2,7 @@ package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.IOUtils;
+import de.axxepta.converterservices.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -235,25 +236,9 @@ public class PipeExec {
             if (nodes.getLength() == 1) {
                 String nodeContent = nodes.item(0).getTextContent();
                 switch (type.toLowerCase()) {
-                    case "bool":
-                    case "boolean":
-                        param = Boolean.valueOf(nodeContent);
-                        break;
                     case "int":
                     case "integer":
                         param = Integer.valueOf(nodeContent);
-                        break;
-                    case "long":
-                        param = Long.valueOf(nodeContent);
-                        break;
-                    case "byte":
-                        param = Byte.valueOf(nodeContent);
-                        break;
-                    case "float":
-                        param = Float.valueOf(nodeContent);
-                        break;
-                    case "double":
-                        param = Double.valueOf(nodeContent);
                         break;
                     default: param = nodeContent;
                 }
@@ -261,34 +246,12 @@ public class PipeExec {
                     param = new String[] { (String) param };
                 }
             } else {
-                List<String> nodeContents = new ArrayList<>();
-                for (int i = 0; i < nodes.getLength(); i++) {
-                    nodeContents.add(nodes.item(i).getTextContent());
+                if (!(StringUtils.isEmpty(type.toLowerCase()) || type.toLowerCase().equals("string") )) {
+                    throw new IllegalArgumentException("Illegal parameter type definition: " + type);
                 }
-                List list = new ArrayList<>();
-                switch (type.toLowerCase()) {
-                    case "bool":
-                    case "boolean":
-                        list.addAll(nodeContents.stream().map(Boolean::valueOf).collect(Collectors.toList()));
-                        break;
-                    case "int":
-                    case "integer":
-                        list.addAll(nodeContents.stream().map(Integer::valueOf).collect(Collectors.toList()));
-                        break;
-                    case "long":
-                        list.addAll(nodeContents.stream().map(Long::valueOf).collect(Collectors.toList()));
-                        break;
-                    case "byte":
-                        list.addAll(nodeContents.stream().map(Byte::valueOf).collect(Collectors.toList()));
-                        break;
-                    case "float":
-                        list.addAll(nodeContents.stream().map(Float::valueOf).collect(Collectors.toList()));
-                        break;
-                    case "double":
-                        list.addAll(nodeContents.stream().map(Double::valueOf).collect(Collectors.toList()));
-                        break;
-                    default:
-                        list.addAll(nodeContents);
+                List<String> list = new ArrayList<>();
+                for (int i = 0; i < nodes.getLength(); i++) {
+                    list.add(nodes.item(i).getTextContent());
                 }
                 if (path.equals(PARAM_ELEMENT)) {
                     param = list.toArray(new String[list.size()]);

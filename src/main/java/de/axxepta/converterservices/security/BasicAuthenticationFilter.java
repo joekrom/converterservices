@@ -1,4 +1,4 @@
-package de.axxepta.converterservices.auth;
+package de.axxepta.converterservices.security;
 
 import spark.FilterImpl;
 import spark.Request;

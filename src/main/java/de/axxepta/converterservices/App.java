@@ -1,6 +1,7 @@
 package de.axxepta.converterservices;
 
 import de.axxepta.converterservices.proc.PipeExec;
+import de.axxepta.converterservices.security.SSLProvider;
 import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.tools.ImageUtils;
@@ -109,6 +110,8 @@ public class App {
 
         if (args.length > 0)
             pwd = args[0];
+
+        SSLProvider.checkSSL();
 
         init("");
 

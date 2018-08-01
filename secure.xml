@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sslFile>
+    <keystoreLocation></keystoreLocation>
+    <keystorePassword></keystorePassword>
+<!--    <truststoreLocation></truststoreLocation>
+    <truststorePassword></truststorePassword> -->
+</sslFile>

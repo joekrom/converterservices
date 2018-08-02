@@ -155,11 +155,12 @@ public class PipeExec {
     private static Pipeline.PipelineBuilder classedPipeBuilder(String className) {
         try {
             Class<?> builderClass = Class.forName(className);
-            if (Pipeline.PipelineBuilder.class.isAssignableFrom(builderClass)) {
+            if (IPipelineBuilderProvider.class.isAssignableFrom(builderClass)) {
                 Constructor<?> constructor = builderClass.getConstructor();
-                return (Pipeline.PipelineBuilder) constructor.newInstance();
+                IPipelineBuilderProvider provider = (IPipelineBuilderProvider) constructor.newInstance();
+                return provider.builder();
             } else {
-                LOGGER.warn("Referenced class does not extend Pipeline.PipelineBuilder");
+                LOGGER.warn("Referenced class does not implement IPipelineBuilderProvider");
                 return Pipeline.builder();
             }
         } catch (Exception ce) {

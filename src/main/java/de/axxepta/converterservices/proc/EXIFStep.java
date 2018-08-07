@@ -23,11 +23,34 @@ class EXIFStep extends Step {
             throws Exception
     {
         boolean compact = false;
-        if (parameters.length > 0) {
-            String parameter = parameters[0].toLowerCase();
-            if (parameter.contains("short") && parameter.contains("true") ||
-                    parameter.contains("comp") && parameter.contains("false")) {
-                compact = true;
+        boolean inPlace = false;
+        String add = "";
+        for (String parameter : parameters) {
+            String[] parts = parameter.split(" *= *");
+            if (parts.length > 1) {
+                switch (parts[0].toLowerCase()) {
+                    case "short":
+                        if (parts[1].toLowerCase().equals("true")) {
+                            compact = true;
+                        }
+                    case "comp":
+                        if (parts[1].toLowerCase().equals("false")) {
+                            compact = true;
+                        }
+                        break;
+                    case "inplace":
+                        if (parts[1].toLowerCase().equals("true")) {
+                            inPlace = true;
+                        }
+                        break;
+                    case "add":
+                        add = parameter.substring(parameter.indexOf("=") + 1);
+                        break;
+                }
+                if (parameter.contains("short") && parameter.contains("true") ||
+                        parameter.contains("comp") && parameter.contains("false")) {
+                    compact = true;
+                }
             }
         }
 
@@ -43,11 +66,12 @@ class EXIFStep extends Step {
                 outputs = new ArrayList<>();
             }
             String outputFile = (inputFiles.size() == outSize) ?
-                    IOUtils.pathCombine(pipe.getWorkPath(), outputs.get(i)) :
-                    IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inFile) + ".rdf") ;
+                    IOUtils.pathCombine( (inPlace ? IOUtils.dirFromPath(inFile) : pipe.getWorkPath()), outputs.get(i)) :
+                    IOUtils.pathCombine( (inPlace ? IOUtils.dirFromPath(inFile) : pipe.getWorkPath()),
+                            IOUtils.filenameFromPath(inFile) + ".rdf") ;
             try {
-                List<String> lines = CmdUtils.exifPipe(compact, "-X", inFile);
-                IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size() - 1) : lines,
+                List<String> lines = CmdUtils.exifPipe(compact, "-X " + add, inFile);
+                IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size()) : lines,
                         outputFile, true);
             } catch (IOException ex) {
                 pipe.log(String.format("Error executing external command %s:\n %s", "exif -X", ex.getMessage()));

@@ -21,7 +21,6 @@ import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Can be called as command line pipeline processing tool.
@@ -272,10 +271,10 @@ public class PipeExec {
             return Pipeline.StepType.NONE;
         } else {
             try {
-                return Pipeline.StepType.valueOf(typeAtt.getNodeValue());
+                return Pipeline.StepType.valueOf(typeAtt.getNodeValue().toUpperCase());
             } catch (NullPointerException | IllegalArgumentException ex) {
                 LOGGER.warn(String.format("Type %s does not correspond to a defined step type, step will be ignored.",
-                        typeAtt.getNodeValue()));
+                        typeAtt.getNodeValue().toUpperCase()));
                 return Pipeline.StepType.NONE;
             }
         }

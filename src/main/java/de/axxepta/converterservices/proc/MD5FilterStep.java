@@ -36,6 +36,7 @@ class MD5FilterStep extends Step {
 
         List<String> outputFiles = new ArrayList<>();
         String md5File;
+        // todo: create md5path if not present
         for (String inFile : inputFiles) {
             if (!IOUtils.isDirectory(inFile)) {
                 md5File = (relativeMD5Path.equals("") ? inFile :

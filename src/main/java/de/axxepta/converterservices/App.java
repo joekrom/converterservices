@@ -111,8 +111,6 @@ public class App {
         if (args.length > 0)
             pwd = args[0];
 
-        SSLProvider.checkSSL();
-
         init("");
 
     }
@@ -120,6 +118,8 @@ public class App {
 //########################################################
 
     static void init(String basePath) {
+
+        SSLProvider.checkSSL();
 
         try {
             de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(TEMP_FILE_PATH);

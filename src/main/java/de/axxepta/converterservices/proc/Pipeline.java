@@ -269,6 +269,9 @@ public class Pipeline {
             case COMBINE:
                 step = new CombineStep(name, input, output, additional, params);
                 break;
+            case FT:
+                step = new FilenameTransformStep(name, input, output, additional, params);
+                break;
             case PDF_SPLIT:
                 step = new PDFSplitStep(name, input, output, additional, params);
                 break;
@@ -487,7 +490,7 @@ public class Pipeline {
 
 
     public enum StepType {
-        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, GZIP, GUNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER,
+        XSLT, XSL_FO, XQUERY, XML_CSV, ZIP, UNZIP, FT, GZIP, GUNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER,
         COMBINE, CMD, JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE,
         BASE64_ENC, BASE64_DEC, XLSX_XML, NONE
     }

@@ -58,9 +58,9 @@ class FTPUpStep extends Step {
                         }
                         break;
                     case "base": case "basepath":
-                        if (parts[1].toLowerCase().startsWith("in")) {
+                        if (parts[1].toLowerCase().equals("input")) {
                             base = pipe.getInputPath();
-                        } else if (!parts[1].toLowerCase().startsWith("work")) {
+                        } else if (!parts[1].toLowerCase().equals("work")) {
                             base = parts[1];
                         }
                         break;
@@ -69,6 +69,9 @@ class FTPUpStep extends Step {
                         break;
                 }
             }
+        }
+        if (port.equals("")) {
+            port = "21";
         }
 
         List<String> uploadFiles = IOUtils.collectFiles(inputFiles);

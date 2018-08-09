@@ -6,7 +6,6 @@ import de.axxepta.converterservices.utils.StringUtils;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 class FTPDownStep extends Step {
@@ -28,6 +27,7 @@ class FTPDownStep extends Step {
         String port = "";
         boolean secure = false;
         boolean recursive = false;
+        boolean single = false;
 
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
@@ -60,48 +60,65 @@ class FTPDownStep extends Step {
                             recursive = true;
                         }
                         break;
+                    case "single": case "singlefile":
+                        if (parts[1].toLowerCase().equals("true")) {
+                            single = true;
+                        }
+                        break;
                 }
             }
         }
 
         List<String> outputFiles = new ArrayList<>();
         for (String inFile : inputFiles) {
+
             String inputPath = IOUtils.relativePath(inFile, pipe.getInputPath()).replaceAll("\\\\", "/");
             inputPath = inputPath.endsWith("/") ? inputPath.substring(0, inputPath.length() - 1) : inputPath;
-            String[] serverList = StringUtils.nlListToArray(
-                    FTPUtils.list(secure, user, pwd, server, Integer.valueOf(port), inputPath));
 
-            String clientPath = "";
-            if (serverList.length > 1) {
-                clientPath = IOUtils.filenameFromPath(inputPath);
-                IOUtils.safeCreateDirectory(IOUtils.pathCombine(pipe.getWorkPath(), clientPath));
-            }
+            if (single) {
 
-            for (String serverListItem : serverList) {
-                if (serverListItem.startsWith(FTPUtils.FILE_ENTRY)) {
-                    String serverFile = serverListItem.substring(FTPUtils.FILE_ENTRY.length());
-                    // ToDo: adjust in FTPUtils
-                    serverFile = secure ? serverFile : IOUtils.filenameFromPath(serverFile);
-                    String outputFile;
-                    if (serverList.length == 1) {
-                        outputFile = IOUtils.pathCombine(pipe.getWorkPath(), serverFile);
-                        serverFile = inputPath;
-                    } else {
-                        outputFile = IOUtils.pathCombine(pipe.getWorkPath(), clientPath) + File.separator + serverFile;
-                        serverFile = IOUtils.pathCombine(inputPath, serverFile).replaceAll("\\\\", "/");
-                    }
+                String outputFile = IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.filenameFromPath(inputPath));
+                FTPUtils.download(secure, user, pwd, server, Integer.valueOf(port), inputPath, outputFile);
+                outputFiles.add(outputFile);
 
-                    FTPUtils.download(secure, user, pwd, server, Integer.valueOf(port), serverFile, outputFile);
-                    outputFiles.add(outputFile);
-                } else {
-                    String dirName = serverListItem.substring(FTPUtils.DIR_ENTRY.length());
-                    // ToDo: see above
-                    dirName = secure ? dirName : IOUtils.filenameFromPath(dirName);
-                    if (recursive && !(dirName.equals(".") || dirName.equals(".."))) {
-                        recursiveDownload(inputPath + "/" + dirName, clientPath,
-                                secure, user, pwd, server, Integer.valueOf(port), pipe, outputFiles);
+            } else {
+
+                String[] serverList = StringUtils.nlListToArray(
+                        FTPUtils.list(secure, user, pwd, server, Integer.valueOf(port), inputPath));
+
+                String clientPath = "";
+                if (serverList.length > 1) {
+                    clientPath = IOUtils.filenameFromPath(inputPath);
+                    IOUtils.safeCreateDirectory(IOUtils.pathCombine(pipe.getWorkPath(), clientPath));
+                }
+
+                for (String serverListItem : serverList) {
+                    if (serverListItem.startsWith(FTPUtils.FILE_ENTRY)) {
+                        String serverFile = serverListItem.substring(FTPUtils.FILE_ENTRY.length());
+                        // ToDo: adjust in FTPUtils
+                        serverFile = secure ? serverFile : IOUtils.filenameFromPath(serverFile);
+                        String outputFile;
+                        if (serverList.length == 1) {
+                            outputFile = IOUtils.pathCombine(pipe.getWorkPath(), serverFile);
+                            serverFile = inputPath;
+                        } else {
+                            outputFile = IOUtils.pathCombine(pipe.getWorkPath(), clientPath) + File.separator + serverFile;
+                            serverFile = IOUtils.pathCombine(inputPath, serverFile).replaceAll("\\\\", "/");
+                        }
+
+                        FTPUtils.download(secure, user, pwd, server, Integer.valueOf(port), serverFile, outputFile);
+                        outputFiles.add(outputFile);
+                    } else if (serverListItem.startsWith(FTPUtils.DIR_ENTRY) && serverListItem.length() > FTPUtils.DIR_ENTRY.length()) {
+                        String dirName = serverListItem.substring(FTPUtils.DIR_ENTRY.length());
+                        // ToDo: see above
+                        dirName = secure ? dirName : IOUtils.filenameFromPath(dirName);
+                        if (recursive && !(dirName.equals(".") || dirName.equals(".."))) {
+                            recursiveDownload(inputPath + "/" + dirName, clientPath,
+                                    secure, user, pwd, server, Integer.valueOf(port), pipe, outputFiles);
+                        }
                     }
                 }
+
             }
         }
 

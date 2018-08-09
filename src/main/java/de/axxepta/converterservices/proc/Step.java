@@ -50,7 +50,9 @@ abstract class Step {
         String[] parameters;
 
         parameters = params;
-        pipe.log("##   Input              : " + inputFiles);
+        pipe.log("##   Input              : " +
+                (getType().equals(Pipeline.StepType.HTTP_GET) || getType().equals(Pipeline.StepType.FTP_DOWN)?
+                        input : inputFiles) );
         pipe.log("##   Additional Input   : " + additional);
         pipe.log("##   Parameters         : " + String.join(" - ", parameters));
 

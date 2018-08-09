@@ -43,6 +43,7 @@ public class App {
     private static final String PATH_SPLIT              = "/pdf/split";
     private static final String PATH_EXCEL              = "/excel";
     private static final String PATH_PIPELINE           = "/pipeline";
+    private static final String PATH_PIPELINE_ASYNC     = "/pipeline-async";
     private static final String PATH_PIPELINE_MULTI     = "/pipeline-multi";
     private static final String PATH_DOWNLOAD           = "/static";
     private static final String PATH_UPLOAD             = "/upload";
@@ -271,7 +272,9 @@ public class App {
 
         post(basePath + PATH_EXCEL, App::excelHandling);
 
-        post(basePath + PATH_PIPELINE, TYPE_XML, App::pipelineHandling);
+        post(basePath + PATH_PIPELINE, TYPE_XML, (request, response) -> pipelineHandling(request, response, false) );
+
+        post(basePath + PATH_PIPELINE_ASYNC, TYPE_XML, (request, response) -> pipelineHandling(request, response, true) );
 
         post(basePath + PATH_PIPELINE_MULTI, MULTIPART_FORM_DATA, App::pipelineHandlingMultipart);
 
@@ -288,7 +291,7 @@ public class App {
     }
 
 
-    private static Object pipelineHandling(Request request, Response response) {
+    private static Object pipelineHandling(Request request, Response response, boolean async) {
         boolean cleanup = false;
         try {
             String pipelineString = request.body();
@@ -297,7 +300,18 @@ public class App {
                 if (parameters.get(PARAM_CLEANUP).equals("true"))
                     cleanup = true;
             }
-            return processPipeline(response, pipelineString);
+            if (async) {
+                new Thread(() -> {
+                    try {
+                        PipeExec.execProcessString(pipelineString);
+                    } catch (Exception ex) {
+                        LOGGER.error("Error running pipeline in thread: ", ex);
+                    }
+                }).start();
+                return "<start>Pipeline started.</start>";
+            } else {
+                return processPipeline(response, pipelineString);
+            }
         } catch (Exception ex) {
             response.status(500);
             return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;

@@ -188,6 +188,9 @@ public class ExcelUtils {
         return customMappingFiles;
     }
 
+
+
+
     public static String CSVToExcel(String fileName, String sheetName, String separator) {
         String outputFile = XLSXFileName(fileName);
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -217,8 +220,34 @@ public class ExcelUtils {
         return outputFile;
     }
 
-    public static String XMLToExcel(String path) {
-        return "";
+    public static String XMLToExcel(String fileName, String sheetName) {
+        String outputFile = XLSXFileName(fileName);
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        try {
+            FileOutputStream out = new FileOutputStream(new File(App.TEMP_FILE_PATH + "/" + outputFile));
+            XSSFSheet sheet = workbook.createSheet(sheetName);
+            try (FileInputStream fis = new FileInputStream(App.TEMP_FILE_PATH + "/" + fileName)) {
+
+                Scanner scanner = new Scanner(fis);
+                int rowId = 0;
+                while (scanner.hasNext()) {
+                    String line = scanner.nextLine();
+                    String[] cellContents = line.split(separator);
+                    XSSFRow row = sheet.createRow(rowId++);
+                    int cellId = 0;
+                    for (String el : cellContents)
+                    {
+                        Cell cell = row.createCell(cellId++);
+                        cell.setCellValue(el);
+                    }
+                }
+            }
+            workbook.write(out);
+            out.close();
+        } catch (IOException ie) {
+            LOGGER.error("Exception writing to XLSX file: " + ie.getMessage());
+        }
+        return outputFile;
     }
 
     private static String excelToXML(String path, String fileName, Workbook workbook, String sheetName, boolean columnFirst,

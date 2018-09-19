@@ -1,5 +1,5 @@
 group 'de.axxepta'
-version '0.5.2'
+version '1.0-SNAPSHOT'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -117,7 +117,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            pom.version = '0.5.2'
+            pom.version = '0.5.3'
             repository(url: mavenUrl) {
                 authentication(userName: mavenUser, privateKey: mavenKeyfile)
             }

@@ -129,7 +129,7 @@ public class IOUtils {
             String name = entry.getName();
             if (name.startsWith(resourcePath)) {
                 if (entry.isDirectory()) {
-                    IOUtils.safeCreateDirectory(path + "/" + name);
+                    IOUtils.safeCreateDirectory(pathCombine(path, name));
                 } else {
                     copyResource(name, path, referenceClass);
                 }

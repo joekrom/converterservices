@@ -27,7 +27,7 @@ public class ExcelContentHandler extends DefaultHandler {
     private String separator;
     private String rowTagName;
     private String colTagName;
-    private String typeAttName;
+    private final String typeAttName;
     private int rowCount = 0;
     private int colCount = 0;
     private boolean inCell = false;
@@ -51,14 +51,19 @@ public class ExcelContentHandler extends DefaultHandler {
         if (qName.equals(rowTagName)) {
             row = sheet.createRow(rowCount++);
             colCount = 0;
-        }
-        if (qName.equals(colTagName)) {
+        } else if (qName.equals(colTagName)) {
             cell = row.createCell(colCount++);
             currentType = attributes.getValue(typeAttName);
             if (currentType != null && currentType.equals(TEXT_CELL_TYPE)) {
                 cell.setCellStyle(wrapStyle);
             }
             inCell = true;
+        } else if (inCell) {
+            cellContent.append("<").append(qName);
+            for (int a = 0; a < attributes.getLength(); a++) {
+                cellContent.append(" ").append(attributes.getQName(a)).append("=\"").append(attributes.getValue(a)).append("\"");
+            }
+            cellContent.append(">");
         }
     }
 
@@ -90,17 +95,32 @@ public class ExcelContentHandler extends DefaultHandler {
                         }
                     }
                     break;
-                default:
+                default:    // text
                     String[] lines = cellContent.toString().split(separator);
                     maxLines = Math.max(maxLines, lines.length);
-                    cell.setCellValue(new XSSFRichTextString( String.join("\n", lines) ));
+                    String wrappedContent = String.join("\n", lines);
+                    boolean cellFormat = true;
+                    if (cellFormat) {
+                        int index = cellContent.indexOf("<i>");
+                        int index2 = cellContent.indexOf("</i>");
+                        while (index  != -1) {
+                            if (index2 != -1 && index2 > index) {
+                                //
+                            }
+                            index = cellContent.indexOf("<i>");
+                            index2 = cellContent.indexOf("</i>");
+                        }
+                    }
+                    cell.setCellValue(new XSSFRichTextString(wrappedContent));
             }
             inCell = false;
             cellContent = new StringBuilder();
-        }
-        if (qName.equals(rowTagName)) {
+        } else if (qName.equals(rowTagName)) {
             row.setHeightInPoints((maxLines * sheet.getDefaultRowHeightInPoints()));
             maxLines = 1;
+        } else if (inCell) {
+            cellContent.append("</").append(qName);
+            cellContent.append(">");
         }
     }
 

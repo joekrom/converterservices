@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.Const;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 
@@ -22,16 +23,29 @@ class XMLToXLSXStep extends Step {
     Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
             throws Exception
     {
-        String row = "Row";
-        String column = "Cell";
+        String row = Const.ROW_TAG;
+        String column = Const.CELL_TAG;
+        String sheet = Const.SHEET_NAME;
+        String dataType = Const.DATA_TYPE_ATT;
+        String separator = ExcelUtils.XML_SEPARATOR;
 
         for (String line : parameters) {
-            String[] components = line.split(" *= *");
-            if (components[0].toLowerCase().equals("tr") || components[0].toLowerCase().equals("row")) {
-                row = components[components.length - 1];
-            }
-            if (components[0].toLowerCase().equals("td") || components[0].toLowerCase().equals("column")) {
-                column = components[components.length - 1];
+            String[] parts = line.split(" *= *");
+            if (parts.length > 1) {
+                switch (parts[0].toLowerCase()) {
+                    case "tr": case "row":
+                        row = parts[1];
+                        break;
+                    case "td": case "column":
+                        column = parts[1];
+                        break;
+                    case "sheetname":
+                        sheet = parts[1];
+                        break;
+                    case "data": case "type": case "data-type": case "datatype":
+                        dataType = parts[1];
+                        break;
+                }
             }
         }
 
@@ -40,10 +54,7 @@ class XMLToXLSXStep extends Step {
         int i = 0;
         for (String inFile : inputFiles) {
             String outputFile = getCurrentOutputFile(providedOutputNames, i, inFile, pipe);
-
-            try (ByteArrayOutputStream os = ExcelUtils.XMLToExcel(inFile, row, column)) {
-                IOUtils.byteArrayOutputStreamToFile(os, outputFile);
-            }
+            ExcelUtils.XMLToExcel(inFile, sheet, row, column, dataType, separator, outputFile);
             pipe.addGeneratedFile(outputFile);
             usedOutputFiles.add(outputFile);
             i++;
@@ -54,7 +65,7 @@ class XMLToXLSXStep extends Step {
     private String getCurrentOutputFile(List<String> providedOutputNames, int current, String inputFile, Pipeline pipe) {
         return providedOutputNames.size() > current && !providedOutputNames.get(current).equals("") ?
                 IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(current)) :
-                IOUtils.pathCombine(pipe.getWorkPath(),IOUtils.filenameFromPath(inputFile) + ".csv");
+                IOUtils.pathCombine(pipe.getWorkPath(),IOUtils.filenameFromPath(inputFile) + ".xlsx");
     }
 
     @Override

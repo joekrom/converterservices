@@ -420,7 +420,7 @@ public class App {
                         (sheetName.equals("")) ? ExcelUtils.DEF_SHEET_NAME : sheetName, separator));
             }
             if (de.axxepta.converterservices.utils.IOUtils.isXML(file)) {
-                convertedFiles.add(ExcelUtils.XMLToExcel(file));
+                convertedFiles.add(ExcelUtils.serviceXMLToExcel(file, sheetName, row, column, ExcelUtils.XML_SEPARATOR));
             }
         }
 

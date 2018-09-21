@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.Const;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
@@ -21,13 +22,15 @@ class XLSXToXMLStep extends Step {
     @Override
     Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
         String root = "xml";
-        String sheetName = "Sheet1";
+        String sheetName = Const.SHEET_NAME;
         boolean firstRowHead = true;
         boolean customXMLMapping = false;
         boolean indent = true;
+        boolean wrapValue = false;
+        boolean wrapSheet = true;
         boolean columnFirst = false;
         String fileEl = "file";
-        String sheetEl = "sheet";
+        String sheetEl = Const.SHEET_TAG;
         String rowEl = "row";
         String colEl = "column";
         String attSheetName = "";
@@ -64,6 +67,16 @@ class XLSXToXMLStep extends Step {
                             indent = false;
                         }
                         break;
+                    case "wrapvalue":
+                        if (parts[1].toLowerCase().equals("true")) {
+                            wrapValue = true;
+                        }
+                        break;
+                    case "wrapsheet":
+                        if (parts[1].toLowerCase().equals("false")) {
+                            wrapSheet = false;
+                        }
+                        break;
                     case "columnfirst":
                         if (parts[1].toLowerCase().equals("true")) {
                             columnFirst = true;
@@ -84,7 +97,7 @@ class XLSXToXMLStep extends Step {
             // if no external mapping file is provided use internal mapping or export all
             if (additional == null || (additional instanceof String && additional.equals(""))) {
                 List<String> exportedFiles = ExcelUtils.fromPipeExcel(pipe.getWorkPath(), inputFile, ExcelUtils.FileType.XML,
-                        customXMLMapping, sheetName, "", indent, columnFirst, false, true,
+                        customXMLMapping, sheetName, "", indent, wrapValue, wrapSheet, columnFirst, false, true,
                         fileEl, sheetEl, rowEl, colEl, attSheetName);
 
                 // transformation method has its own name pattern, rename if output name set

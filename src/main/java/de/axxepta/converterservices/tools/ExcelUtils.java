@@ -1,6 +1,7 @@
 package de.axxepta.converterservices.tools;
 
 import de.axxepta.converterservices.App;
+import de.axxepta.converterservices.Const;
 import de.axxepta.converterservices.utils.IOUtils;
 import org.apache.poi.hssf.util.CellReference;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
@@ -10,9 +11,7 @@ import org.apache.poi.xssf.extractor.XSSFExportToXml;
 import org.apache.poi.xssf.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -22,7 +21,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import javax.xml.transform.TransformerException;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class ExcelUtils {
@@ -31,10 +29,10 @@ public class ExcelUtils {
 
     private static final String XML_PROLOGUE    = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\" ?>"
             + System.lineSeparator();
-    private static final String SHEET_INDENT    = "  ";
-    private static final String ROW_INDENT      = "    ";
-    private static final String COL_INDENT      = "      ";
-    private static final String VALUE_INDENT    = "        ";
+    private static final String SHEET_INDENT    = "";
+    private static final String ROW_INDENT      = "  ";
+    private static final String COL_INDENT      = "    ";
+    private static final String VALUE_INDENT    = "      ";
     private static final String FILE_EL         = "Workbook";
     public static final String SHEET_EL                = "Data";
     public static final String ROW_EL                  = "Row";
@@ -43,6 +41,8 @@ public class ExcelUtils {
     public static final String DEF_SHEET_NAME          = "sheet0";
     public static final String DEF_ATT_SHEET           = "name";
     public static final String DEF_SEPARATOR           = ";";
+
+    public static final String XML_SEPARATOR           = "\\r?\\n";
 
 
     public static List<String> fromTempExcel(String fileName, FileType type, boolean customXMLMapping, String sheetName,
@@ -53,7 +53,7 @@ public class ExcelUtils {
         List<String> outputFiles = new ArrayList<>();
         try (FileInputStream file = new FileInputStream(App.TEMP_FILE_PATH + "/" + fileName)) {
             exportExcel(file, App.TEMP_FILE_PATH, fileName, type, customXMLMapping, sheetName, separator, indent,
-                    columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName);
+                    true, true, columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName);
         } catch (IOException ie) {
             LOGGER.error("Exception reading Excel file: " + ie.getMessage());
         }
@@ -61,7 +61,7 @@ public class ExcelUtils {
     }
 
     public static List<String> fromPipeExcel(String workPath, String inputFile, FileType type, boolean customXMLMapping, String sheetName,
-                                             String separator, boolean indent, boolean columnFirst, boolean firstColName,
+                                             String separator, boolean indent, boolean wrapValue, boolean wrapSheet, boolean columnFirst, boolean firstColName,
                                              boolean firstRowName, String fileEl, String sheetEl, String rowEl,
                                              String colEl, String attSheetName)
             throws IOException
@@ -69,15 +69,16 @@ public class ExcelUtils {
         List<String> outputFiles = new ArrayList<>();
         try (FileInputStream file = new FileInputStream(inputFile)) {
             exportExcel(file, workPath, IOUtils.filenameFromPath(inputFile), type, customXMLMapping, sheetName, separator,
-                    indent,columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName);
+                    indent, wrapValue, wrapSheet, columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName);
         }
         return outputFiles;
     }
 
-    private static List<String> exportExcel(FileInputStream file, String path, String fileName, FileType type, boolean customXMLMapping,
-                                           String sheetName, String separator, boolean indent, boolean columnFirst,
-                                           boolean firstColName, boolean firstRowName, String fileEl, String sheetEl,
-                                           String rowEl, String colEl, String attSheetName)
+    private static List<String> exportExcel(FileInputStream file, String path, String fileName, FileType type,
+                                            boolean customXMLMapping, String sheetName, String separator, boolean indent,
+                                            boolean wrapValue,  boolean wrapSheet, boolean columnFirst,
+                                            boolean firstColName, boolean firstRowName, String fileEl, String sheetEl,
+                                            String rowEl, String colEl, String attSheetName)
             throws IOException
     {
         List<String> outputFiles = new ArrayList<>();
@@ -91,7 +92,7 @@ public class ExcelUtils {
                     outputFiles.addAll(excelCustomXMLMapping(path, fileName));
                 else
                     outputFiles.add(excelToXML(path, fileName, workbook, sheetName, columnFirst, firstColName, firstRowName,
-                            fileEl, sheetEl, rowEl, colEl, indent, attSheetName));
+                            fileEl, sheetEl, rowEl, colEl, indent, wrapValue, wrapSheet, attSheetName));
             }
         return outputFiles;
     }
@@ -182,13 +183,11 @@ public class ExcelUtils {
                 }
             }
             pkg.close();
-        } catch (InvalidFormatException | SAXException | ParserConfigurationException | TransformerException ife) {
+        } catch (InvalidFormatException | SAXException | TransformerException ife) {
             LOGGER.error("Exception writing to CSV file: " + ife.getMessage());
         }
         return customMappingFiles;
     }
-
-
 
 
     public static String CSVToExcel(String fileName, String sheetName, String separator) {
@@ -220,30 +219,40 @@ public class ExcelUtils {
         return outputFile;
     }
 
-    public static String XMLToExcel(String fileName, String sheetName) {
-        String outputFile = XLSXFileName(fileName);
+    public static String serviceXMLToExcel(String fileName, String sheetName, String row, String col, String separator, String... outputFileName) {
+        String outputFile = App.TEMP_FILE_PATH + "/" + (outputFileName.length > 0 ? outputFileName[0]: XLSXFileName(fileName));
+        String type = Const.DATA_TYPE_ATT;
+        return XMLToExcel(fileName, sheetName, row, col, type, separator, outputFile);
+    }
+
+    public static String XMLToExcel(String fileName, String sheetName, String row, String col, String type,
+                                    String separator, String outputFile) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         try {
-            FileOutputStream out = new FileOutputStream(new File(App.TEMP_FILE_PATH + "/" + outputFile));
-            XSSFSheet sheet = workbook.createSheet(sheetName);
-            try (FileInputStream fis = new FileInputStream(App.TEMP_FILE_PATH + "/" + fileName)) {
 
-                Scanner scanner = new Scanner(fis);
-                int rowId = 0;
-                while (scanner.hasNext()) {
-                    String line = scanner.nextLine();
-                    String[] cellContents = line.split(separator);
-                    XSSFRow row = sheet.createRow(rowId++);
-                    int cellId = 0;
-                    for (String el : cellContents)
-                    {
-                        Cell cell = row.createCell(cellId++);
-                        cell.setCellValue(el);
-                    }
-                }
+            ExcelContentHandler handler = new ExcelContentHandler(workbook, sheetName, row, col, type, separator);
+            File file = new File(fileName);
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParser parser = factory.newSAXParser();
+            parser.parse(file, handler);
+
+            // auto-adjust columns widths
+            Sheet sheet = workbook.getSheet(sheetName);
+            int lastRow = sheet.getLastRowNum();
+            int lastColumn = 0;
+            for (int r = 0; r <= lastRow; r++) {
+                lastColumn = Math.max(lastColumn, sheet.getRow(r).getLastCellNum());
             }
-            workbook.write(out);
-            out.close();
+            for (int c = 0; c <= lastColumn; c++) {
+                sheet.autoSizeColumn((short) c);
+            }
+
+            try (FileOutputStream out = new FileOutputStream(new File(outputFile))) {
+                workbook.write(out);
+            }
+
+        } catch (SAXException | ParserConfigurationException sx) {
+            LOGGER.error("Exception reading " + sx.getMessage());
         } catch (IOException ie) {
             LOGGER.error("Exception writing to XLSX file: " + ie.getMessage());
         }
@@ -253,20 +262,24 @@ public class ExcelUtils {
     private static String excelToXML(String path, String fileName, Workbook workbook, String sheetName, boolean columnFirst,
                                    boolean firstColName, boolean firstRowName,
                                    String fileEl, String sheetEl, String rowEl, String colEl,
-                                   boolean indent, String attSheetName) {
+                                   boolean indent, boolean wrapValue, boolean wrapSheet, String attSheetName) {
         List<Sheet> sheets = getSheets(workbook, sheetName);
         FormulaEvaluator evaluator = new XSSFFormulaEvaluator((XSSFWorkbook) workbook);
         DataFormatter formatter = new DataFormatter(true);
 
         String outputFile = XMLFileName(fileName);
+        String file_indent = "";
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(path + "/" + outputFile))) {
             writer.write(XML_PROLOGUE);
-            writeTag(writer, TagType.open, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
+            if (wrapSheet) {
+                writeTag(writer, TagType.open, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
+                file_indent = "  ";
+            }
             for (Sheet sheet : sheets) {
                 if (attSheetName.equals("")) {
-                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent,false, SHEET_INDENT);
+                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent,false, SHEET_INDENT + file_indent);
                 } else {
-                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, false, SHEET_INDENT,
+                    writeTag(writer, TagType.open, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, false, SHEET_INDENT + file_indent,
                             attSheetName, sheet.getSheetName());
                 }
                 int firstRow = sheet.getFirstRowNum();
@@ -278,28 +291,56 @@ public class ExcelUtils {
                 } else {
                     for (int rowNumber = firstRow; rowNumber < lastRow + 1; rowNumber++) {
                         Row row = sheet.getRow(rowNumber);
-                        writeTag(writer, TagType.open, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT,
+                        writeTag(writer, TagType.open, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT + file_indent,
                                 "RowNumber", Integer.toString(row.getRowNum()));
                         for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {
                             Cell cell = row.getCell(colNumber);
-                            writeTag(writer, TagType.open, colEl.equals("") ? COL_EL : colEl, indent, false,
-                                    COL_INDENT, "Ref", (cell != null) ? cell.getAddress().toString() : "_",
-                                    "ColumnNumber", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_",
-                                    "Type", (cell != null) ? cell.getCellTypeEnum().toString().toLowerCase().substring(0, 1) : "_");
-                            writeElement(writer, VALUE_EL,
-                                    formatter.formatCellValue(cell, evaluator), indent, VALUE_INDENT);
-                            writeTag(writer, TagType.close, colEl.equals("") ? COL_EL : colEl, indent, false, COL_INDENT);
+                            String cellType = (cell != null) ? getCellType(cell) : "_";
+                            String cellValue = cellType.equals("text") ? ((XSSFCell) cell).getRichStringCellValue().toString() :
+                                    formatter.formatCellValue(cell, evaluator);
+                            if (wrapValue) {
+                                writeTag(writer, TagType.open, colEl.equals("") ? COL_EL : colEl, indent, false,
+                                        COL_INDENT + file_indent,
+                                        "ref", (cell != null) ? cell.getAddress().toString() : "_",
+                                        "column-number", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_",
+                                        "data-type", cellType);
+                                writeElement(writer, VALUE_EL,
+                                        cellValue, indent, VALUE_INDENT + file_indent);
+                                writeTag(writer, TagType.close, colEl.equals("") ? COL_EL : colEl, indent, false, COL_INDENT + file_indent);
+                            } else {
+                                writeElement(writer, COL_EL,
+                                        cellValue, indent, COL_INDENT + file_indent,
+                                        "ref", (cell != null) ? cell.getAddress().toString() : "_",
+                                        "column-number", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_",
+                                        Const.DATA_TYPE_ATT, cellType);
+                            }
                         }
-                        writeTag(writer, TagType.close, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT);
+                        writeTag(writer, TagType.close, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT + file_indent);
                     }
                 }
-                writeTag(writer, TagType.close, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, false, SHEET_INDENT);
+                writeTag(writer, TagType.close, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, false, SHEET_INDENT + file_indent);
             }
-            writeTag(writer, TagType.close, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
+            if (wrapSheet) {
+                writeTag(writer, TagType.close, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
+            }
         } catch (IOException ie){
             LOGGER.error("Exception writing to XML file: " + ie.getMessage());
         }
         return outputFile;
+    }
+
+    private static String getCellType(Cell cell) {
+        String typeString = cell.getCellType().toString().toLowerCase();
+        switch (typeString) {
+            case "string": return "text";
+            case "numeric": if (DateUtil.isCellDateFormatted(cell)) {
+                return "date";
+            } else {
+                return "number";
+            }
+            case "formula": return "number";
+            default: return typeString;
+        }
     }
 
     private static List<Sheet> getSheets(Workbook workbook, String sheetName) {
@@ -377,71 +418,6 @@ public class ExcelUtils {
     private enum TagType {
         open,
         close
-    }
-
-    private static class CSVContentHandler extends DefaultHandler {
-        private ByteArrayOutputStream builder = new ByteArrayOutputStream();
-        private final String row;
-        private final String column;
-        private final String delimiter;
-        private boolean inRowElement = false;
-        private boolean rowStarted = false;
-        private boolean inColumnElement = false;
-
-        private CSVContentHandler(final String row, final String column, final String delimiter) {
-            this.row = row;
-            this.column = column;
-            this.delimiter = delimiter;
-        }
-
-        @Override
-        public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            if (qName.equals(row)) {
-                inRowElement = true;
-                rowStarted = true;
-            }
-            if (qName.equals(column) && inRowElement) {
-                if (rowStarted) {
-                    rowStarted = false;
-                } else {
-                    try {
-                        builder.write(delimiter.getBytes(StandardCharsets.ISO_8859_1));
-                    } catch (IOException ex) {
-                        LOGGER.error("Error converting XML to CSV: ", ex);
-                    }
-                }
-                inColumnElement = true;
-            }
-        }
-
-        @Override
-        public void endElement(String uri, String localName, String qName) throws SAXException {
-            if (qName.equals(row)) {
-                builder.write((byte) '\r');
-                builder.write((byte) '\n');
-                rowStarted = false;
-                inRowElement = false;
-            }
-            if (qName.equals(column)) {
-                inColumnElement = false;
-            }
-        }
-
-        @Override
-        public void characters(char[] ch, int start, int length) throws SAXException {
-            if (inColumnElement) {
-                try {
-                    builder.write(new String(Arrays.copyOfRange(ch, start, start + length)).
-                            getBytes(StandardCharsets.ISO_8859_1));
-                } catch (IOException ex) {
-                    LOGGER.error("Error converting XML to CSV: ", ex);
-                }
-            }
-        }
-
-        private ByteArrayOutputStream getOutputStream() {
-            return builder;
-        }
     }
 
     public static String excelSheetTransformString(String fileName, String sheetName, String root,

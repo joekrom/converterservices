@@ -266,6 +266,9 @@ public class Pipeline {
             case XLSX_XML:
                 step = new XLSXToXMLStep(name, input, output, additional, params);
                 break;
+            case XML_XLSX:
+                step = new XMLToXLSXStep(name, input, output, additional, params);
+                break;
             case COMBINE:
                 step = new CombineStep(name, input, output, additional, params);
                 break;

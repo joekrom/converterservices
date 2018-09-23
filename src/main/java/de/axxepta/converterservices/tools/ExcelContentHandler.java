@@ -7,7 +7,10 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 
 public class ExcelContentHandler extends DefaultHandler {
 
@@ -19,6 +22,9 @@ public class ExcelContentHandler extends DefaultHandler {
 
     private Sheet sheet;
     private CellStyle wrapStyle;
+    private Font iFont;
+    private Font bFont;
+    private Font biFont;
     private Row row;
     private Cell cell;
     private String currentType = TEXT_CELL_TYPE;
@@ -44,6 +50,13 @@ public class ExcelContentHandler extends DefaultHandler {
 
         wrapStyle = workbook.createCellStyle();
         wrapStyle.setWrapText(true);
+        iFont = workbook.createFont();
+        iFont.setItalic(true);
+        bFont = workbook.createFont();
+        bFont.setBold(true);
+        biFont = workbook.createFont();
+        biFont.setBold(true);
+        biFont.setItalic(true);
     }
 
     @Override
@@ -100,18 +113,8 @@ public class ExcelContentHandler extends DefaultHandler {
                     maxLines = Math.max(maxLines, lines.length);
                     String wrappedContent = String.join("\n", lines);
                     boolean cellFormat = true;
-                    if (cellFormat) {
-                        int index = cellContent.indexOf("<i>");
-                        int index2 = cellContent.indexOf("</i>");
-                        while (index  != -1) {
-                            if (index2 != -1 && index2 > index) {
-                                //
-                            }
-                            index = cellContent.indexOf("<i>");
-                            index2 = cellContent.indexOf("</i>");
-                        }
-                    }
-                    cell.setCellValue(new XSSFRichTextString(wrappedContent));
+                    cell.setCellValue(cellFormat ?
+                            formatRichText(wrappedContent) : new XSSFRichTextString(wrappedContent));
             }
             inCell = false;
             cellContent = new StringBuilder();
@@ -124,11 +127,71 @@ public class ExcelContentHandler extends DefaultHandler {
         }
     }
 
+    private XSSFRichTextString formatRichText(String content) {
+        List<RTFormat> formats = new ArrayList<>();
+        content = getFormats(content, "i", formats, iFont);
+        content = getFormats(content, "b", formats, bFont);
+
+
+        XSSFRichTextString rtContent = new XSSFRichTextString(content);
+        formats.forEach(c -> c.apply(rtContent));
+/*        formats.sort(Comparator.comparing(RTFormat::getStart));
+        for (int f = 0; f < formats.size(); f++) {
+            if (f < formats.size() - 1 && formats.get(f).getEnd() > formats.get(f + 1).getEnd()) {
+                // overlapping
+            } else {
+                formats.get(f).apply(rtContent);
+            }
+        }*/
+        return rtContent;
+    }
+
+    private String getFormats(String content, String tag, List<RTFormat> formats, Font font) {
+        int index = content.indexOf("<" + tag + ">");
+        int index2 = content.indexOf("</" + tag + ">");
+        while (index  != -1) {
+            if (index2 != -1 && index2 > index) {
+                formats.add(new RTFormat(index, index2 - 3, font));
+                content = content.replaceFirst("<" + tag + ">", "");
+                content = content.replaceFirst("</" + tag + ">", "");
+            } else {
+                break;
+            }
+            index = content.indexOf("<" + tag + ">");
+            index2 = content.indexOf("</" + tag + ">");
+        }
+        return content;
+    }
+
     @Override
     public void characters(char[] ch, int start, int length) {
         if (inCell) {
             String content = new String(Arrays.copyOfRange(ch, start, start + length));
             cellContent.append(content);
+        }
+    }
+
+    private static class RTFormat {
+        int start;
+        int end;
+        Font font;
+
+        private RTFormat(int start, int end, Font font) {
+            this.start = start;
+            this.end = end;
+            this.font = font;
+        }
+
+        private int getStart() {
+            return start;
+        }
+
+        private int getEnd() {
+            return end;
+        }
+
+        private void apply(RichTextString rts) {
+            rts.applyFont(start, end, font);
         }
     }
 }

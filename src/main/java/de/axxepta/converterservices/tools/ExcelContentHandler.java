@@ -151,6 +151,19 @@ public class ExcelContentHandler extends DefaultHandler {
         int index2 = content.indexOf("</" + tag + ">");
         while (index  != -1) {
             if (index2 != -1 && index2 > index) {
+                for (RTFormat format : formats) {
+                    if (format.getEnd() > index2) {
+                        format.shiftEnd(4);
+                    }if (format.getEnd() > index) {
+                        format.shiftEnd(3);
+                    }
+                    if (format.getStart() > index2) {
+                        format.shiftStart(4);
+                    }
+                    if (format.getStart() > index) {
+                        format.shiftStart(3);
+                    }
+                }
                 formats.add(new RTFormat(index, index2 - 3, font));
                 content = content.replaceFirst("<" + tag + ">", "");
                 content = content.replaceFirst("</" + tag + ">", "");
@@ -188,6 +201,14 @@ public class ExcelContentHandler extends DefaultHandler {
 
         private int getEnd() {
             return end;
+        }
+
+        private void shiftStart(int s) {
+            start -= s;
+        }
+
+        private void shiftEnd(int s) {
+            end -= s;
         }
 
         private void apply(RichTextString rts) {

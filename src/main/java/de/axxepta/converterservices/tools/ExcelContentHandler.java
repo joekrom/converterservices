@@ -7,10 +7,9 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.Attributes;
 import org.xml.sax.helpers.DefaultHandler;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
+
+import static org.apache.poi.ss.usermodel.Font.U_SINGLE;
 
 public class ExcelContentHandler extends DefaultHandler {
 
@@ -22,9 +21,6 @@ public class ExcelContentHandler extends DefaultHandler {
 
     private Sheet sheet;
     private CellStyle wrapStyle;
-    private Font iFont;
-    private Font bFont;
-    private Font biFont;
     private Row row;
     private Cell cell;
     private String currentType = TEXT_CELL_TYPE;
@@ -39,6 +35,9 @@ public class ExcelContentHandler extends DefaultHandler {
     private boolean inCell = false;
     private int maxLines = 1;
 
+    private static final Map<String, Integer> formatCodes = new HashMap<>();
+    private final Map<Object, Object> formatAssignments = new HashMap<>();
+
     ExcelContentHandler(Workbook workbook, String sheetName, String rowTagName, String colTagName, String typeAttName,
                         String separator) {
         this.rowTagName = rowTagName;
@@ -50,13 +49,44 @@ public class ExcelContentHandler extends DefaultHandler {
 
         wrapStyle = workbook.createCellStyle();
         wrapStyle.setWrapText(true);
-        iFont = workbook.createFont();
+
+        Font iFont = workbook.createFont();
         iFont.setItalic(true);
-        bFont = workbook.createFont();
+        Font bFont = workbook.createFont();
         bFont.setBold(true);
-        biFont = workbook.createFont();
-        biFont.setBold(true);
-        biFont.setItalic(true);
+        Font biFont = workbook.createFont();
+        biFont.setBold(true); biFont.setItalic(true);
+        Font uFont = workbook.createFont();
+        uFont.setUnderline(U_SINGLE);
+        Font ubFont = workbook.createFont();
+        ubFont.setUnderline(U_SINGLE); ubFont.setBold(true);
+        Font uiFont = workbook.createFont();
+        uiFont.setUnderline(U_SINGLE); uiFont.setItalic(true);
+        Font ubiFont = workbook.createFont();
+        ubiFont.setUnderline(U_SINGLE); ubiFont.setItalic(true); ubiFont.setBold(true);
+
+        if (formatCodes.size() == 0) {
+            synchronized (formatCodes) {
+                if (formatCodes.size() == 0) {
+                    formatCodes.put("i", 1);
+                    formatCodes.put("em", 1);
+                    formatCodes.put("b", 2);
+                    formatCodes.put("strong", 2);
+                    formatCodes.put("u", 4);
+                }
+            }
+        }
+
+        formatAssignments.put(1, iFont);
+        formatAssignments.put(iFont, 1);
+        formatAssignments.put(2, bFont);
+        formatAssignments.put(bFont, 2);
+        formatAssignments.put(3, biFont);
+        formatAssignments.put(4, uFont);
+        formatAssignments.put(uFont, 4);
+        formatAssignments.put(6, ubFont);
+        formatAssignments.put(5, uiFont);
+        formatAssignments.put(7, ubiFont);
     }
 
     @Override
@@ -109,12 +139,14 @@ public class ExcelContentHandler extends DefaultHandler {
                     }
                     break;
                 default:    // text
-                    String[] lines = cellContent.toString().split(separator);
-                    maxLines = Math.max(maxLines, lines.length);
-                    String wrappedContent = String.join("\n", lines);
-                    boolean cellFormat = true;
-                    cell.setCellValue(cellFormat ?
-                            formatRichText(wrappedContent) : new XSSFRichTextString(wrappedContent));
+                    if (cellContent.length() > 0) {
+                        String[] lines = cellContent.toString().split(separator);
+                        maxLines = Math.max(maxLines, lines.length);
+                        String wrappedContent = String.join("\n", lines);
+                        boolean cellFormat = true;
+                        cell.setCellValue(cellFormat ?
+                                formatRichText(wrappedContent) : new XSSFRichTextString(wrappedContent));
+                    }
             }
             inCell = false;
             cellContent = new StringBuilder();
@@ -129,20 +161,12 @@ public class ExcelContentHandler extends DefaultHandler {
 
     private XSSFRichTextString formatRichText(String content) {
         List<RTFormat> formats = new ArrayList<>();
-        content = getFormats(content, "i", formats, iFont);
-        content = getFormats(content, "b", formats, bFont);
-
-
+        for (Map.Entry<String, Integer> entry : formatCodes.entrySet()) {
+            content = getFormats(content, entry.getKey(), formats, (Font) formatAssignments.get(entry.getValue()));
+        }
+        checkFormatOverlap(content.length(), formats);
         XSSFRichTextString rtContent = new XSSFRichTextString(content);
         formats.forEach(c -> c.apply(rtContent));
-/*        formats.sort(Comparator.comparing(RTFormat::getStart));
-        for (int f = 0; f < formats.size(); f++) {
-            if (f < formats.size() - 1 && formats.get(f).getEnd() > formats.get(f + 1).getEnd()) {
-                // overlapping
-            } else {
-                formats.get(f).apply(rtContent);
-            }
-        }*/
         return rtContent;
     }
 
@@ -153,18 +177,19 @@ public class ExcelContentHandler extends DefaultHandler {
             if (index2 != -1 && index2 > index) {
                 for (RTFormat format : formats) {
                     if (format.getEnd() > index2) {
-                        format.shiftEnd(4);
-                    }if (format.getEnd() > index) {
-                        format.shiftEnd(3);
+                        format.shiftEnd(tag.length() + 3);
+                    }
+                    if (format.getEnd() > index) {
+                        format.shiftEnd(tag.length() + 2);
                     }
                     if (format.getStart() > index2) {
-                        format.shiftStart(4);
+                        format.shiftStart(tag.length() + 3);
                     }
                     if (format.getStart() > index) {
-                        format.shiftStart(3);
+                        format.shiftStart(tag.length() + 2);
                     }
                 }
-                formats.add(new RTFormat(index, index2 - 3, font));
+                formats.add(new RTFormat(index, index2 - (tag.length() + 2), font));
                 content = content.replaceFirst("<" + tag + ">", "");
                 content = content.replaceFirst("</" + tag + ">", "");
             } else {
@@ -174,6 +199,29 @@ public class ExcelContentHandler extends DefaultHandler {
             index2 = content.indexOf("</" + tag + ">");
         }
         return content;
+    }
+
+    private void checkFormatOverlap(int contentLength, List<RTFormat> formats) {
+        int[] charFormats = new int[contentLength];
+        formats.forEach(f -> {
+            for (int c = f.getStart(); c < f.getEnd(); c++) {
+                charFormats[c] += (Integer) formatAssignments.get(f.getFont());
+            }
+        });
+        formats.clear();
+        int currentFormat = charFormats[0];
+        int currentStart = 0;
+        for (int c = 0; c < contentLength; c++) {
+            if (c == contentLength - 1 || currentFormat != charFormats[c + 1]) {
+                if (currentFormat != 0) {
+                    formats.add(new RTFormat(currentStart, c + 1, (Font) formatAssignments.get(currentFormat)));
+                }
+                currentStart = c + 1;
+            }
+            if (c < contentLength - 1) {
+                currentFormat = charFormats[c + 1];
+            }
+        }
     }
 
     @Override
@@ -201,6 +249,10 @@ public class ExcelContentHandler extends DefaultHandler {
 
         private int getEnd() {
             return end;
+        }
+
+        private Font getFont() {
+            return font;
         }
 
         private void shiftStart(int s) {

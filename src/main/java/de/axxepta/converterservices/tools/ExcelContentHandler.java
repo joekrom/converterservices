@@ -26,6 +26,7 @@ public class ExcelContentHandler extends DefaultHandler {
     private String currentType = TEXT_CELL_TYPE;
     private StringBuilder cellContent = new StringBuilder();
 
+    private boolean cellFormat;
     private String separator;
     private String rowTagName;
     private String colTagName;
@@ -39,10 +40,11 @@ public class ExcelContentHandler extends DefaultHandler {
     private final Map<Object, Object> formatAssignments = new HashMap<>();
 
     ExcelContentHandler(Workbook workbook, String sheetName, String rowTagName, String colTagName, String typeAttName,
-                        String separator) {
+                        boolean cellFormat, String separator) {
         this.rowTagName = rowTagName;
         this.colTagName = colTagName;
         this.typeAttName = typeAttName;
+        this.cellFormat = cellFormat;
         this.separator = separator;
 
         sheet = workbook.createSheet(sheetName);
@@ -143,7 +145,6 @@ public class ExcelContentHandler extends DefaultHandler {
                         String[] lines = cellContent.toString().split(separator);
                         maxLines = Math.max(maxLines, lines.length);
                         String wrappedContent = String.join("\n", lines);
-                        boolean cellFormat = true;
                         cell.setCellValue(cellFormat ?
                                 formatRichText(wrappedContent) : new XSSFRichTextString(wrappedContent));
                     }

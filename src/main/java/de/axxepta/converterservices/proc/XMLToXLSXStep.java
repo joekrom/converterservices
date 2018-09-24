@@ -4,7 +4,6 @@ import de.axxepta.converterservices.Const;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 
-import java.io.ByteArrayOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,6 +27,7 @@ class XMLToXLSXStep extends Step {
         String sheet = Const.SHEET_NAME;
         String dataType = Const.DATA_TYPE_ATT;
         String separator = ExcelUtils.XML_SEPARATOR;
+        boolean cellFormat = true;
 
         for (String line : parameters) {
             String[] parts = line.split(" *= *");
@@ -45,6 +45,11 @@ class XMLToXLSXStep extends Step {
                     case "data": case "type": case "data-type": case "datatype":
                         dataType = parts[1];
                         break;
+                    case "cellformat": case "format": case "cell-format":
+                        if (parts[1].toLowerCase().equals("false")) {
+                            cellFormat = false;
+                        }
+                        break;
                 }
             }
         }
@@ -54,7 +59,7 @@ class XMLToXLSXStep extends Step {
         int i = 0;
         for (String inFile : inputFiles) {
             String outputFile = getCurrentOutputFile(providedOutputNames, i, inFile, pipe);
-            ExcelUtils.XMLToExcel(inFile, sheet, row, column, dataType, separator, outputFile);
+            ExcelUtils.XMLToExcel(inFile, sheet, row, column, dataType, cellFormat, separator, outputFile);
             pipe.addGeneratedFile(outputFile);
             usedOutputFiles.add(outputFile);
             i++;

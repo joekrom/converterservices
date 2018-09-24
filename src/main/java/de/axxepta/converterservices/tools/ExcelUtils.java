@@ -222,15 +222,16 @@ public class ExcelUtils {
     public static String serviceXMLToExcel(String fileName, String sheetName, String row, String col, String separator, String... outputFileName) {
         String outputFile = App.TEMP_FILE_PATH + "/" + (outputFileName.length > 0 ? outputFileName[0]: XLSXFileName(fileName));
         String type = Const.DATA_TYPE_ATT;
-        return XMLToExcel(fileName, sheetName, row, col, type, separator, outputFile);
+        boolean cellFormat = true;
+        return XMLToExcel(fileName, sheetName, row, col, type, cellFormat, separator, outputFile);
     }
 
     public static String XMLToExcel(String fileName, String sheetName, String row, String col, String type,
-                                    String separator, String outputFile) {
+                                    boolean cellFormat, String separator, String outputFile) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         try {
 
-            ExcelContentHandler handler = new ExcelContentHandler(workbook, sheetName, row, col, type, separator);
+            ExcelContentHandler handler = new ExcelContentHandler(workbook, sheetName, row, col, type, cellFormat, separator);
             File file = new File(fileName);
             SAXParserFactory factory = SAXParserFactory.newInstance();
             SAXParser parser = factory.newSAXParser();

@@ -328,10 +328,12 @@ public class IOUtils {
     /**
      * Recursively collect all files in a list of files and paths with sub-directories with absolute paths
      * @param input List of file or directory names
+     * @param logFunction optional logging function/lambda (String) -> void
      * @return All absolute file names including all files in sub-directories
      * @throws IOException if a provided input element corresponds not to an existing directory or file
      */
-    public static List<String> collectFiles(List<String> input) throws IOException {
+    @SafeVarargs
+    public static List<String> collectFiles(List<String> input, Consumer<String>... logFunction) throws IOException {
         List<String> output = new ArrayList<>();
         for (String inFile : input) {
             if (IOUtils.pathExists(inFile)) {
@@ -339,6 +341,10 @@ public class IOUtils {
                     addSubDirFiles(output, inFile);
                 } else {
                     output.add(inFile);
+                }
+            } else {
+                if (logFunction.length > 0) {
+                    logFunction[0].accept(String.format("File or directory %s not found.", inFile));
                 }
             }
         }

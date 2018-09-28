@@ -74,7 +74,7 @@ class FTPUpStep extends Step {
             port = "21";
         }
 
-        List<String> uploadFiles = IOUtils.collectFiles(inputFiles);
+        List<String> uploadFiles = IOUtils.collectFiles(inputFiles, pipe::log);
         List<String> uploadedFiles = new ArrayList<>();
 
         for (String file : uploadFiles) {

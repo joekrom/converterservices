@@ -22,14 +22,17 @@ class MD5FilterStep extends Step {
     {
         String extension = ".md5";
         String relativeMD5Path = "";
+        boolean update = true;
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
-            if (parts[0].toLowerCase().startsWith("ext") && parts.length > 1) {
+            String key = parts[0].toLowerCase();
+            if (key.startsWith("ext") && parts.length > 1) {
                 extension = parts[1];
-            } else if ( (parts[0].toLowerCase().contains("path") || parts[0].toLowerCase().contains("dir")
-                            || parts[0].toLowerCase().contains("folder") )
+            } else if ( (key.contains("path") || key.contains("dir") || key.contains("folder") )
                     && parts.length > 1) {
                 relativeMD5Path = parts[1];
+            } else if (key.equals("update") && key.contains("false")) {
+                update = false;
             }
         }
 
@@ -46,7 +49,9 @@ class MD5FilterStep extends Step {
                         + extension;
                 String md5result = IOUtils.getMD5Checksum(inFile);
                 if (!IOUtils.pathExists(md5File) || !IOUtils.loadStringFromFile(md5File).equals(md5result) ) {
-                    IOUtils.saveStringToFile(md5result, md5File);
+                    if (update) {
+                        IOUtils.saveStringToFile(md5result, md5File);
+                    }
                     pipe.addGeneratedFile(md5File);
                     outputFiles.add(inFile);
                 }

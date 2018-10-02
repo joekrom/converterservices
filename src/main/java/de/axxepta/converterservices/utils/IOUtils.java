@@ -74,14 +74,17 @@ public class IOUtils {
         }
     }
 
-    public static void saveStringArrayToFile(List<String> lines, String fileName, boolean removeEmptyLines) throws IOException {
-        try (FileWriter writer = new FileWriter(fileName)) {
+    public static void saveStringArrayToFile(List<String> lines, String fileName, boolean removeEmptyLines,
+                                             String... characterSet) throws IOException {
+        String charset = characterSet.length > 0 ? characterSet[0] : "UTF-8";
+        try (PrintWriter writer = new PrintWriter(fileName, charset)) {
             int i = 1;
             for (String line : lines) {
                 if (!(removeEmptyLines && StringUtils.isNoStringOrEmpty(line))) {
-                    writer.write(line);
                     if (i < lines.size()) {
-                        writer.write("\n");
+                        writer.println(line);
+                    } else {
+                        writer.print(line);
                     }
                 }
                 i++;

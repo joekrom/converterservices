@@ -48,8 +48,8 @@ dependencies {
     releaseJars 'org.apache.xmlgraphics:xmlgraphics-commons:2.3'  // explicitly list before fop to handle image loader issue
     // https://stackoverflow.com/questions/26139301/apache-fop-in-a-java-applet-no-imagepreloader-found-for-data
     releaseJars 'org.apache.xmlgraphics:fop:2.3'
-    releaseJars 'org.apache.pdfbox:pdfbox:2.0.4'
-    releaseJars 'org.apache.pdfbox:pdfbox-tools:2.0.4'
+    releaseJars 'org.apache.pdfbox:pdfbox:2.0.7'
+    releaseJars 'org.apache.pdfbox:pdfbox-tools:2.0.7'
     releaseJars 'commons-fileupload:commons-fileupload:1.3.2'
     releaseJars 'commons-codec:commons-codec:1.10'
     releaseJars 'org.apache.poi:poi-ooxml:4.0.0'
@@ -117,7 +117,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            pom.version = '0.5.5'
+            pom.version = '0.5.7'
             repository(url: mavenUrl) {
                 authentication(userName: mavenUser, privateKey: mavenKeyfile)
             }

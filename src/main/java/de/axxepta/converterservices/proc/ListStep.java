@@ -23,10 +23,20 @@ class ListStep extends Step {
             throws Exception
     {
         boolean xml = false;
+        String charset = "UTF-8";
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
-            if (parts[0].toLowerCase().startsWith("xml") && parts.length > 1 && parts[1].toLowerCase().equals("true")) {
-                xml = true;
+            if (parts.length > 1) {
+                switch (parts[0].toLowerCase()) {
+                    case "xml":
+                        if (parts[1].toLowerCase().equals("true")) {
+                            xml = true;
+                        }
+                        break;
+                    case "char": case "charset":
+                        charset = parts[1];
+                        break;
+                }
             }
         }
         String outputFile = IOUtils.pathCombine(pipe.getWorkPath(),
@@ -37,9 +47,9 @@ class ListStep extends Step {
             xmlLines.add("<list>");
             xmlLines.addAll(inputFiles.stream().map(s -> "  <item>" + s + "</item>").collect(Collectors.toList()));
             xmlLines.add("</list>");
-            IOUtils.saveStringArrayToFile(xmlLines, outputFile, true);
+            IOUtils.saveStringArrayToFile(xmlLines, outputFile, true, charset);
         } else {
-            IOUtils.saveStringArrayToFile(inputFiles, outputFile, true);
+            IOUtils.saveStringArrayToFile(inputFiles, outputFile, true, charset);
         }
 
         pipe.addGeneratedFile(outputFile);

@@ -115,7 +115,7 @@ public class Pipeline {
             IOUtils.safeCreateDirectory(workPath);
             IOUtils.safeCreateDirectory(outputPath);
             for (Step step : steps) {
-                lastOutput = stepExec(step, true);
+                lastOutput = stepExec(step);
             }
             if (!outputPath.equals("") && lastOutput instanceof List && ((List) lastOutput).size() > 0
                     && ((List) lastOutput).get(0) instanceof String) {
@@ -322,9 +322,9 @@ public class Pipeline {
         return step;
     }
 
-    private Object stepExec(Step step, boolean mainPipe) throws Exception {
+    private Object stepExec(Step step) throws Exception {
         stepCounter += 1;
-        log("## Process Step Number " + stepCounter + (mainPipe ? "" : "(side pipeline)"));
+        log("## Process Step Number " + stepCounter);
         log("##   Type               : " + step.getType());
         return step.exec(this);
     }

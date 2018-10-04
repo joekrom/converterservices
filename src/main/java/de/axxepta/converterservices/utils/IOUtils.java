@@ -183,9 +183,12 @@ public class IOUtils {
     public static String relativePath(String file, String basePath) {
         String[] fileParts = file.split("/|\\\\");
         String[] baseParts = basePath.split("/|\\\\");
-        if (fileParts[0].equals(baseParts[0])) {
+        if (isWin() ? fileParts[0].toLowerCase().equals(baseParts[0].toLowerCase()) : fileParts[0].equals(baseParts[0])) {
             int same = 0;
-            while (fileParts.length > same && baseParts.length > same && fileParts[same].equals(baseParts[same])) {
+            while (fileParts.length > same && baseParts.length > same &&
+                    (isWin() ? fileParts[same].toLowerCase().equals(baseParts[same].toLowerCase()) :
+                            fileParts[same].equals(baseParts[same]) )
+                    ) {
                 same++;
             }
             List<String> builder = new ArrayList<>();

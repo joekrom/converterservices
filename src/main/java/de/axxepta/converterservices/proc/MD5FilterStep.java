@@ -31,7 +31,7 @@ class MD5FilterStep extends Step {
             } else if ( (key.contains("path") || key.contains("dir") || key.contains("folder") )
                     && parts.length > 1) {
                 relativeMD5Path = parts[1];
-            } else if (key.equals("update") && key.contains("false")) {
+            } else if (key.equals("update") && parameter.toLowerCase().contains("false")) {
                 update = false;
             }
         }
@@ -51,8 +51,8 @@ class MD5FilterStep extends Step {
                 if (!IOUtils.pathExists(md5File) || !IOUtils.loadStringFromFile(md5File).equals(md5result) ) {
                     if (update) {
                         IOUtils.saveStringToFile(md5result, md5File);
+                        pipe.addGeneratedFile(md5File);
                     }
-                    pipe.addGeneratedFile(md5File);
                     outputFiles.add(inFile);
                 }
             }

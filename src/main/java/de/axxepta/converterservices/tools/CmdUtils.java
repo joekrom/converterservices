@@ -1,11 +1,13 @@
 package de.axxepta.converterservices.tools;
 
+import de.axxepta.converterservices.utils.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static de.axxepta.converterservices.App.TEMP_FILE_PATH;
 
@@ -18,12 +20,38 @@ public class CmdUtils {
     public static List<String> exec(String cmdLine) throws IOException, InterruptedException {
         List<String> lines = new ArrayList<>();
         Runtime rt = Runtime.getRuntime();
-        Process pr = rt.exec((System.getProperty("os.name").startsWith("Windows") ? "cmd /c " : "") +
+        Process pr = rt.exec((IOUtils.isWin() ? "cmd /c " : "") +
                 cmdLine);
         try (BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()))) {
-
             String line;
+            while ((line = input.readLine()) != null) {
+                lines.add(line);
+            }
+            int exitVal = pr.waitFor();
+            lines.add(0, Integer.toString(exitVal));
+        }
+        return lines;
+    }
 
+    public static List<String> runProcess(List<String> cmd, Map<String, String> env, String path) throws IOException, InterruptedException {
+        if (IOUtils.isWin()) {
+            cmd.add(0, "/c");
+            cmd.add(0, "cmd");
+
+        }
+        ProcessBuilder pb = new ProcessBuilder(cmd).
+                redirectErrorStream(true);
+        if (env.size() > 0) {
+            Map<String, String> envSettings = pb.environment();
+            envSettings.putAll(env);
+        }
+        if (!path.equals("")) {
+            pb.directory(new File(path));
+        }
+        Process pr = pb.start();
+        List<String> lines = new ArrayList<>();
+        try (BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()))) {
+            String line;
             while ((line = input.readLine()) != null) {
                 lines.add(line);
             }
@@ -50,7 +78,7 @@ public class CmdUtils {
         try {
             byte[] buffer = new byte[1024];
             Process process = Runtime.getRuntime().
-                    exec((System.getProperty("os.name").startsWith("Windows") ? "cmd /c " : "") + command);
+                    exec((IOUtils.isWin() ? "cmd /c " : "") + command);
             try (InputStream is = process.getInputStream()) {
                 int n;
                 while ((n = is.read(buffer)) > -1) {

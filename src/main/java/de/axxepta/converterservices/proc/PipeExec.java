@@ -36,6 +36,7 @@ public class PipeExec {
     private final static String INPUT_ELEMENT = "input";
     private final static String OUTPUT_ELEMENT = "output";
     private final static String ADD_ELEMENT = "add";
+    private final static String STOP_ELEMENT = "stop";
     private final static String PARAM_ELEMENT = "param";
 
     private final static String VERBOSE = "verbose";
@@ -220,9 +221,10 @@ public class PipeExec {
         Object input = assignParameter(step, xPath, INPUT_ELEMENT);
         Object output = assignParameter(step, xPath, OUTPUT_ELEMENT);
         Object additional = assignParameter(step, xPath, ADD_ELEMENT);
+        boolean stopOnError = (Boolean) assignParameter(step, xPath, STOP_ELEMENT);
         String[] param = (String[]) assignParameter(step, xPath, PARAM_ELEMENT);
 
-        return builder.step(type, stepName, input, output, additional, param);
+        return builder.step(type, stepName, input, output, additional, stopOnError, param);
     }
 
     private static Object assignParameter(Node step, XPath xPath, String path)
@@ -233,12 +235,20 @@ public class PipeExec {
         if (nodes.getLength() > 0) {
             Node typeAtt = nodes.item(0).getAttributes().getNamedItem(TYPE);
             String type = (typeAtt == null) ? "String" : typeAtt.getNodeValue();
+            if (path.equals(STOP_ELEMENT)) {
+                type = "boolean";
+                param = true;
+            }
             if (nodes.getLength() == 1) {
                 String nodeContent = nodes.item(0).getTextContent();
                 switch (type.toLowerCase()) {
                     case "int":
                     case "integer":
                         param = Integer.valueOf(nodeContent);
+                        break;
+                    case "bool":
+                    case "boolean":
+                        param = Boolean.valueOf(nodeContent);
                         break;
                     default: param = nodeContent;
                 }
@@ -261,6 +271,8 @@ public class PipeExec {
             }
         } else if (path.equals(PARAM_ELEMENT)) {
             return new String[0];
+        } else if (path.equals(STOP_ELEMENT)) {
+            return true;
         }
         return param;
     }

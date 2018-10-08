@@ -233,7 +233,7 @@ public class Pipeline {
     }
 
     private static Step createStep(final StepType type, String name, int no, final Object input, final Object output,
-                                   final Object additional, final String... params) throws IllegalArgumentException
+                                   final Object additional, final boolean stopOnError, final String... params) throws IllegalArgumentException
     {
         if (StringUtils.isEmpty(name)) {
             name = Integer.toString(no);
@@ -241,82 +241,82 @@ public class Pipeline {
         Step step;
         switch (type) {
             case XSLT:
-                step = new XSLTStep(name, input, output, additional, params);
+                step = new XSLTStep(name, input, output, additional, stopOnError, params);
                 break;
             case XSL_FO:
-                step = new FOPStep(name, input, output, additional, params);
+                step = new FOPStep(name, input, output, additional, stopOnError, params);
                 break;
             case JSON_XML:
-                step = new JSONtoXMLStep(name, input, output, additional, params);
+                step = new JSONtoXMLStep(name, input, output, additional, stopOnError, params);
                 break;
             case ZIP:
-                step = new ZIPStep(name, input, output, additional, params);
+                step = new ZIPStep(name, input, output, additional, stopOnError, params);
                 break;
             case UNZIP:
-                step = new UnzipStep(name, input, output, additional, params);
+                step = new UnzipStep(name, input, output, additional, stopOnError, params);
                 break;
             case GUNZIP:
-                step = new GUnzipStep(name, input, output, additional, params);
+                step = new GUnzipStep(name, input, output, additional, stopOnError, params);
                 break;
             case XQUERY:
-                step = new XQueryStep(name, input, output, additional, params);
+                step = new XQueryStep(name, input, output, additional, stopOnError, params);
                 break;
             case XML_CSV:
-                step = new XMLToCSVStep(name, input, output, additional, params);
+                step = new XMLToCSVStep(name, input, output, additional, stopOnError, params);
                 break;
             case XLSX_XML:
-                step = new XLSXToXMLStep(name, input, output, additional, params);
+                step = new XLSXToXMLStep(name, input, output, additional, stopOnError, params);
                 break;
             case XML_XLSX:
-                step = new XMLToXLSXStep(name, input, output, additional, params);
+                step = new XMLToXLSXStep(name, input, output, additional, stopOnError, params);
                 break;
             case COMBINE:
-                step = new CombineStep(name, input, output, additional, params);
+                step = new CombineStep(name, input, output, additional, stopOnError, params);
                 break;
             case FT:
-                step = new FilenameTransformStep(name, input, output, additional, params);
+                step = new FilenameTransformStep(name, input, output, additional, stopOnError, params);
                 break;
             case PDF_SPLIT:
-                step = new PDFSplitStep(name, input, output, additional, params);
+                step = new PDFSplitStep(name, input, output, additional, stopOnError, params);
                 break;
             case EXIF:
-                step = new EXIFStep(name, input, output, additional, params);
+                step = new EXIFStep(name, input, output, additional, stopOnError, params);
                 break;
             case MD5:
-                step = new MD5Step(name, input, output, additional, params);
+                step = new MD5Step(name, input, output, additional, stopOnError, params);
                 break;
             case MD5_FILTER:
-                step = new MD5FilterStep(name, input, output, additional, params);
+                step = new MD5FilterStep(name, input, output, additional, stopOnError, params);
                 break;
             case FILTER:
-                step = new FilterStep(name, input, output, additional, params);
+                step = new FilterStep(name, input, output, additional, stopOnError, params);
                 break;
             case FTP_UP:
-                step = new FTPUpStep(name, input, output, additional, params);
+                step = new FTPUpStep(name, input, output, additional, stopOnError, params);
                 break;
             case FTP_DOWN:
-                step = new FTPDownStep(name, input, output, additional, params);
+                step = new FTPDownStep(name, input, output, additional, stopOnError, params);
                 break;
             case HTTP_POST:
-                step = new HTTPPostStep(name, input, output, additional, params);
+                step = new HTTPPostStep(name, input, output, additional, stopOnError, params);
                 break;
             case HTTP_GET:
-                step = new HTTPGetStep(name, input, output, additional, params);
+                step = new HTTPGetStep(name, input, output, additional, stopOnError, params);
                 break;
             case CMD:
-                step = new CmdStep(name, input, output, additional, params);
+                step = new CmdStep(name, input, output, additional, stopOnError, params);
                 break;
             case LIST:
-                step = new ListStep(name, input, output, additional, params);
+                step = new ListStep(name, input, output, additional, stopOnError, params);
                 break;
             case REPLACE:
-                step = new ReplaceStep(name, input, output, additional, params);
+                step = new ReplaceStep(name, input, output, additional, stopOnError, params);
                 break;
             case BASE64_DEC:
-                step = new Base64DecodeStep(name, input, output, additional, params);
+                step = new Base64DecodeStep(name, input, output, additional, stopOnError, params);
                 break;
             default:
-                step = new EmptyStep(name, input, output, additional, params);
+                step = new EmptyStep(name, input, output, additional, stopOnError, params);
         }
         step.assertParameters(no);
         return step;
@@ -425,12 +425,14 @@ public class Pipeline {
          * @param additional Possible additional file names which can be relative to the input path, output path (if
          *                   prepended with <i>step://</i>, <i>pipe://</i> or provided as Integer (see input) or relative
          *                   to other references (e.g. path on FTP server or in ZIP file). See in the Wiki for more details.
+         * @param stopOnError Defines whether pipeline execution should be stopped after an error in this step
          * @param params (Optional) parameters, see in the Wiki for possible values for different StepTypes
          * @return Pipeline builder with current step appended to step list
          * @throws IllegalArgumentException If one of the provided arguments does not fit the expected type. This prevents
          *          the pipe from being executed with false parameters.
          */
-        public PipelineBuilder step(StepType type, String name, Object input, Object output, Object additional, String... params)
+        public PipelineBuilder step(StepType type, String name, Object input, Object output, Object additional,
+                                    boolean stopOnError, String... params)
                 throws IllegalArgumentException
         {
             if (steps.size() == 0) {
@@ -446,7 +448,7 @@ public class Pipeline {
                     throw new IllegalArgumentException("Input of first argument must not be null!");
                 }
             }
-            steps.add(Pipeline.createStep(type, name, steps.size(), input, output, additional, params));
+            steps.add(Pipeline.createStep(type, name, steps.size(), input, output, additional, stopOnError, params));
             return this;
         }
 

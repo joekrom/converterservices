@@ -10,8 +10,8 @@ import java.util.List;
 
 class HTTPGetStep extends Step {
 
-    HTTPGetStep(String name, Object input, Object output, Object additional, String... params) {
-        super(name, input, output, additional, params);
+    HTTPGetStep(String name, Object input, Object output, Object additional, boolean stopOnError, String... params) {
+        super(name, input, output, additional, stopOnError, params);
     }
 
     @Override
@@ -70,8 +70,6 @@ class HTTPGetStep extends Step {
             // ToDo: handle multipart responses, eventually multiple get requests/inputs
             String outputFile = IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.size() == 0 ?
                     "step_" + pipe.getCounter() + ".xml" : providedOutputNames.get(0));
-            System.out.println("HTTP_GET output file " + outputFile);
-            System.out.println("");
             List<String> responseFiles;
             if (contentTypeString.equals("")) {
                 responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, outputFile);

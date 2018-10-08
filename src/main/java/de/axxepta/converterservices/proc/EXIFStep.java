@@ -9,8 +9,8 @@ import java.util.List;
 
 class EXIFStep extends Step {
 
-    EXIFStep(String name, Object input, Object output, Object additional, String... params) {
-        super(name, input, output, additional, params);
+    EXIFStep(String name, Object input, Object output, Object additional, boolean stopOnError, String... params) {
+        super(name, input, output, additional, stopOnError, params);
     }
 
     @Override

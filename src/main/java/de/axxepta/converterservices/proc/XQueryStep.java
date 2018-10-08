@@ -9,8 +9,8 @@ import java.util.List;
 
 class XQueryStep extends Step {
 
-    XQueryStep(String name, Object input, Object output, Object additional, String... params) {
-        super(name, input, output, additional, params);
+    XQueryStep(String name, Object input, Object output, Object additional, boolean stopOnError, String... params) {
+        super(name, input, output, additional, stopOnError, params);
     }
 
     Pipeline.StepType getType() {

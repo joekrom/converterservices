@@ -7,8 +7,8 @@ import java.util.List;
 
 class XSLTStep extends Step {
 
-    XSLTStep(String name, Object input, Object output, Object additional, String... params) {
-        super(name, input, output, additional, params);
+    XSLTStep(String name, Object input, Object output, Object additional, boolean stopOnError, String... params) {
+        super(name, input, output, additional, stopOnError, params);
     }
 
     Pipeline.StepType getType() {

@@ -11,8 +11,8 @@ import java.util.List;
 
 class HTTPPostStep extends Step {
 
-    HTTPPostStep(String name, Object input, Object output, Object additional, String... params) {
-        super(name, input, output, additional, params);
+    HTTPPostStep(String name, Object input, Object output, Object additional, boolean stopOnError, String... params) {
+        super(name, input, output, additional, stopOnError, params);
     }
 
     @Override

@@ -12,14 +12,16 @@ abstract class Step {
     Object input;
     Object output;
     Object additional;
+    boolean stopOnError;
     String[] params;
-    Object actualOutput;
+    private Object actualOutput;
 
-    Step(String name,  final Object input, final Object output, final Object additional, final String... params) {
+    Step(String name,  final Object input, final Object output, final Object additional, final boolean stopOnError, final String... params) {
         this.name = name;
         this.input = input;
         this.output = output;
         this.additional = additional;
+        this.stopOnError = stopOnError;
         this.params = params;
     }
 
@@ -37,7 +39,7 @@ abstract class Step {
         this.input = input;
     }
 
-    public Object getActualOutput() {
+    Object getActualOutput() {
         return actualOutput;
     }
 

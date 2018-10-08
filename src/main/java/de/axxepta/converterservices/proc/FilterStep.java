@@ -10,8 +10,8 @@ import java.util.List;
 
 class FilterStep extends Step {
 
-    FilterStep(String name, Object input, Object output, Object additional, String... params) {
-        super(name, input, output, additional, params);
+    FilterStep(String name, Object input, Object output, Object additional, boolean stopOnError, String... params) {
+        super(name, input, output, additional, stopOnError, params);
     }
 
     @Override

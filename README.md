@@ -1,8 +1,8 @@
 # converterservices
 
-In this project a bunch of tools, especially for XML publication, is collected and wrapped in a Java toolbox for simple access.
-The list of supported tools contains
+In this project a set of wrapper for the conversion of commonly used data formats (csv, json, excel, xml)
 
+The list of supported steps contains
 
 * Saxon XSLT
 * Saxon XQuery

@@ -1,8 +1,9 @@
 # converterservices
 
-In this project a bunch of tools, especially for XML publication, is collected and wrapped in a Java toolbox for simple access.
-The list of supported tools contains
+A set of wrappers (steps) for the conversion of commonly used data formats (csv, json, excel, xml)
 
+
+The list of supported steps contains
 
 * Saxon XSLT
 * Saxon XQuery
@@ -14,14 +15,16 @@ The list of supported tools contains
 * exiftool meta data extraction
 * Upload and download by FTP and HTTP
 
+*converterservices* can be
+* used as library
+* started as web service, using [sparkjava](http://sparkjava.com/) as framework
+* excecuted from the command line 
 
-*converterservices* can be used as library, can be started as web service, using [sparkjava](http://sparkjava.com/) as framework,
-or as a command line tool for pipeline processing with error reporting (you can config the logger to send the reports to
-a remote server logging instance or by email).
-
-*converterservices* requires Java 8.
+Error reporting can be configured (send the reports to a remote server logging instance or by email).
 
 Check out the [Wiki](https://github.com/axxepta/converterservices/wiki) to find out more about *converterservices*.
+
+*converterservices* requires Java 8.
 
 Some wrapped external tools have to be installed independently and made accessible (ImageMagick, exiftool) if they shall be used,
 but most of the functionality makes use of open source Java libraries which can be bundled in a single JAR (using the Gradle fatJar task).

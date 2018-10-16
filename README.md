@@ -1,6 +1,6 @@
 # converterservices
 
-In this project a set of wrapper for the conversion of commonly used data formats (csv, json, excel, xml)
+A set of wrappers (steps) for the conversion of commonly used data formats (csv, json, excel, xml)
 
 The list of supported steps contains
 

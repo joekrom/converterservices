@@ -195,9 +195,10 @@ public class IOUtils {
             for (int i = same; i < baseParts.length; i++) {
                 builder.add("..");
             }
-            for (int i = same; i < fileParts.length; i++) {
+            builder.addAll(Arrays.asList(Arrays.copyOfRange(fileParts, same, fileParts.length)));
+/*            for (int i = same; i < fileParts.length; i++) {
                 builder.add(fileParts[i]);
-            }
+            }*/
             return String.join("/", builder);
         } else {
             throw new IllegalArgumentException("Given path is not in base path.");

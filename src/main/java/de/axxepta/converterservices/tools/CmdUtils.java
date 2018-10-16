@@ -69,8 +69,8 @@ public class CmdUtils {
 
     public static List<String> exifPipe(boolean compact, String option, String file) throws IOException, InterruptedException {
         return compact ?
-                exec("exiftool -e " + option + " " + file) :
-                exec("exiftool " + option + " " + file);
+                exec("exiftool -e " + option + " \"" + file + "\"") :
+                exec("exiftool " + option + " \"" + file + "\"");
     }
 
     public static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {

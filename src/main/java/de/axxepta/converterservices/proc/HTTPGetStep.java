@@ -5,6 +5,7 @@ import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -77,6 +78,11 @@ class HTTPGetStep extends Step {
                 responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, outputFile, contentTypeString);
             }
             downloadedFiles.addAll(responseFiles);
+        } catch (SocketTimeoutException ex) {
+            pipe.log(String.format("Timout during HTTP GET to %s", (secure ? "https" : "http" + server + port + inputPath) ));
+            if (stopOnError) {
+                throw ex;
+            }
         } catch (IOException ex) {
             pipe.log(String.format("Error during HTTP GET to %s: %s",
                     (secure ? "https" : "http" + server + port + inputPath), ex.getMessage()));

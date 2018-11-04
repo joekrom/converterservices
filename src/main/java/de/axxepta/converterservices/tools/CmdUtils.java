@@ -50,9 +50,14 @@ public class CmdUtils {
         }
         Process pr = pb.start();
         List<String> lines = new ArrayList<>();
-        try (BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()))) {
+        try (BufferedReader input = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+             BufferedReader error = new BufferedReader(new InputStreamReader(pr.getErrorStream())))
+        {
             String line;
             while ((line = input.readLine()) != null) {
+                lines.add(line);
+            }
+            while ((line = error.readLine()) != null) {
                 lines.add(line);
             }
             int exitVal = pr.waitFor();

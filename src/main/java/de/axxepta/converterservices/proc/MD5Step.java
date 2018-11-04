@@ -35,16 +35,19 @@ class MD5Step extends Step {
         String outputFile;
         for (String inFile : inputFiles) {
             if (!IOUtils.isDirectory(inFile)) {
-                outputFile = (relativeMD5Path.equals("") ? inFile :
-                        IOUtils.pathCombine(
-                                IOUtils.pathCombine(IOUtils.dirFromPath(inFile), relativeMD5Path),
-                                IOUtils.filenameFromPath(inFile)))
-                        + extension;
+                try {
+                    outputFile = (relativeMD5Path.equals("") ? inFile :
+                            IOUtils.pathCombine(
+                                    IOUtils.pathCombine(IOUtils.dirFromPath(inFile), relativeMD5Path),
+                                    IOUtils.filenameFromPath(inFile)))
+                            + extension;
 
-                String md5result = IOUtils.getMD5Checksum(inFile);
-                IOUtils.saveStringToFile(md5result, outputFile);
-                pipe.addGeneratedFile(outputFile);
-
+                    String md5result = IOUtils.getMD5Checksum(inFile);
+                    IOUtils.saveStringToFile(md5result, outputFile);
+                    pipe.addGeneratedFile(outputFile);
+                } catch (Exception ex) {
+                    pipe.log("Error during md5 step, input file " + inFile + ": " + ex.getMessage());
+                }
             }
         }
 

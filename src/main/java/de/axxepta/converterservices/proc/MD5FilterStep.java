@@ -42,18 +42,22 @@ class MD5FilterStep extends Step {
         // todo: create md5path if not present
         for (String inFile : inputFiles) {
             if (!IOUtils.isDirectory(inFile)) {
-                md5File = (relativeMD5Path.equals("") ? inFile :
+                try {
+                    md5File = (relativeMD5Path.equals("") ? inFile :
                             IOUtils.pathCombine(
                                     IOUtils.pathCombine(IOUtils.dirFromPath(inFile), relativeMD5Path),
-                                    IOUtils.filenameFromPath(inFile)) )
-                        + extension;
-                String md5result = IOUtils.getMD5Checksum(inFile);
-                if (!IOUtils.pathExists(md5File) || !IOUtils.loadStringFromFile(md5File).equals(md5result) ) {
-                    if (update) {
-                        IOUtils.saveStringToFile(md5result, md5File);
-                        pipe.addGeneratedFile(md5File);
+                                    IOUtils.filenameFromPath(inFile)))
+                            + extension;
+                    String md5result = IOUtils.getMD5Checksum(inFile);
+                    if (!IOUtils.pathExists(md5File) || !IOUtils.loadStringFromFile(md5File).equals(md5result)) {
+                        if (update) {
+                            IOUtils.saveStringToFile(md5result, md5File);
+                            pipe.addGeneratedFile(md5File);
+                        }
+                        outputFiles.add(inFile);
                     }
-                    outputFiles.add(inFile);
+                } catch (Exception ex) {
+                    pipe.log("Error during md5 filter step, input file " + inFile + ": " + ex.getMessage());
                 }
             }
         }

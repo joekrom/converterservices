@@ -3,7 +3,9 @@ package de.axxepta.converterservices.proc;
 import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 abstract class Step {
@@ -52,6 +54,7 @@ abstract class Step {
         String[] parameters;
 
         parameters = params;
+        pipe.log("## " + new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime()));
         pipe.log("##   Input              : " +
                 (getType().equals(Pipeline.StepType.HTTP_GET) || getType().equals(Pipeline.StepType.FTP_DOWN)?
                         input : inputFiles) );

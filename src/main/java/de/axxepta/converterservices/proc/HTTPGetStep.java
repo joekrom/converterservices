@@ -79,7 +79,7 @@ class HTTPGetStep extends Step {
             }
             downloadedFiles.addAll(responseFiles);
         } catch (SocketTimeoutException ex) {
-            pipe.log(String.format("Timout during HTTP GET to %s", (secure ? "https" : "http" + server + port + inputPath) ));
+            pipe.log(String.format("Timeout during HTTP GET to %s", (secure ? "https" : "http" + server + port + inputPath) ));
             if (stopOnError) {
                 throw ex;
             }

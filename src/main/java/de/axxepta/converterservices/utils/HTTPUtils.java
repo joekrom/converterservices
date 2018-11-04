@@ -185,7 +185,7 @@ public class HTTPUtils {
     }
 
     private static CloseableHttpClient getClient(String host, int port, String user, String password) {
-        int timeout = 600;
+        int timeout = 1200;
         RequestConfig config = RequestConfig.custom()
                 .setConnectTimeout(timeout * 1000)
                 .setConnectionRequestTimeout(timeout * 1000)

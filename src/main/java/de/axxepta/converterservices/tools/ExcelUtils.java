@@ -21,6 +21,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
 import javax.xml.transform.TransformerException;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class ExcelUtils {
@@ -149,9 +150,7 @@ public class ExcelUtils {
                 for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {
                     builder.append((firstRowHead && (rowNumber == firstRow)) ? "<th>" : "<td>");
                     Cell cell = row.getCell(colNumber);
-                    builder.append(formatter.formatCellValue(cell).
-                            replaceAll("&", "&amp;").replaceAll("<", "&lt;").
-                            replaceAll(">", "&gt;"));
+                    builder.append(xmlEncode(formatter.formatCellValue(cell)));
                     builder.append((firstRowHead && (colNumber == firstColumn)) ? "</th>" : "</td>");
                 }
                 builder.append("</tr>");
@@ -270,7 +269,9 @@ public class ExcelUtils {
 
         String outputFile = XMLFileName(fileName);
         String file_indent = "";
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path + "/" + outputFile))) {
+        try (BufferedWriter writer =
+                     new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path + "/" + outputFile), StandardCharsets.UTF_8)))
+        {
             writer.write(XML_PROLOGUE);
             if (wrapSheet) {
                 writeTag(writer, TagType.open, fileEl.equals("") ? FILE_EL : fileEl, indent, false, "");
@@ -297,8 +298,9 @@ public class ExcelUtils {
                         for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {
                             Cell cell = row.getCell(colNumber);
                             String cellType = (cell != null) ? getCellType(cell) : "_";
-                            String cellValue = cellType.equals("text") ? ((XSSFCell) cell).getRichStringCellValue().toString() :
-                                    formatter.formatCellValue(cell, evaluator);
+                            String cellValue = xmlEncode( cellType.equals("text") ?
+                                    ((XSSFCell) cell).getRichStringCellValue().toString() :
+                                    formatter.formatCellValue(cell, evaluator) );
                             if (wrapValue) {
                                 writeTag(writer, TagType.open, colEl.equals("") ? COL_EL : colEl, indent, false,
                                         COL_INDENT + file_indent,
@@ -328,6 +330,11 @@ public class ExcelUtils {
             LOGGER.error("Exception writing to XML file: " + ie.getMessage());
         }
         return outputFile;
+    }
+
+    private static String xmlEncode(String val) {
+        return val.replaceAll("&([^;\\W]*([^;\\w]|$))", "&amp;$1").
+                replaceAll("<","&lt;").replaceAll(">", "&gt;");
     }
 
     private static String getCellType(Cell cell) {
@@ -457,9 +464,7 @@ public class ExcelUtils {
                     if (col > firstColumn - 1) {
                         try {
                             Cell cell = row.getCell(col);
-                            String val = formatter.formatCellValue(cell).
-                                    replaceAll("&", "&amp;").replaceAll("<", "&lt;").
-                                    replaceAll(">", "&gt;");
+                            String val = xmlEncode(formatter.formatCellValue(cell));
                             String[][] diff = pathDiff(lastElement[0], k[1]);
                             closeWriterElements(writer, diff[0].length - (lastElement[0].contains("@") ? 1 :0));
                             for (int e = 0; e < diff[1].length; e++) {

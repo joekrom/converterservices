@@ -54,7 +54,7 @@ abstract class Step {
         String[] parameters;
 
         parameters = params;
-        pipe.log("## " + new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime()));
+        pipe.log("## at " + new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss").format(Calendar.getInstance().getTime()));
         pipe.log("##   Input              : " +
                 (getType().equals(Pipeline.StepType.HTTP_GET) || getType().equals(Pipeline.StepType.FTP_DOWN)?
                         input : inputFiles) );

@@ -67,15 +67,19 @@ public class CmdUtils {
     }
 
     public static ByteArrayOutputStream exif(boolean compact, String option, String file) throws IOException, InterruptedException {
+        // ToDo: check output for file names with umlauts (FileName element)
         return compact ?
-                runExternal("exiftool", "-e", option, TEMP_FILE_PATH + "/" + file) :
-                runExternal("exiftool", option, TEMP_FILE_PATH + "/" + file);
+                (IOUtils.isWin() ? runExternal("exiftool", "-charset filename=cp1252", "-e", option, TEMP_FILE_PATH + "/" + file) :
+                    runExternal("exiftool", "-e", option, TEMP_FILE_PATH + "/" + file)) :
+                (IOUtils.isWin() ? runExternal("exiftool", "-charset filename=cp1252", option, TEMP_FILE_PATH + "/" + file) :
+                        runExternal("exiftool", option, TEMP_FILE_PATH + "/" + file));
     }
 
     public static List<String> exifPipe(boolean compact, String option, String file) throws IOException, InterruptedException {
         return compact ?
-                exec("exiftool -e " + option + " \"" + file + "\"") :
-                exec("exiftool " + option + " \"" + file + "\"");
+                exec("exiftool " + (IOUtils.isWin() ? "-charset filename=cp1252 " : "") + "-e " + option + " \"" + file + "\"") :
+                //exec("@chcp 1252 & exiftool " + (IOUtils.isWin() ? "-charset filename=cp1252 " : "") + option + " \"" + file + "\"");
+                exec("exiftool " + (IOUtils.isWin() ? "-charset filename=cp1252 " : "") + option + " \"" + file + "\"");
     }
 
     public static ByteArrayOutputStream runExternal(String... command) throws IOException, InterruptedException {

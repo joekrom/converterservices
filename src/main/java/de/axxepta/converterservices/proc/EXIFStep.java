@@ -72,7 +72,7 @@ class EXIFStep extends Step {
             try {
                 List<String> lines = CmdUtils.exifPipe(compact, "-X " + add, inFile);
                 IOUtils.saveStringArrayToFile(lines.size() > 1 ? lines.subList(1, lines.size()) : lines,
-                        outputFile, true);
+                        outputFile, true, IOUtils.isWin() ? "CP1252" : "UTF-8");
             } catch (IOException ex) {
                 pipe.log(String.format("Error executing external command %s:\n %s", "exif -X", ex.getMessage()));
             }

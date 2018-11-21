@@ -216,8 +216,9 @@ public class IOUtils {
     }
 
     public static String strippedFilename(String path) {
-        String[] fileParts = filenameFromPath(path).split("\\.");
-        return fileParts[0];
+        String fileName = filenameFromPath(path);
+        int p = fileName.lastIndexOf(".");
+        return p == -1 ? fileName : fileName.substring(0, p);
     }
 
     public static String getFileExtension(String path) {

@@ -324,7 +324,7 @@ public class App {
 
     private static Object pipelineHandlingMultipart(Request request, Response response) {
         boolean cleanup = false;
-        String dateString = setTemPath();
+        String dateString = setTempPath();
         try {
             String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
             List<String> parts = new ArrayList<>();
@@ -574,7 +574,7 @@ public class App {
     }
 
 
-    public static String setTemPath() {
+    public static String setTempPath() {
         String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         synchronized (activeDirectories) {
             if (activeDirectories.contains(dateString)) {

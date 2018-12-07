@@ -41,11 +41,10 @@ public class IOUtils {
     }
 
     public static void copyStreams(InputStream is, OutputStream os) throws IOException {
-        byte[] buffer = new byte[1024];
+        byte[] buffer = new byte[8192];
         int length;
         while ((length = is.read(buffer, 0, buffer.length)) > -1) {
             os.write(buffer, 0, length);
-            os.flush();
         }
     }
 

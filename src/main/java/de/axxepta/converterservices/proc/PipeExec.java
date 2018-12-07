@@ -198,7 +198,7 @@ public class PipeExec {
                     builder = builder.setLogFile(att.getNodeValue());
                     break;
                 case LOG_LEVEL:
-                    builder = builder.setLogLevel(att.getNodeValue());
+                    builder = builder.setLogLevel(att.getNodeValue().toUpperCase());
                     break;
             }
         }

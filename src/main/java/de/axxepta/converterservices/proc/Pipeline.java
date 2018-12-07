@@ -15,7 +15,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -85,7 +84,7 @@ public class Pipeline {
         saxon.setErrorListener(err);
 
         if (workPath.equals("")) {
-            temporaryWorkPath = App.setTemPath();
+            temporaryWorkPath = App.setTempPath();
             dateString = temporaryWorkPath;
             workPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, temporaryWorkPath);
         } else {

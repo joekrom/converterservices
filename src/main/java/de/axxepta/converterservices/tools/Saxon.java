@@ -8,9 +8,8 @@ import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
+import javax.xml.parsers.*;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
@@ -43,7 +42,9 @@ public class Saxon {
     }
 
     private void transform(String sourceFile, String xsltFile, String resultFile, String validateDTD, String... parameters) {
-
+        if (validateDTD.equals("false")) {
+            createDummyDTDifNE(sourceFile);
+        }
         TransformerFactory tFactory = TransformerFactory.newInstance("net.sf.saxon.TransformerFactoryImpl", null);
         try {
             tFactory.setAttribute(FeatureKeys.MESSAGE_EMITTER_CLASS, "net.sf.saxon.serialize.MessageWarner");
@@ -67,6 +68,27 @@ public class Saxon {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void createDummyDTDifNE(String xmlFile) {
+        String[] dtd = extractDTD(xmlFile);
+        System.out.println("#########   DTD ##############  " + dtd[2]);
+    }
+
+    /**
+     * Extracts document type name, public identifier or null and system identifier or null of the DTD
+     * @param xmlFile name of the XML file of which the DTD information shall be extracted
+     */
+    public String[] extractDTD(String xmlFile) {
+        DocTypeExtractionHandler handler = new DocTypeExtractionHandler();
+        File file = new File(xmlFile);
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParser parser = factory.newSAXParser();
+            parser.setProperty("http://xml.org/sax/properties/lexical-handler", handler);
+            parser.parse(file, handler);
+        } catch (SAXException | IOException | ParserConfigurationException pc) {/**/}
+        return handler.getDocType();
     }
 
     public static boolean validateXML(String xmlFile, String ngFile){

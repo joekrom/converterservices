@@ -77,7 +77,6 @@ class ReplaceStep extends Step {
                 }
             } catch (IOException ex) {
                 pipe.log("Text replacement or file operation failed at file " + inFile);
-                LOGGER.warn("Text replacement or file operation failed at file " + inFile, ex);
             }
             i++;
         }

@@ -29,6 +29,7 @@ class HTTPGetStep extends Step {
         int port = 80;
         boolean secure = false;
         String contentTypeString = "";
+        int timeout = 1200;
 
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
@@ -56,6 +57,11 @@ class HTTPGetStep extends Step {
                             port = Integer.valueOf(parts[1]);
                         }
                         break;
+                    case "timeout":
+                        if (StringUtils.isInt(parts[1])) {
+                            timeout = Integer.valueOf(parts[1]);
+                        }
+                        break;
                     case "content": case "contenttype": case "accept":
                         contentTypeString = parts[1];
                         break;
@@ -73,9 +79,9 @@ class HTTPGetStep extends Step {
                     "step_" + pipe.getCounter() + ".xml" : providedOutputNames.get(0));
             List<String> responseFiles;
             if (contentTypeString.equals("")) {
-                responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, outputFile);
+                responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, timeout, outputFile);
             } else {
-                responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, outputFile, contentTypeString);
+                responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, timeout, outputFile, contentTypeString);
             }
             downloadedFiles.addAll(responseFiles);
         } catch (SocketTimeoutException ex) {

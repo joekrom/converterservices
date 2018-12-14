@@ -31,6 +31,7 @@ class HTTPPostStep extends Step {
         String path = "";
         boolean secure = false;
         String contentTypeString = "";
+        int timeout = 1200;
 
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
@@ -58,6 +59,11 @@ class HTTPPostStep extends Step {
                             port = Integer.valueOf(parts[1]);
                         }
                         break;
+                    case "timeout":
+                        if (StringUtils.isInt(parts[1])) {
+                            timeout = Integer.valueOf(parts[1]);
+                        }
+                        break;
                     case "path":
                         path = parts[1];
                         break;
@@ -76,7 +82,7 @@ class HTTPPostStep extends Step {
                 if (HTTPUtils.contentTypeIsTextType(contentTypeString) ||
                         HTTPUtils.fileTypeIsTextType(IOUtils.getFileExtension(file))) {
                     ContentType currentContent = determineContentType(contentTypeString, IOUtils.getFileExtension(file));
-                    HTTPUtils.postTextTypeFile(secure ? "https" : "http", server, port, path, user, pwd, file, currentContent);
+                    HTTPUtils.postTextTypeFile(secure ? "https" : "http", server, port, path, user, pwd, timeout, file, currentContent);
                     uploadedFiles.add(file);
                 }
             } catch (IOException ex) {

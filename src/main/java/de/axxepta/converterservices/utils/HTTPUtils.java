@@ -25,9 +25,9 @@ import java.util.List;
 public class HTTPUtils {
 
     public static String getString(String protocol, String host, int port, String path, String user, String password,
-                                 String... accept) throws IOException
+                                 int timeout, String... accept) throws IOException
     {
-        try (CloseableHttpClient httpClient = getClient(host, port, user, password)) {
+        try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
             HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + Integer.toString(port) + path);
             if (accept.length > 0) {
                 httpget.setHeader("Accept", accept[0]);
@@ -39,12 +39,12 @@ public class HTTPUtils {
         }
     }
 
-    public static List<String> get(String protocol, String host, int port, String path, String user, String password, String file,
-                                   String... accept) throws IOException
+    public static List<String> get(String protocol, String host, int port, String path, String user, String password,
+                                   int timeout, String file, String... accept) throws IOException
     {
         List<String> responseFile = new ArrayList<>();
         //ToDo: Multipart
-        try (CloseableHttpClient httpClient = getClient(host, port, user, password)) {
+        try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
             HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + Integer.toString(port) + path);
             if (accept.length > 0) {
                 httpget.setHeader("Accept", accept[0]);
@@ -60,37 +60,37 @@ public class HTTPUtils {
         }
     }
 
-    public static String getJSON(String protocol, String host, int port, String path, String user, String password)
+    public static String getJSON(String protocol, String host, int port, String path, String user, String password, int timeout)
             throws IOException
     {
-        return getString(protocol, host, port, path, user, password, "application/json");
+        return getString(protocol, host, port, path, user, password, timeout, "application/json");
     }
 
-    public static String getXML(String protocol, String host, int port, String path, String user, String password)
+    public static String getXML(String protocol, String host, int port, String path, String user, String password, int timeout)
             throws IOException
     {
-        return getString(protocol, host, port, path, user, password, "application/xml");
+        return getString(protocol, host, port, path, user, password, timeout, "application/xml");
     }
 
-    public static String getXmlFromJSON(String protocol, String host, int port, String path, String user, String password)
+    public static String getXmlFromJSON(String protocol, String host, int port, String path, String user, String password, int timeout)
             throws IOException
     {
-        String str = getJSON(protocol, host, port, path, user, password);
+        String str = getJSON(protocol, host, port, path, user, password, timeout);
         return "<response>" + JSONUtils.JsonToXmlString(str) + "</response>";
     }
 
 
     public static String postXmlToJson(String protocol, String host, int port, String path, String user, String password,
-                                       String content) throws IOException
+                                       int timeout, String content) throws IOException
     {
         String jsonString = JSONUtils.XmlToJsonString(content);
-        return postJSON(protocol, host, port, path, user, password, jsonString);
+        return postJSON(protocol, host, port, path, user, password, timeout, jsonString);
     }
 
 
     public static String post(String protocol, String host, int port, String path, String user, String password,
-                                  String content, ContentType... contentType) throws IOException {
-        try (CloseableHttpClient httpClient = getClient(host, port, user, password)) {
+                                  int timeout, String content, ContentType... contentType) throws IOException {
+        try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
             HttpPost httpPost = new HttpPost(protocol + "://" + host + ":" + Integer.toString(port) + path);
             HttpEntity stringEntity;
             if (contentType.length > 0) {
@@ -107,42 +107,42 @@ public class HTTPUtils {
     }
 
     public static String postJSON(String protocol, String host, int port, String path, String user, String password,
-                                  String content) throws IOException
+                                  int timeout, String content) throws IOException
     {
-        return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
+        return post(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_JSON);
     }
 
     public static String postJSONFile(String protocol, String host, int port, String path, String user, String password,
-                                  String content) throws IOException
+                                  int timeout, String content) throws IOException
     {
-        return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
+        return post(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_JSON);
     }
 
     public static String postXML(String protocol, String host, int port, String path, String user, String password,
-                                  String file) throws IOException
+                                  int timeout, String file) throws IOException
     {
         String content = IOUtils.loadStringFromFile(file);
-        return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
+        return post(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_XML);
     }
 
     public static String postXMLFile(String protocol, String host, int port, String path, String user, String password,
-                                 String file) throws IOException
+                                 int timeout, String file) throws IOException
     {
         String content = IOUtils.loadStringFromFile(file);
-        return post(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
+        return post(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_XML);
     }
 
     public static String postTextTypeFile(String protocol, String host, int port, String path, String user, String password,
-                                     String file, ContentType contentType) throws IOException
+                                     int timeout, String file, ContentType contentType) throws IOException
     {
         String content = IOUtils.loadStringFromFile(file);
-        return post(protocol, host, port, path, user, password, content, contentType);
+        return post(protocol, host, port, path, user, password, timeout, content, contentType);
     }
 
     public static String putString(String protocol, String host, int port, String path, String user, String password,
-                                   String content, ContentType... contentType) throws IOException
+                                   int timeout, String content, ContentType... contentType) throws IOException
     {
-        try (CloseableHttpClient httpClient = getClient(host, port, user, password)) {
+        try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
             HttpPut httpPut = new HttpPut(protocol + "://" + host + ":" + Integer.toString(port) + path);
             HttpEntity stringEntity;
             if (contentType.length > 0) {
@@ -159,33 +159,32 @@ public class HTTPUtils {
     }
 
     public static String putJSON(String protocol, String host, int port, String path, String user, String password,
-                                 String content) throws IOException
+                                 int timeout, String content) throws IOException
     {
-        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
+        return putString(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_JSON);
     }
 
     public static String putJSONFile(String protocol, String host, int port, String path, String user, String password,
-                                 String file) throws IOException
+                                 int timeout, String file) throws IOException
     {
         String content = IOUtils.loadStringFromFile(file);
-        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_JSON);
+        return putString(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_JSON);
     }
 
     public static String putXML(String protocol, String host, int port, String path, String user, String password,
-                                 String content) throws IOException
+                                 int timeout, String content) throws IOException
     {
-        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
+        return putString(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_XML);
     }
 
     public static String putXMLFile(String protocol, String host, int port, String path, String user, String password,
-                                String file) throws IOException
+                                int timeout, String file) throws IOException
     {
         String content = IOUtils.loadStringFromFile(file);
-        return putString(protocol, host, port, path, user, password, content, ContentType.APPLICATION_XML);
+        return putString(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_XML);
     }
 
-    private static CloseableHttpClient getClient(String host, int port, String user, String password) {
-        int timeout = 1200;
+    private static CloseableHttpClient getClient(String host, int port, String user, String password, int timeout) {
         RequestConfig config = RequestConfig.custom()
                 .setConnectTimeout(timeout * 1000)
                 .setConnectionRequestTimeout(timeout * 1000)

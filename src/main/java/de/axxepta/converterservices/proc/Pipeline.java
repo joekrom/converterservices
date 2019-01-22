@@ -133,7 +133,7 @@ public class Pipeline {
             }
         } catch (Exception ex) {
             errCode = -1;
-            log(String.format("--- Exception in process step %s: %s", stepCounter, ex.getMessage()));
+            log("#--# Step " + stepCounter + " # Exception: " + ex.getMessage());
             if (verbose) {
                 ex.printStackTrace();
             }
@@ -165,7 +165,7 @@ public class Pipeline {
     }
 
     void finalLogFileAdd(String text) {
-        logFileFinal.add(text);
+        logFileFinal.add("#--# Step " + stepCounter + " # " + text);
     }
 
     void logFileAddArray(FileArray array) {

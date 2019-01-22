@@ -37,7 +37,7 @@ class ZIPStep extends Step {
         try {
             ZIPUtils.zipRenamedFiles(outputFile, inputFiles, additionalInputs);
         } catch (IOException ex) {
-            pipe.finalLogFileAdd(String.format("--- Exception zipping files in step %s: %s", pipe.getCounter(), ex.getMessage()));
+            pipe.finalLogFileAdd(String.format("Exception zipping files: %s", ex.getMessage()));
         }
         pipe.addGeneratedFile(outputFile);
         return singleFileList(outputFile);

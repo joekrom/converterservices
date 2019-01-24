@@ -8,6 +8,7 @@ import net.sf.saxon.s9api.SaxonApiException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.xml.transform.TransformerException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -215,7 +216,7 @@ public class Pipeline {
         throw new IllegalArgumentException(String.format("Referenced step %s not defined.", stepName));
     }
 
-    void saxonTransform(String sourceFile, String xsltFile, String resultFile, String... parameter) {
+    void saxonTransform(String sourceFile, String xsltFile, String resultFile, String... parameter) throws TransformerException {
         saxon.transform(sourceFile, xsltFile, resultFile, parameter);
     }
 

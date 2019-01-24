@@ -37,14 +37,21 @@ public class Saxon {
         _err = err;
     }
 
-    public void transform(String sourceFile, String xsltFile, String resultFile, String... parameters) {
-        transform(sourceFile, xsltFile, resultFile, "false", parameters);
+    public void transform(String sourceFile, String xsltFile, String resultFile, String... parameters)
+        throws TransformerException
+    {
+        String validate = Arrays.stream(parameters).anyMatch(n -> n.toUpperCase().startsWith("DTD_VALIDATION") && n.toLowerCase().contains("true")) ?
+                "true" : "false";
+        transform(sourceFile, xsltFile, resultFile, validate,
+                Arrays.stream(parameters).filter(n -> !n.toUpperCase().startsWith("DTD_VALIDATION")).toArray(String[]::new));
     }
 
-    private void transform(String sourceFile, String xsltFile, String resultFile, String validateDTD, String... parameters) {
-        if (validateDTD.equals("false")) {
+    private void transform(String sourceFile, String xsltFile, String resultFile, String validateDTD, String... parameters)
+        throws TransformerException
+    {
+/*        if (validateDTD.equals("false")) {
             createDummyDTDifNE(sourceFile);
-        }
+        }*/
         TransformerFactory tFactory = TransformerFactory.newInstance("net.sf.saxon.TransformerFactoryImpl", null);
         try {
             tFactory.setAttribute(FeatureKeys.MESSAGE_EMITTER_CLASS, "net.sf.saxon.serialize.MessageWarner");
@@ -55,7 +62,7 @@ public class Saxon {
         } catch(Exception e) {
             System.out.println("Error setting transformer factory attributes " + e.getMessage());
         }
-        try {
+//        try {
             Transformer transformer =  tFactory.newTransformer(new StreamSource(new File(xsltFile)));
 
             if (parameters.length > 0) {
@@ -65,9 +72,7 @@ public class Saxon {
                 }
             }
             transformer.transform(new StreamSource(new File(sourceFile)), new StreamResult(new File(resultFile)));
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        }
     }
 
     private void createDummyDTDifNE(String xmlFile) {

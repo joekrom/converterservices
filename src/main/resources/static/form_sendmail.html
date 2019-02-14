@@ -1,0 +1,25 @@
+<html>
+    <head>
+        <title>Upload form for sending Emails</title>
+    </head>
+    <body>
+        <h1>Upload Mail text and attachments</h1>
+        <form id="form2" action="%s" method="post" enctype="multipart/form-data">
+            <label><input type="text" id="host" name="%s">Host</label><br>
+            <label><input type="text" id="port" name="%s">Port</label><br>
+            <label><input type="checkbox" id="SSLTLS" name="%s">secure protocol</label><br>
+            <label><input type="text" id="user" name="%s">Username</label><br>
+            <label><input type="text" id="pwd" name="%s">Password</label><br>
+            <label><input type="text" id="sender" name="%s">Sender</label><br>
+            <label><input type="text" id="receiver" name="%s">Recipient(s) (separated by ";")</label><br>
+            <label><input type="text" id="subject" name="%s">Subject</label><br>
+            <!--<label><input type="text" id="text" name="_s">Content</label><br>-->
+            <label><input type="checkbox" id="html" name="%s">HTML mail</label><br>
+            <label><input type="checkbox" id="img" name="%s">Images included</label><br>
+            <label><input type="checkbox" id="attachments" name="%s">Attachments</label><br>
+            <label><input type="file" name="%s" multiple />Choose Attachments</label><br>
+            <input type="submit" name="button1"/>
+        </form>
+        <textarea id="text" name="%s" form="form2" rows="15" cols="50">Mail body</textarea>
+    </body>
+</html>

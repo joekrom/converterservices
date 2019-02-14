@@ -8,7 +8,10 @@ import de.axxepta.converterservices.tools.ImageUtils;
 import de.axxepta.converterservices.tools.PDFUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.ServletUtils;
+import de.axxepta.emailwrapper.Mail;
+import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.mail.EmailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -23,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static spark.Spark.*;
 
@@ -42,6 +46,7 @@ public class App {
     private static final String PATH_META               = "/file/metadata";
     private static final String PATH_SPLIT              = "/pdf/split";
     private static final String PATH_EXCEL              = "/excel";
+    private static final String PATH_SEND_MAIL          = "/send-mail";
     private static final String PATH_PIPELINE           = "/pipeline";
     private static final String PATH_PIPELINE_ASYNC     = "/pipeline-async";
     private static final String PATH_PIPELINE_MULTI     = "/pipeline-multi";
@@ -52,6 +57,7 @@ public class App {
     private static final String PATH_UPLOAD_META        = "/form/meta";
     private static final String PATH_UPLOAD_SPLIT       = "/form/pdfsplit";
     private static final String PATH_UPLOAD_EXCEL       = "/form/excel";
+    private static final String PATH_UPLOAD_MAIL        = "/form/send-mail";
     private static final String PATH_UPLOAD_PIPELINE    = "/form/pipeline";
 
     private static final String PARAM_NAME              = ":name";
@@ -78,12 +84,25 @@ public class App {
     private static final String PARAM_VAL_MULTI         = "multi";
     private static final String PARAM_CLEANUP           = "cleanup";
 
+    private static final String PARAM_HOST              = "host";
+    private static final String PARAM_PORT              = "port";
+    private static final String PARAM_SECURE            = "secure";
+    private static final String PARAM_USER              = "user";
+    private static final String PARAM_SENDER            = "sender";
+    private static final String PARAM_RECEIVER          = "receiver";
+    private static final String PARAM_SUBJECT           = "subject";
+    private static final String PARAM_CONTENT           = "content";
+    private static final String PARAM_HTML              = "html";
+    private static final String PARAM_IMAGES            = "img";
+    private static final String PARAM_ATTACHMENTS       = "attachments";
+
     private static final String HELLO_PAGE              = "static/hello.html";
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
     private static final String THUMBS_UPLOAD_FORM      = "static/form_thumbs.html";
     private static final String META_UPLOAD_FORM        = "static/form_meta.html";
     private static final String PDFSPLIT_UPLOAD_FORM    = "static/form_pdfsplit.html";
     private static final String EXCEL_UPLOAD_FORM       = "static/form_excel.html";
+    private static final String MAIL_UPLOAD_FORM        = "static/form_sendmail.html";
     private static final String PIPELINE_UPLOAD_FORM    = "static/form_pipeline.html";
 
     public static final String TYPE_JPEG                = "image/jpeg";
@@ -133,7 +152,8 @@ public class App {
                         basePath + PATH_THUMB, basePath + PATH_THUMBS,
                         basePath + PATH_META, basePath + PATH_SPLIT, basePath + PATH_UPLOAD_THUMB,
                         basePath + PATH_UPLOAD_THUMBS, basePath + PATH_UPLOAD_META, basePath + PATH_UPLOAD_SPLIT,
-                        basePath + PATH_UPLOAD_EXCEL, basePath + PATH_UPLOAD_PIPELINE, basePath + PATH_STOP)
+                        basePath + PATH_UPLOAD_EXCEL, basePath + PATH_UPLOAD_MAIL, basePath + PATH_UPLOAD_PIPELINE,
+                        basePath + PATH_STOP)
         );
 
         get(basePath + PATH_DOWNLOAD + "/" + PARAM_NAME, (request, response) -> {
@@ -144,7 +164,7 @@ public class App {
                     de.axxepta.converterservices.utils.IOUtils.copyStreams(is, raw.getOutputStream());
                     raw.getOutputStream().close();
                 } catch (Exception e) {
-                    return HTML_OPEN + e.getMessage() + HTML_CLOSE;
+                    return wrapResponse(e.getMessage());
                 }
             } else {
                 return NO_SUCH_FILE;
@@ -179,6 +199,12 @@ public class App {
                         PARAM_ATT_SHEET_NAME, PARAM_SEPARATOR, FILE_PART)
         );
 
+        get(basePath + PATH_UPLOAD_MAIL, (request, response) ->
+                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(MAIL_UPLOAD_FORM),
+                        basePath + PATH_SEND_MAIL,
+                        PARAM_HOST, PARAM_PORT, PARAM_SECURE, PARAM_USER, PARAM_PWD, PARAM_SENDER, PARAM_RECEIVER, PARAM_SUBJECT,
+                        PARAM_HTML, PARAM_IMAGES, PARAM_ATTACHMENTS, FILE_PART, PARAM_CONTENT)
+        );
 
         get(basePath + PATH_UPLOAD_PIPELINE, (request, response) ->
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(PIPELINE_UPLOAD_FORM),
@@ -218,7 +244,7 @@ public class App {
 
         post(basePath + PATH_META, (request, response) -> {
             boolean compact = ServletUtils.checkQueryParameter(request, PARAM_COMPACT, false, "true", true);
-            List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new ArrayList<>());
+            List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>()).getOrDefault(FILE_PART, new ArrayList<>());
             try {
                 if (files.size() > 0) {
                     try (ByteArrayOutputStream out = CmdUtils.exif(compact, "-json", TEMP_FILE_PATH + "/" + files.get(0))) {
@@ -237,13 +263,13 @@ public class App {
             List<String> files;
             List<String> outputFiles;
             try {
-                List<String> partNames = new ArrayList<>();
-                files = ServletUtils.parseMultipartRequest(request, FILE_PART, partNames);
+                Map<String, String> formFields = new HashMap<>();
+                files = ServletUtils.parseMultipartRequest(request, FILE_PART, formFields).getOrDefault(FILE_PART, new ArrayList<>());
                 /*if (partNames.contains(AS_PNG))
                     as_png = true;*/
                 outputFiles = PDFUtils.splitPDF(files.get(0), as_png, TEMP_FILE_PATH);
             } catch (IOException | InterruptedException ex) {
-                return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+                return wrapResponse(ex.getMessage());
             }
 
             if (outputFiles.size() > 0) {
@@ -261,7 +287,7 @@ public class App {
                     ServletUtils.multiPartClose(raw.getOutputStream());
                     return raw;
                 } catch (IOException ex) {
-                    return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+                    return wrapResponse(ex.getMessage());
                 } finally {
                     cleanTemp(files);
                 }
@@ -271,6 +297,8 @@ public class App {
         });
 
         post(basePath + PATH_EXCEL, App::excelHandling);
+
+        post(basePath + PATH_SEND_MAIL, MULTIPART_FORM_DATA, App::mailHandling);
 
         post(basePath + PATH_PIPELINE, TYPE_XML, (request, response) -> pipelineHandling(request, response, false) );
 
@@ -314,7 +342,7 @@ public class App {
             }
         } catch (Exception ex) {
             response.status(500);
-            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+            return wrapResponse("Error during pipeline execution");
         } finally {
             if (cleanup) {
                 // ToDo:
@@ -327,9 +355,8 @@ public class App {
         String dateString = setTempPath();
         try {
             String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
-            List<String> parts = new ArrayList<>();
             List<String> submittedFiles =
-                    ServletUtils.parseMultipartRequest(request, FILE_PART, parts, tempPath);
+                    ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>(), tempPath).getOrDefault(FILE_PART, new ArrayList<>());
             String pipelineString = IOUtils.loadStringFromFile(IOUtils.pathCombine(tempPath, submittedFiles.get(0)));
 
             Map<String, String> parameters = request.params();
@@ -340,7 +367,7 @@ public class App {
             return processPipeline(response, pipelineString);
         } catch (Exception ex) {
             response.status(500);
-            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+            return wrapResponse("Error during pipeline execution");
         } finally {
             cleanup(dateString);
         }
@@ -350,7 +377,7 @@ public class App {
         Object result = PipeExec.execProcessString(pipelineString);
         if (result instanceof Integer && result.equals(-1)) {
             response.status(500);
-            return HTML_OPEN + "Error during pipeline execution" + HTML_CLOSE;
+            return wrapResponse("Error during pipeline execution");
         } else {
             List<String> results = new ArrayList<>();
             if (result instanceof String) {
@@ -363,7 +390,7 @@ public class App {
                 if (IOUtils.isFile(results.get(0))) {
                     return ServletUtils.buildSingleFileResponse(response, results.get(0));
                 } else {
-                    return HTML_OPEN + result + HTML_CLOSE;
+                    return wrapResponse(result.toString());
                 }
             } else if (results.size() > 1) {
                 if (IOUtils.isFile(results.get(0))) {
@@ -386,8 +413,68 @@ public class App {
                     return responseBuilder.append(HTML_CLOSE).toString();
                 }
             } else {
-                return HTML_OPEN + result + HTML_CLOSE;
+                return wrapResponse(result.toString());
             }
+        }
+    }
+
+    private static Object mailHandling(Request request, Response response) {
+        String dateString = setTempPath();
+        try {
+            if (!ServletFileUpload.isMultipartContent(request.raw())) {
+                response.status(400);
+                return wrapResponse("No multipart request");
+            }
+
+            Map<String, String> formFields = new HashMap<>();
+            List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, formFields).getOrDefault(FILE_PART, new ArrayList<>());
+            files = files.stream().map(e -> IOUtils.pathCombine(App.TEMP_FILE_PATH, e)).collect(Collectors.toList());
+
+            String host = formFields.getOrDefault(PARAM_HOST, "");
+            int port;
+            try {
+                port = Integer.parseInt(formFields.getOrDefault(PARAM_PORT, "587"));
+            } catch (NumberFormatException ne) {
+                port = 587;
+            }
+            String user = formFields.getOrDefault(PARAM_USER, "");
+            String pwd = formFields.getOrDefault(PARAM_PWD, "");
+            String sender = formFields.getOrDefault(PARAM_SENDER, "");
+            String receiver = formFields.getOrDefault(PARAM_RECEIVER, "");
+            if (host.equals("") || user.equals("") || pwd.equals("") || sender.equals("") || receiver.equals("")) {
+                response.status(422);
+                return wrapResponse("Missing parameter (HOST|USER|PWD|SENDER|RECEIVER)");
+            }
+            boolean secure = formFields.containsKey(PARAM_SECURE);
+            String subject = formFields.getOrDefault(PARAM_SUBJECT, "--");
+            String content = formFields.getOrDefault(PARAM_CONTENT, "");
+            boolean htmlMail = formFields.containsKey(PARAM_HTML);
+            boolean embeddedImages = formFields.containsKey(PARAM_IMAGES);
+            boolean attachments = formFields.containsKey(PARAM_ATTACHMENTS);
+            try {
+                if (htmlMail) {
+                    if (embeddedImages) {
+                        return Mail.sendImageHTMLMail(secure, host, port, user, pwd, sender, receiver, subject, content, content, "", true);
+                    } else {
+                        return Mail.sendHTMLMail(secure, host, port, user, pwd, sender, receiver, subject, content, content, true);
+                    }
+                } else {
+                    if (attachments) {
+                        return Mail.sendAttachmentMail(secure, host, port, user, pwd, sender, receiver, subject, content, files, true);
+                    } else {
+                        return Mail.sendMail(secure, host, port, user, pwd, sender, receiver, subject, content, true);
+                    }
+                }
+            } catch (EmailException ex) {
+                response.status(500);
+                LOGGER.error("Error while sending mail:", ex);
+                return "<response>" + ex.getMessage() + "</response>";
+            }
+        } catch (Exception ex) {
+            response.status(500);
+            return wrapResponse("Error while sending mail");
+        } finally {
+            cleanup(dateString);
         }
     }
 
@@ -406,7 +493,7 @@ public class App {
         String column = ServletUtils.getQueryParameter(request, PARAM_COLUMN_TAG, ExcelUtils.COL_EL);
         String separator = ServletUtils.getQueryParameter(request, PARAM_SEPARATOR, ExcelUtils.DEF_SEPARATOR);
 
-        List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new ArrayList<>());
+        List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>()).getOrDefault(FILE_PART, new ArrayList<>());
         List<String> convertedFiles = new ArrayList<>();
         for (String file : files) {
             if (de.axxepta.converterservices.utils.IOUtils.isXLSX(file)) {
@@ -460,7 +547,7 @@ public class App {
                     ServletUtils.multiPartClose(raw.getOutputStream());
                 return raw;
             } catch (IOException ex) {
-                return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+                return wrapResponse(ex.getMessage());
             } finally {
                 cleanTemp(files);
             }
@@ -475,7 +562,7 @@ public class App {
         try {
             files = thumbifyFiles(request);
         } catch (IOException | InterruptedException ex) {
-            return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+            return wrapResponse(ex.getMessage());
         }
 
         if (files.size() > 0) {
@@ -488,7 +575,7 @@ public class App {
                     raw.getOutputStream().close();
                     return raw;
                 } catch (Exception e) {
-                    return HTML_OPEN + e.getMessage() + HTML_CLOSE;
+                    return wrapResponse(e.getMessage());
                 } finally {
                     cleanTemp(files);
                 }
@@ -506,7 +593,7 @@ public class App {
         try {
             files = thumbifyFiles(request);
         } catch (IOException | InterruptedException ex) {
-            return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+            return wrapResponse(ex.getMessage());
         }
 
         if (files.size() > 0) {
@@ -526,7 +613,7 @@ public class App {
                 ServletUtils.multiPartClose(raw.getOutputStream());
                 return raw;
             } catch (IOException ex) {
-                return HTML_OPEN + ex.getMessage() + HTML_CLOSE;
+                return wrapResponse(ex.getMessage());
             } finally {
                 cleanTemp(files);
             }
@@ -537,7 +624,7 @@ public class App {
 
     private static List<String> thumbifyFiles(Request request)
             throws IOException, InterruptedException {
-        List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new ArrayList<>());
+        List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>()).getOrDefault(FILE_PART, new ArrayList<>());
         String size = request.splat()[0];
         String fit = "";
         if (request.splat().length > 1)
@@ -603,6 +690,10 @@ public class App {
         synchronized (activeDirectories) {
             activeDirectories.remove(dateString);
         }
+    }
+
+    private static String wrapResponse(String text) {
+        return HTML_OPEN + text + HTML_CLOSE;
     }
 
 }

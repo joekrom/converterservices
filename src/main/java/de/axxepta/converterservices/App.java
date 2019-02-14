@@ -95,6 +95,7 @@ public class App {
     private static final String PARAM_HTML              = "html";
     private static final String PARAM_IMAGES            = "img";
     private static final String PARAM_ATTACHMENTS       = "attachments";
+    private static final String PARAM_BASE              = "base";
 
     private static final String HELLO_PAGE              = "static/hello.html";
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
@@ -203,7 +204,7 @@ public class App {
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(MAIL_UPLOAD_FORM),
                         basePath + PATH_SEND_MAIL,
                         PARAM_HOST, PARAM_PORT, PARAM_SECURE, PARAM_USER, PARAM_PWD, PARAM_SENDER, PARAM_RECEIVER, PARAM_SUBJECT,
-                        PARAM_HTML, PARAM_IMAGES, PARAM_ATTACHMENTS, FILE_PART, PARAM_CONTENT)
+                        PARAM_HTML, PARAM_IMAGES, PARAM_BASE, PARAM_ATTACHMENTS, FILE_PART, PARAM_CONTENT)
         );
 
         get(basePath + PATH_UPLOAD_PIPELINE, (request, response) ->
@@ -451,10 +452,11 @@ public class App {
             boolean htmlMail = formFields.containsKey(PARAM_HTML);
             boolean embeddedImages = formFields.containsKey(PARAM_IMAGES);
             boolean attachments = formFields.containsKey(PARAM_ATTACHMENTS);
+            String imgBaseURL = formFields.getOrDefault(PARAM_BASE, "");
             try {
                 if (htmlMail) {
                     if (embeddedImages) {
-                        return Mail.sendImageHTMLMail(secure, host, port, user, pwd, sender, receiver, subject, content, content, "", true);
+                        return Mail.sendImageHTMLMail(secure, host, port, user, pwd, sender, receiver, subject, content, content, imgBaseURL, true);
                     } else {
                         return Mail.sendHTMLMail(secure, host, port, user, pwd, sender, receiver, subject, content, content, true);
                     }

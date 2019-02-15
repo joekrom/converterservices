@@ -14,6 +14,7 @@ The list of supported steps contains
 * md5 hashing
 * exiftool meta data extraction
 * Upload and download by FTP and HTTP
+* Send mails (Apache commons mail)
 
 *converterservices* can be
 * used as library

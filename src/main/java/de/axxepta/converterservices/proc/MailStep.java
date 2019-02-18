@@ -67,6 +67,9 @@ class MailStep extends Step {
                     case "sender": case "from":
                         sender = parts[1];
                         break;
+                    case "subject":
+                        subject = parts[1];
+                        break;
                     case "receiver": case "recipient": case "to":
                         receiver = parts[1];
                         break;

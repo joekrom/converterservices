@@ -1,5 +1,5 @@
 group 'de.axxepta'
-version '0.8'
+version '0.8.1'
 
 apply plugin: 'java'
 apply plugin: 'maven'
@@ -20,7 +20,7 @@ configurations {
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
 
-    compile 'com.sparkjava:spark-core:2.5.4'
+    compile 'com.sparkjava:spark-core:2.8.0'
     compile 'org.slf4j:slf4j-api:1.7.25'
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'ch.qos.logback:logback-core:1.2.3'
@@ -38,7 +38,7 @@ dependencies {
     compile 'org.json:json:20171018'
     compile 'org.apache.commons:commons-email:1.5'
 
-    releaseJars 'com.sparkjava:spark-core:2.5.4'
+    releaseJars 'com.sparkjava:spark-core:2.8.0'
     releaseJars 'org.slf4j:slf4j-api:1.7.25'
     releaseJars 'ch.qos.logback:logback-classic:1.2.3'
     releaseJars 'ch.qos.logback:logback-core:1.2.3'
@@ -119,7 +119,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            pom.version = '0.8'
+            pom.version = '0.8.1'
             repository(url: mavenUrl) {
                 authentication(userName: mavenUser, privateKey: mavenKeyfile)
             }

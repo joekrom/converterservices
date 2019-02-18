@@ -49,7 +49,7 @@ abstract class Step {
         if (StringUtils.isNoStringOrEmpty(input) && !(input instanceof Integer) && !(pipe.getLastOutput() instanceof List))
             throw new IllegalStateException("Last process step has wrong type!");
 
-        List<String> inputFiles = resolveInput(input, pipe);
+        List<String> inputFiles = resolveInput(input, pipe, false);
 
         String[] parameters;
 
@@ -76,10 +76,10 @@ abstract class Step {
         return (List) oldOutput;
     }
 
-    private static List<String> resolveInput(Object in, Pipeline pipe) {
+    static List<String> resolveInput(final Object in, final Pipeline pipe, boolean additional) {
         List<String> inputFiles;
         if (in == null || (in instanceof String && StringUtils.isEmpty((String) in))  ) {
-            inputFiles = outputList( pipe.getLastOutput() );
+            inputFiles = additional ? new ArrayList<>() : outputList( pipe.getLastOutput() );
         } else {
             inputFiles = resolveNotEmptyInput(in, pipe);
         }
@@ -139,6 +139,18 @@ abstract class Step {
             }
         }
         return outputFileNames;
+    }
+
+    String standardOutputFile(final Pipeline pipe) {
+        return standardOutputFile(pipe, "xml");
+    }
+
+    String standardOutputFile(final Pipeline pipe, String ext) {
+        return IOUtils.pathCombine(pipe.getWorkPath(),
+                StringUtils.isNoStringOrEmpty(output) ?
+                "step_" + pipe.getCounter() + "." + ext :
+                (String) output
+        );
     }
 
     static List<String> singleFileList(final String file) {

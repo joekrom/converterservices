@@ -32,10 +32,7 @@ class FOPStep extends Step {
     Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
         String inputFile = inputFiles.get(0);
 
-        String outputFile = pipe.getWorkPath() +
-                (StringUtils.isNoStringOrEmpty(output) ?
-                "step_" + pipe.getCounter() + ".pdf" : (String) output);
-
+        String outputFile = standardOutputFile(pipe, "pdf");
 
         String configFile = resolveNotEmptyInput(additional, pipe).get(0);
         //String configFile = pipedPath(additional, pipe);

@@ -78,6 +78,7 @@ public class PipeExec {
     /**
      * Executes a pipeline described in a passed file. Look in the wiki for further information.
      * @param file XML pipeline description input file name
+     * @param externalWorkPath External work path, will only be used of none is defined in the pipe itself.
      * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
      * @throws IllegalArgumentException if the pipeline description contains invalid components
      * @throws NullPointerException if the step type attribute is missing
@@ -86,13 +87,13 @@ public class PipeExec {
      * @throws SAXException if a XSLT step fails
      * @throws XPathExpressionException if the XPath processing for pipeline parsing fails
      */
-    public static Object execProcessFile(String file)
+    public static Object execProcessFile(String file, String... externalWorkPath)
             throws IllegalArgumentException, NullPointerException, ParserConfigurationException, IOException,
             SAXException, XPathExpressionException
     {
         if (IOUtils.pathExists(file) && !IOUtils.isDirectory(file)) {
             Document dom = Saxon.loadDOM(file);
-            return execProcess(dom);
+            return execProcess(dom, externalWorkPath);
         } else {
             throw new IllegalArgumentException("File does not exist");
         }
@@ -101,6 +102,7 @@ public class PipeExec {
     /**
      * Executes a pipeline described in a passed String. Look in the wiki for further information.
      * @param xmlString Pipeline description input XML String
+     * @param externalWorkPath External work path, will only be used of none is defined in the pipe itself.
      * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
      * @throws IllegalArgumentException if the pipeline description contains invalid components
      * @throws NullPointerException if the step type attribute is missing
@@ -109,7 +111,7 @@ public class PipeExec {
      * @throws SAXException if an XSLT step fails
      * @throws XPathExpressionException if the XPath processing for pipeline parsing fails
      */
-    public static Object execProcessString(String xmlString)
+    public static Object execProcessString(String xmlString, String... externalWorkPath)
             throws IllegalArgumentException, NullPointerException, ParserConfigurationException, IOException,
             SAXException, XPathExpressionException
     {
@@ -117,18 +119,19 @@ public class PipeExec {
         InputSource is = new InputSource();
         is.setCharacterStream(new StringReader(xmlString));
         Document dom = builder.parse(is);
-        return execProcess(dom);
+        return execProcess(dom, externalWorkPath);
     }
 
     /**
      * Executes a pipeline described in a passed XML DOM. Look in the wiki for further information.
      * @param dom Pipeline description as XML DOM
+     * @param externalWorkPath External work path, will only be used of none is defined in the pipe itself.
      * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
      * @throws XPathExpressionException - if the XPath processing for pipeline parsing fails
      * @throws NullPointerException if the step type attribute is missing
      * @throws IllegalArgumentException if the pipeline description contains invalid components
      */
-    public static Object execProcess(Document dom) throws XPathExpressionException, NullPointerException, IllegalArgumentException {
+    public static Object execProcess(Document dom, String... externalWorkPath) throws XPathExpressionException, NullPointerException, IllegalArgumentException {
         XPathFactory factory = XPathFactory.newInstance();
         XPath xPath = factory.newXPath();
         Node pipeNode = (Node) xPath.compile("//" + PIPE_ELEMENT).evaluate(dom, XPathConstants.NODE);
@@ -142,7 +145,7 @@ public class PipeExec {
             for (int s = 0; s < steps.getLength(); s++) {
                 pipelineBuilder = evalSteps(pipelineBuilder, steps.item(s), xPath);
             }
-            return pipelineBuilder.exec();
+            return pipelineBuilder.exec(externalWorkPath);
         } else {
             throw new XPathExpressionException("No pipeline defined in input.");
         }

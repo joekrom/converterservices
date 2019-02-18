@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * Wrapper utility class for Apache commons mail (version 1.5), provides static functions for sending mails, e.g. for use in XQuery.
- * @version 0.1
+ * @version 0.1.1
  */
 public class Mail {
 

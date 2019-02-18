@@ -111,7 +111,7 @@ public class Saxon {
         return true;
     }
 
-    public static String standardOutputFilename(String xsltPath) {
+    public static String standardOutputFile(String xsltPath) {
         String file = IOUtils.filenameFromPath(xsltPath);
         int pos = file.contains(".") ? file.indexOf(".") : file.length();
         return file.substring(0, pos) + ".xml";

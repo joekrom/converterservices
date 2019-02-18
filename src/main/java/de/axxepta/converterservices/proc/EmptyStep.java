@@ -14,7 +14,7 @@ class EmptyStep extends Step {
 
     @Override
     Object execAction(Pipeline pipe, List<String> inputFiles, String... parameters) throws Exception {
-        return null;
+        return inputFiles;
     }
 
     @Override

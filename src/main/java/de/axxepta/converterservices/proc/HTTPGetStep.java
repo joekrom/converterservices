@@ -69,14 +69,12 @@ class HTTPGetStep extends Step {
             }
         }
 
-        List<String> providedOutputNames = listifyOutput(pipe);
         List<String> downloadedFiles = new ArrayList<>();
         String inputPath = IOUtils.relativePath(inputFiles.get(0), pipe.getInputPath());
 
         try {
             // ToDo: handle multipart responses, eventually multiple get requests/inputs
-            String outputFile = IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.size() == 0 ?
-                    "step_" + pipe.getCounter() + ".xml" : providedOutputNames.get(0));
+            String outputFile = standardOutputFile(pipe);
             List<String> responseFiles;
             if (contentTypeString.equals("")) {
                 responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, timeout, outputFile);

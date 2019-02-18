@@ -19,13 +19,7 @@ class CombineStep extends Step {
     {
         List<String> outputFiles = new ArrayList<>();
         outputFiles.addAll(inputFiles);
-        if (additional instanceof String) {
-            outputFiles.add(pipedPath(additional, pipe));
-        } else {
-            for (Object inFile : (List) additional) {
-                outputFiles.add(pipedPath(inFile, pipe));
-            }
-        }
+        outputFiles.addAll(resolveInput(additional, pipe, true));
         return outputFiles;
     }
 

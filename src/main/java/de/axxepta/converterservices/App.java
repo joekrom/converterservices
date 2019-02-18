@@ -1,6 +1,7 @@
 package de.axxepta.converterservices;
 
 import de.axxepta.converterservices.proc.PipeExec;
+import de.axxepta.converterservices.security.BasicAuthenticationFilter;
 import de.axxepta.converterservices.security.SSLProvider;
 import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.tools.ExcelUtils;
@@ -147,6 +148,8 @@ public class App {
         } catch (IOException ie) {
             LOGGER.error("Couldn't create directory for temporary files!");
         }
+
+        //before(new BasicAuthenticationFilter("/*"));
 
         get(basePath + PATH_HELLO, (request, response) ->
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(HELLO_PAGE),
@@ -312,7 +315,8 @@ public class App {
                 stop();
                 return "Services stopped.";
             } else {
-                return "Wrong password provided for stopping server.";
+                response.status(400);
+                return "Wrong or no password provided for stopping server.";
             }
 
         });
@@ -321,38 +325,42 @@ public class App {
 
 
     private static Object pipelineHandling(Request request, Response response, boolean async) {
-        boolean cleanup = false;
+        boolean cleanup = true;
+        String dateString = setTempPath();
+        String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
         try {
             String pipelineString = request.body();
             Map<String, String> parameters = request.params();
             if (parameters.containsKey(PARAM_CLEANUP)) {
-                if (parameters.get(PARAM_CLEANUP).equals("true"))
-                    cleanup = true;
+                if (parameters.get(PARAM_CLEANUP).equals("false"))
+                    cleanup = false;
             }
             if (async) {
                 new Thread(() -> {
                     try {
-                        PipeExec.execProcessString(pipelineString);
+                        PipeExec.execProcessString(pipelineString, tempPath);
                     } catch (Exception ex) {
                         LOGGER.error("Error running pipeline in thread: ", ex);
                     }
                 }).start();
                 return "<start>Pipeline started.</start>";
             } else {
-                return processPipeline(response, pipelineString);
+                return processPipeline(response, pipelineString, tempPath);
             }
         } catch (Exception ex) {
             response.status(500);
             return wrapResponse("Error during pipeline execution");
         } finally {
             if (cleanup) {
-                // ToDo:
+                cleanup(dateString);
+            } else {
+                releaseTemporaryDir(dateString);
             }
         }
     }
 
     private static Object pipelineHandlingMultipart(Request request, Response response) {
-        boolean cleanup = false;
+        boolean cleanup = true;
         String dateString = setTempPath();
         try {
             String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
@@ -362,20 +370,24 @@ public class App {
 
             Map<String, String> parameters = request.params();
             if (parameters.containsKey(PARAM_CLEANUP)) {
-                if (parameters.get(PARAM_CLEANUP).equals("true"))
-                    cleanup = true;
+                if (parameters.get(PARAM_CLEANUP).equals("false"))
+                    cleanup = false;
             }
-            return processPipeline(response, pipelineString);
+            return processPipeline(response, pipelineString, tempPath);
         } catch (Exception ex) {
             response.status(500);
             return wrapResponse("Error during pipeline execution");
         } finally {
-            cleanup(dateString);
+            if (cleanup) {
+                cleanup(dateString);
+            } else {
+                releaseTemporaryDir(dateString);
+            }
         }
     }
 
-    private static Object processPipeline(Response response, String pipelineString) throws Exception {
-        Object result = PipeExec.execProcessString(pipelineString);
+    private static Object processPipeline(Response response, String pipelineString, String tempPath) throws Exception {
+        Object result = PipeExec.execProcessString(pipelineString, tempPath);
         if (result instanceof Integer && result.equals(-1)) {
             response.status(500);
             return wrapResponse("Error during pipeline execution");
@@ -421,6 +433,7 @@ public class App {
 
     private static Object mailHandling(Request request, Response response) {
         String dateString = setTempPath();
+        String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
         try {
             if (!ServletFileUpload.isMultipartContent(request.raw())) {
                 response.status(400);
@@ -428,8 +441,10 @@ public class App {
             }
 
             Map<String, String> formFields = new HashMap<>();
-            List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, formFields).getOrDefault(FILE_PART, new ArrayList<>());
-            files = files.stream().map(e -> IOUtils.pathCombine(App.TEMP_FILE_PATH, e)).collect(Collectors.toList());
+            List<String> files =
+                    ServletUtils.parseMultipartRequest(request, FILE_PART, formFields, tempPath)
+                            .getOrDefault(FILE_PART, new ArrayList<>());
+            files = files.stream().map(e -> IOUtils.pathCombine(tempPath, e)).collect(Collectors.toList());
 
             String host = formFields.getOrDefault(PARAM_HOST, "");
             int port;
@@ -453,6 +468,7 @@ public class App {
             boolean embeddedImages = formFields.containsKey(PARAM_IMAGES);
             boolean attachments = formFields.containsKey(PARAM_ATTACHMENTS);
             String imgBaseURL = formFields.getOrDefault(PARAM_BASE, "");
+
             try {
                 if (htmlMail) {
                     if (embeddedImages) {
@@ -472,6 +488,7 @@ public class App {
                 LOGGER.error("Error while sending mail:", ex);
                 return "<response>" + ex.getMessage() + "</response>";
             }
+
         } catch (Exception ex) {
             response.status(500);
             return wrapResponse("Error while sending mail");
@@ -662,7 +679,7 @@ public class App {
         }
     }
 
-
+    // ToDo: extract setTempPath, cleanup, and releaseTemporaryDir to extra class -- avoid dependency Pipeline -> App
     public static String setTempPath() {
         String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         synchronized (activeDirectories) {

@@ -68,7 +68,7 @@ public class Pipeline {
     private List<String> generatedFiles = new ArrayList<>();
     private Object lastOutput = new ArrayList<>();
 
-    private Pipeline(PipelineBuilder builder) {
+    private Pipeline(PipelineBuilder builder, String extWorkPath) {
         this.verbose = builder.verbose;
         this.archive = builder.archive;
         this.cleanup = builder.cleanup;
@@ -85,9 +85,14 @@ public class Pipeline {
         saxon.setErrorListener(err);
 
         if (workPath.equals("")) {
-            temporaryWorkPath = App.setTempPath();
-            dateString = temporaryWorkPath;
-            workPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, temporaryWorkPath);
+            if (extWorkPath.equals("")) {
+                temporaryWorkPath = App.setTempPath();
+                dateString = temporaryWorkPath;
+                workPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, temporaryWorkPath);
+            } else {
+                workPath = extWorkPath;
+                dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
+            }
         } else {
             dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         }
@@ -202,18 +207,19 @@ public class Pipeline {
     }
 
     Object getStepOutput(int step) throws IllegalArgumentException {
-        if (step > steps.size() -1)
-            throw new IllegalArgumentException(String.format("Referenced step %s not defined.", step));
+        if (step >= stepCounter)
+            throw new IllegalArgumentException(String.format("Referenced step %s not defined or not yet executed.", step));
         return steps.get(step).getActualOutput();
     }
 
     Object getStepOutput(String stepName) throws IllegalArgumentException {
-        for (Step step : steps) {
+        for (int i = 0; i < stepCounter; i++) {
+            Step step = steps.get(i);
             if (step.getName().equals(stepName)) {
                 return step.getActualOutput();
             }
         }
-        throw new IllegalArgumentException(String.format("Referenced step %s not defined.", stepName));
+        throw new IllegalArgumentException(String.format("Referenced step %s not defined or not yet executed.", stepName));
     }
 
     void saxonTransform(String sourceFile, String xsltFile, String resultFile, String... parameter) throws TransformerException {
@@ -314,6 +320,9 @@ public class Pipeline {
                 break;
             case BASE64_DEC:
                 step = new Base64DecodeStep(name, input, output, additional, stopOnError, params);
+                break;
+            case MAIL:
+                step = new MailStep(name, input, output, additional, stopOnError, params);
                 break;
             default:
                 step = new EmptyStep(name, input, output, additional, stopOnError, params);
@@ -487,17 +496,20 @@ public class Pipeline {
         /**
          * Executes the pipeline defined by the builder. This "consumes" the pipeline, no actual instance of it is returned.
          * You can execute a new one from the last returned builder.
+         * @param externalWorkPath Injected work path. Is only used if none is defined in the pipe itself. If neither implicit
+         *                         nor external is provided, a temporary time stamped directory will be created in the work path
+         *                         of the application.
          * @return Last step's output or Integer with value -1 if an error occurred during Pipeline execution code
          */
-        public Object exec() {
-            return new Pipeline(this).exec();
+        public Object exec(String... externalWorkPath) {
+            return new Pipeline(this, externalWorkPath.length > 0 ? externalWorkPath[0] : "").exec();
         }
     }
 
 
     public enum StepType {
         XSLT, XSL_FO, XQUERY, XML_CSV, XML_XLSX, ZIP, UNZIP, FT, GZIP, GUNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER,
-        COMBINE, CMD, JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE,
+        COMBINE, CMD, JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE, MAIL,
         BASE64_ENC, BASE64_DEC, XLSX_XML, NONE
     }
 

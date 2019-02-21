@@ -144,6 +144,7 @@ public class App {
         SSLProvider.checkSSL();
 
         try {
+            de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(STATIC_FILE_PATH);
             de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(TEMP_FILE_PATH);
         } catch (IOException ie) {
             LOGGER.error("Couldn't create directory for temporary files!");
@@ -179,11 +180,6 @@ public class App {
         get(basePath + PATH_UPLOAD_THUMB, (request, response) ->
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(THUMB_UPLOAD_FORM),
                         basePath + PATH_THUMB, FILE_PART)
-        );
-
-        get(basePath + PATH_UPLOAD_THUMBS, (request, response) ->
-                String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(THUMBS_UPLOAD_FORM),
-                        basePath + PATH_THUMBS, FILE_PART)
         );
 
         get(basePath + PATH_UPLOAD_META, (request, response) ->

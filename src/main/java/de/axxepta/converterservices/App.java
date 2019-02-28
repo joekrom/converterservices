@@ -1,18 +1,15 @@
 package de.axxepta.converterservices;
 
-import de.axxepta.converterservices.proc.PipeExec;
-import de.axxepta.converterservices.security.BasicAuthenticationFilter;
 import de.axxepta.converterservices.security.SSLProvider;
+import de.axxepta.converterservices.servlet.MailHandler;
+import de.axxepta.converterservices.servlet.RequestHandler;
+import de.axxepta.converterservices.servlet.PipelineHandler;
 import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.tools.ImageUtils;
 import de.axxepta.converterservices.tools.PDFUtils;
 import de.axxepta.converterservices.utils.IOUtils;
-import de.axxepta.converterservices.utils.ServletUtils;
-import de.axxepta.emailwrapper.Mail;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.mail.EmailException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -23,19 +20,15 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.text.SimpleDateFormat;
+import java.lang.reflect.Constructor;
 import java.util.*;
-import java.util.stream.Collectors;
 
+import static de.axxepta.converterservices.servlet.ServletUtils.*;
 import static spark.Spark.*;
 
 public class App {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
-
-    private static final List<String> activeDirectories = new ArrayList<>();
 
     public static final String STATIC_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
     public static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
@@ -61,43 +54,6 @@ public class App {
     private static final String PATH_UPLOAD_MAIL        = "/form/send-mail";
     private static final String PATH_UPLOAD_PIPELINE    = "/form/pipeline";
 
-    private static final String PARAM_NAME              = ":name";
-    private static final String PARAM_COMPACT           = "compact";
-    private static final String PARAM_AS                = "as";
-    private static final String PARAM_CUSTOM_XML        = "customXMLMapping";
-    private static final String PARAM_SHEET_NAME        = "sheetName";
-    private static final String PARAM_ATT_SHEET_NAME    = "attSheetName";
-    private static final String PARAM_INDENT            = "indent";
-    private static final String PARAM_FIRST_ROW_NAME    = "firstRowName";
-    private static final String PARAM_FIRST_COL_ID      = "firstColId";
-    private static final String PARAM_COLUMN_FIRST      = "columnFirst";
-    private static final String PARAM_SHEET_TAG         = "sheet";
-    private static final String PARAM_ROW_TAG           = "row";
-    private static final String PARAM_COLUMN_TAG        = "column";
-    private static final String PARAM_SEPARATOR         = "separator";
-    private static final String PARAM_PWD               = "pwd";
-    private static final String PARAM_RESPONSE          = "response";
-    private static final String PARAM_VAL_SCALE         = "scale";
-    private static final String PARAM_VAL_CROP          = "crop";
-    private static final String PARAM_VAL_PDF           = "pdf";
-    private static final String PARAM_VAL_PNG           = "png";
-    private static final String PARAM_VAL_SINGLE        = "single";
-    private static final String PARAM_VAL_MULTI         = "multi";
-    private static final String PARAM_CLEANUP           = "cleanup";
-
-    private static final String PARAM_HOST              = "host";
-    private static final String PARAM_PORT              = "port";
-    private static final String PARAM_SECURE            = "secure";
-    private static final String PARAM_USER              = "user";
-    private static final String PARAM_SENDER            = "sender";
-    private static final String PARAM_RECEIVER          = "receiver";
-    private static final String PARAM_SUBJECT           = "subject";
-    private static final String PARAM_CONTENT           = "content";
-    private static final String PARAM_HTML              = "html";
-    private static final String PARAM_IMAGES            = "img";
-    private static final String PARAM_ATTACHMENTS       = "attachments";
-    private static final String PARAM_BASE              = "base";
-
     private static final String HELLO_PAGE              = "static/hello.html";
     private static final String THUMB_UPLOAD_FORM       = "static/form_thumb.html";
     private static final String THUMBS_UPLOAD_FORM      = "static/form_thumbs.html";
@@ -115,11 +71,8 @@ public class App {
     public static final String TYPE_XML                 = "application/xml";
     public static final String TYPE_OCTET               = "application/octet-stream";
 
-    private static final String FILE_PART               = "FILE";
     private static final String AS_PNG                  = "AS_PNG";
     private static final String MULTIPART_FORM_DATA     = "multipart/form-data";
-    private static final String HTML_OPEN               = "<html><body><h1>";
-    private static final String HTML_CLOSE              = "</h1></body></html>";
     private static final String NO_SUCH_FILE            = "<html><body><h1>File does not exist.</h1></body></html>";
     private static final String NO_FILES_JSON           = "{\"ERROR\": \"No temporary file found.\"}";
     private static final String EXCEPTION_OPEN_JSON     = "{\"EXCEPTION\": \"";
@@ -162,7 +115,7 @@ public class App {
         );
 
         get(basePath + PATH_DOWNLOAD + "/" + PARAM_NAME, (request, response) -> {
-            HttpServletResponse raw = ServletUtils.singleFileResponse(response, request.params(PARAM_NAME));
+            HttpServletResponse raw = singleFileResponse(response, request.params(PARAM_NAME));
             File file = new File(STATIC_FILE_PATH + "/" + request.params(PARAM_NAME));
             if (file.exists()) {
                 try (InputStream is = new FileInputStream(file)) {
@@ -243,12 +196,14 @@ public class App {
         });
 
         post(basePath + PATH_META, (request, response) -> {
-            boolean compact = ServletUtils.checkQueryParameter(request, PARAM_COMPACT, false, "true", true);
-            List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>()).getOrDefault(FILE_PART, new ArrayList<>());
+            boolean compact = checkQueryParameter(request, PARAM_COMPACT, false, "true", true);
+            List<String> files =
+                    parseMultipartRequest(request, FILE_PART, new HashMap<>(), TEMP_FILE_PATH).
+                    getOrDefault(FILE_PART, new ArrayList<>());
             try {
                 if (files.size() > 0) {
                     try (ByteArrayOutputStream out = CmdUtils.exif(compact, "-json", TEMP_FILE_PATH + "/" + files.get(0))) {
-                        cleanTemp(files);
+                        Core.cleanTemp(files);
                         return new String(out.toByteArray(), "UTF-8");
                     }
                 } else return NO_FILES_JSON;
@@ -259,12 +214,13 @@ public class App {
         });
 
         post(basePath + PATH_SPLIT, MULTIPART_FORM_DATA, (request, response) -> {
-            boolean as_png = ServletUtils.checkQueryParameter(request, PARAM_AS, false, PARAM_VAL_PNG, false);
+            boolean as_png = checkQueryParameter(request, PARAM_AS, false, PARAM_VAL_PNG, false);
             List<String> files;
             List<String> outputFiles;
             try {
                 Map<String, String> formFields = new HashMap<>();
-                files = ServletUtils.parseMultipartRequest(request, FILE_PART, formFields).getOrDefault(FILE_PART, new ArrayList<>());
+                files = parseMultipartRequest(request, FILE_PART, formFields, TEMP_FILE_PATH).
+                        getOrDefault(FILE_PART, new ArrayList<>());
                 /*if (partNames.contains(AS_PNG))
                     as_png = true;*/
                 outputFiles = PDFUtils.splitPDF(files.get(0), as_png, TEMP_FILE_PATH);
@@ -274,22 +230,22 @@ public class App {
 
             if (outputFiles.size() > 0) {
                 try {
-                    HttpServletResponse raw = ServletUtils.multiPartResponse(response);
+                    HttpServletResponse raw = multiPartResponse(response);
                     for (String fileName : outputFiles) {
                         File file = new File(TEMP_FILE_PATH + "/" + fileName);
                         if (file.exists()) {
                             files.add(fileName);
                             try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                ServletUtils.addMultiPartFile(raw.getOutputStream(), as_png ? TYPE_PNG : TYPE_PDF, is, fileName);
+                                addMultiPartFile(raw.getOutputStream(), as_png ? TYPE_PNG : TYPE_PDF, is, fileName);
                             }
                         }
                     }
-                    ServletUtils.multiPartClose(raw.getOutputStream());
+                    multiPartClose(raw.getOutputStream());
                     return raw;
                 } catch (IOException ex) {
                     return wrapResponse(ex.getMessage());
                 } finally {
-                    cleanTemp(files);
+                    Core.cleanTemp(files);
                 }
             } else {
                 return NO_SUCH_FILE;
@@ -298,16 +254,16 @@ public class App {
 
         post(basePath + PATH_EXCEL, App::excelHandling);
 
-        post(basePath + PATH_SEND_MAIL, MULTIPART_FORM_DATA, App::mailHandling);
+        post(basePath + PATH_SEND_MAIL, MULTIPART_FORM_DATA, (request, response) -> handleMultipart(request, response, MailHandler.class));
 
-        post(basePath + PATH_PIPELINE, TYPE_XML, (request, response) -> pipelineHandling(request, response, false) );
+        post(basePath + PATH_PIPELINE, TYPE_XML, (request, response) -> handleSingle(request, response, false, PipelineHandler.class) );
 
-        post(basePath + PATH_PIPELINE_ASYNC, TYPE_XML, (request, response) -> pipelineHandling(request, response, true) );
+        post(basePath + PATH_PIPELINE_ASYNC, TYPE_XML, (request, response) -> handleSingle(request, response, true, PipelineHandler.class) );
 
-        post(basePath + PATH_PIPELINE_MULTI, MULTIPART_FORM_DATA, App::pipelineHandlingMultipart);
+        post(basePath + PATH_PIPELINE_MULTI, MULTIPART_FORM_DATA, (request, response) -> handleMultipart(request, response, PipelineHandler.class));
 
         get(basePath + PATH_STOP, (request, response) -> {
-            if (ServletUtils.getQueryParameter(request, PARAM_PWD).equals(pwd)) {
+            if (getQueryParameter(request, PARAM_PWD).equals(pwd)) {
                 stop();
                 return "Services stopped.";
             } else {
@@ -320,115 +276,9 @@ public class App {
     }
 
 
-    private static Object pipelineHandling(Request request, Response response, boolean async) {
+    private static Object handleMultipart(Request request, Response response, Class<? extends RequestHandler> clazz) {
         boolean cleanup = true;
-        String dateString = setTempPath();
-        String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
-        try {
-            String pipelineString = request.body();
-            Map<String, String> parameters = request.params();
-            if (parameters.containsKey(PARAM_CLEANUP)) {
-                if (parameters.get(PARAM_CLEANUP).equals("false"))
-                    cleanup = false;
-            }
-            if (async) {
-                new Thread(() -> {
-                    try {
-                        PipeExec.execProcessString(pipelineString, tempPath);
-                    } catch (Exception ex) {
-                        LOGGER.error("Error running pipeline in thread: ", ex);
-                    }
-                }).start();
-                return "<start>Pipeline started.</start>";
-            } else {
-                return processPipeline(response, pipelineString, tempPath);
-            }
-        } catch (Exception ex) {
-            response.status(500);
-            return wrapResponse("Error during pipeline execution");
-        } finally {
-            if (cleanup) {
-                cleanup(dateString);
-            } else {
-                releaseTemporaryDir(dateString);
-            }
-        }
-    }
-
-    private static Object pipelineHandlingMultipart(Request request, Response response) {
-        boolean cleanup = true;
-        String dateString = setTempPath();
-        try {
-            String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
-            List<String> submittedFiles =
-                    ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>(), tempPath).getOrDefault(FILE_PART, new ArrayList<>());
-            String pipelineString = IOUtils.loadStringFromFile(IOUtils.pathCombine(tempPath, submittedFiles.get(0)));
-
-            Map<String, String> parameters = request.params();
-            if (parameters.containsKey(PARAM_CLEANUP)) {
-                if (parameters.get(PARAM_CLEANUP).equals("false"))
-                    cleanup = false;
-            }
-            return processPipeline(response, pipelineString, tempPath);
-        } catch (Exception ex) {
-            response.status(500);
-            return wrapResponse("Error during pipeline execution");
-        } finally {
-            if (cleanup) {
-                cleanup(dateString);
-            } else {
-                releaseTemporaryDir(dateString);
-            }
-        }
-    }
-
-    private static Object processPipeline(Response response, String pipelineString, String tempPath) throws Exception {
-        Object result = PipeExec.execProcessString(pipelineString, tempPath);
-        if (result instanceof Integer && result.equals(-1)) {
-            response.status(500);
-            return wrapResponse("Error during pipeline execution");
-        } else {
-            List<String> results = new ArrayList<>();
-            if (result instanceof String) {
-                results.add((String) result);
-            }
-            if (result instanceof List && ((List) result).get(0) instanceof String) {
-                results.addAll( (List<String>) result );
-            }
-            if (results.size() == 1) {
-                if (IOUtils.isFile(results.get(0))) {
-                    return ServletUtils.buildSingleFileResponse(response, results.get(0));
-                } else {
-                    return wrapResponse(result.toString());
-                }
-            } else if (results.size() > 1) {
-                if (IOUtils.isFile(results.get(0))) {
-                    HttpServletResponse raw = ServletUtils.multiPartResponse(response);
-                    for (String fileName : results) {
-                        if (IOUtils.isFile(fileName)) {
-                            try (InputStream is = new BufferedInputStream(new FileInputStream(fileName))) {
-                                String outputType = IOUtils.contentTypeByFileName(fileName);
-                                ServletUtils.addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
-                            }
-                        }
-                    }
-                    ServletUtils.multiPartClose(raw.getOutputStream());
-                    return raw;
-                } else {
-                    StringBuilder responseBuilder = new StringBuilder(HTML_OPEN);
-                    for (String fileName : results) {
-                        responseBuilder = responseBuilder.append("<div>").append(fileName).append("</div>");
-                    }
-                    return responseBuilder.append(HTML_CLOSE).toString();
-                }
-            } else {
-                return wrapResponse(result.toString());
-            }
-        }
-    }
-
-    private static Object mailHandling(Request request, Response response) {
-        String dateString = setTempPath();
+        String dateString = Core.setTempPath();
         String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
         try {
             if (!ServletFileUpload.isMultipartContent(request.raw())) {
@@ -437,78 +287,75 @@ public class App {
             }
 
             Map<String, String> formFields = new HashMap<>();
-            List<String> files =
-                    ServletUtils.parseMultipartRequest(request, FILE_PART, formFields, tempPath)
-                            .getOrDefault(FILE_PART, new ArrayList<>());
-            files = files.stream().map(e -> IOUtils.pathCombine(tempPath, e)).collect(Collectors.toList());
+            Map<String, List<String>> files =
+                    parseMultipartRequest(request, "", formFields, tempPath);
 
-            String host = formFields.getOrDefault(PARAM_HOST, "");
-            int port;
-            try {
-                port = Integer.parseInt(formFields.getOrDefault(PARAM_PORT, "587"));
-            } catch (NumberFormatException ne) {
-                port = 587;
-            }
-            String user = formFields.getOrDefault(PARAM_USER, "");
-            String pwd = formFields.getOrDefault(PARAM_PWD, "");
-            String sender = formFields.getOrDefault(PARAM_SENDER, "");
-            String receiver = formFields.getOrDefault(PARAM_RECEIVER, "");
-            if (host.equals("") || user.equals("") || pwd.equals("") || sender.equals("") || receiver.equals("")) {
-                response.status(422);
-                return wrapResponse("Missing parameter (HOST|USER|PWD|SENDER|RECEIVER)");
-            }
-            boolean secure = formFields.containsKey(PARAM_SECURE);
-            String subject = formFields.getOrDefault(PARAM_SUBJECT, "--");
-            String content = formFields.getOrDefault(PARAM_CONTENT, "");
-            boolean htmlMail = formFields.containsKey(PARAM_HTML);
-            boolean embeddedImages = formFields.containsKey(PARAM_IMAGES);
-            boolean attachments = formFields.containsKey(PARAM_ATTACHMENTS);
-            String imgBaseURL = formFields.getOrDefault(PARAM_BASE, "");
-
-            try {
-                if (htmlMail) {
-                    if (embeddedImages) {
-                        return Mail.sendImageHTMLMail(secure, host, port, user, pwd, sender, receiver, subject, content, content, imgBaseURL, true);
-                    } else {
-                        return Mail.sendHTMLMail(secure, host, port, user, pwd, sender, receiver, subject, content, content, true);
-                    }
-                } else {
-                    if (attachments) {
-                        return Mail.sendAttachmentMail(secure, host, port, user, pwd, sender, receiver, subject, content, files, true);
-                    } else {
-                        return Mail.sendMail(secure, host, port, user, pwd, sender, receiver, subject, content, true);
-                    }
-                }
-            } catch (EmailException ex) {
-                response.status(500);
-                LOGGER.error("Error while sending mail:", ex);
-                return "<response>" + ex.getMessage() + "</response>";
+            Map<String, String> parameters = request.params();
+            if (parameters.containsKey(PARAM_CLEANUP)) {
+                if (parameters.get(PARAM_CLEANUP).equals("false"))
+                    cleanup = false;
             }
 
+            Constructor<?> constructor = clazz.getConstructor(Request.class, Response.class, String.class, Map.class, Map.class);
+            RequestHandler object = (RequestHandler) constructor.newInstance(request, response, tempPath, formFields, files);
+            return object.processMulti();
         } catch (Exception ex) {
             response.status(500);
-            return wrapResponse("Error while sending mail");
+            return wrapResponse(ex.getMessage());
         } finally {
-            cleanup(dateString);
+            if (cleanup) {
+                Core.cleanup(dateString);
+            } else {
+                Core.releaseTemporaryDir(dateString);
+            }
         }
     }
 
-    private static Object excelHandling(Request request, Response response) {
-        String sheetName = ServletUtils.getQueryParameter(request, PARAM_SHEET_NAME, "");
-        String attSheetName = ServletUtils.getQueryParameter(request, PARAM_ATT_SHEET_NAME, "");
-        String as = ServletUtils.getQueryParameter(request, PARAM_AS);
-        String responseType = ServletUtils.getQueryParameter(request, PARAM_RESPONSE, PARAM_VAL_MULTI);
-        boolean customXMLMapping = ServletUtils.checkQueryParameter(request, PARAM_CUSTOM_XML, false, "true", false);
-        boolean indent = !ServletUtils.checkQueryParameter(request, PARAM_INDENT, false, "false", false);
-        boolean firstRowName = !ServletUtils.checkQueryParameter(request, PARAM_FIRST_ROW_NAME, false, "false", false);
-        boolean firstColumnId = ServletUtils.checkQueryParameter(request, PARAM_FIRST_COL_ID, false, "true", false);
-        boolean columnFirst = ServletUtils.checkQueryParameter(request, PARAM_COLUMN_FIRST, false, "true", false);
-        String sheet = ServletUtils.getQueryParameter(request, PARAM_SHEET_TAG, ExcelUtils.SHEET_EL);
-        String row = ServletUtils.getQueryParameter(request, PARAM_ROW_TAG, ExcelUtils.ROW_EL);
-        String column = ServletUtils.getQueryParameter(request, PARAM_COLUMN_TAG, ExcelUtils.COL_EL);
-        String separator = ServletUtils.getQueryParameter(request, PARAM_SEPARATOR, ExcelUtils.DEF_SEPARATOR);
+    private static Object handleSingle(Request request, Response response, boolean async, Class<? extends RequestHandler> clazz) {
+        boolean cleanup = true;
+        String dateString = Core.setTempPath();
+        String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
+        try {
+            Map<String, String> parameters = request.params();
+            if (parameters.containsKey(PARAM_CLEANUP)) {
+                if (parameters.get(PARAM_CLEANUP).equals("false"))
+                    cleanup = false;
+            }
 
-        List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>()).getOrDefault(FILE_PART, new ArrayList<>());
+            Constructor<?> constructor = clazz.getConstructor(Request.class, Response.class, String.class);
+            RequestHandler object = (RequestHandler) constructor.newInstance(request, response, tempPath);
+            return object.processSingle(async);
+        } catch (Exception ex) {
+            response.status(500);
+            return wrapResponse(ex.getMessage());
+        } finally {
+            if (cleanup) {
+                Core.cleanup(dateString);
+            } else {
+                Core.releaseTemporaryDir(dateString);
+            }
+        }
+    }
+
+
+    private static Object excelHandling(Request request, Response response) {
+        String sheetName = getQueryParameter(request, PARAM_SHEET_NAME, "");
+        String attSheetName = getQueryParameter(request, PARAM_ATT_SHEET_NAME, "");
+        String as = getQueryParameter(request, PARAM_AS);
+        String responseType = getQueryParameter(request, PARAM_RESPONSE, PARAM_VAL_MULTI);
+        boolean customXMLMapping = checkQueryParameter(request, PARAM_CUSTOM_XML, false, "true", false);
+        boolean indent = !checkQueryParameter(request, PARAM_INDENT, false, "false", false);
+        boolean firstRowName = !checkQueryParameter(request, PARAM_FIRST_ROW_NAME, false, "false", false);
+        boolean firstColumnId = checkQueryParameter(request, PARAM_FIRST_COL_ID, false, "true", false);
+        boolean columnFirst = checkQueryParameter(request, PARAM_COLUMN_FIRST, false, "true", false);
+        String sheet = getQueryParameter(request, PARAM_SHEET_TAG, ExcelUtils.SHEET_EL);
+        String row = getQueryParameter(request, PARAM_ROW_TAG, ExcelUtils.ROW_EL);
+        String column = getQueryParameter(request, PARAM_COLUMN_TAG, ExcelUtils.COL_EL);
+        String separator = getQueryParameter(request, PARAM_SEPARATOR, ExcelUtils.DEF_SEPARATOR);
+
+        List<String> files =
+                parseMultipartRequest(request, FILE_PART, new HashMap<>(), TEMP_FILE_PATH).
+                getOrDefault(FILE_PART, new ArrayList<>());
         List<String> convertedFiles = new ArrayList<>();
         for (String file : files) {
             if (de.axxepta.converterservices.utils.IOUtils.isXLSX(file)) {
@@ -529,8 +376,8 @@ public class App {
         if (files.size() > 0) {
             try {
                 HttpServletResponse raw = responseType.toLowerCase().equals(PARAM_VAL_SINGLE) ?
-                        ServletUtils.singleFileResponse(response, convertedFiles.get(0)) :
-                        ServletUtils.multiPartResponse(response);
+                        singleFileResponse(response, convertedFiles.get(0)) :
+                        multiPartResponse(response);
                 int fileCounter = 0;
                 for (String fileName : convertedFiles) {
                     File file = new File(TEMP_FILE_PATH + "/" + fileName);
@@ -552,19 +399,19 @@ public class App {
                             else
                                 outputType = TYPE_CSV;
                             try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                ServletUtils.addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
+                                addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
                             }
                         }
                         fileCounter++;
                     }
                 }
                 if (responseType.toLowerCase().equals(PARAM_VAL_MULTI.toLowerCase()))
-                    ServletUtils.multiPartClose(raw.getOutputStream());
+                    multiPartClose(raw.getOutputStream());
                 return raw;
             } catch (IOException ex) {
                 return wrapResponse(ex.getMessage());
             } finally {
-                cleanTemp(files);
+                Core.cleanTemp(files);
             }
         } else {
             return NO_SUCH_FILE;
@@ -581,7 +428,7 @@ public class App {
         }
 
         if (files.size() > 0) {
-            HttpServletResponse raw = ServletUtils.singleFileResponse(response, "thumb_" + ImageUtils.jpgFilename(files.get(0)));
+            HttpServletResponse raw = singleFileResponse(response, "thumb_" + ImageUtils.jpgFilename(files.get(0)));
             File file = new File(TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(files.get(0)));
             if (file.exists()) {
                 files.add(ImageUtils.jpgFilename(files.get(0)));
@@ -592,10 +439,10 @@ public class App {
                 } catch (Exception e) {
                     return wrapResponse(e.getMessage());
                 } finally {
-                    cleanTemp(files);
+                    Core.cleanTemp(files);
                 }
             } else {
-                cleanTemp(files);
+                Core.cleanTemp(files);
                 return NO_SUCH_FILE;
             }
         } else {
@@ -614,23 +461,23 @@ public class App {
         if (files.size() > 0) {
             try {
                 List<String> transformedFiles = new ArrayList<>();
-                HttpServletResponse raw = ServletUtils.multiPartResponse(response);
+                HttpServletResponse raw = multiPartResponse(response);
                 for (String fileName : files) {
                     File file = new File(TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(fileName));
                     if (file.exists()) {
                         transformedFiles.add(ImageUtils.jpgFilename(fileName));
                         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                            ServletUtils.addMultiPartFile(raw.getOutputStream(), TYPE_JPEG, is, ImageUtils.jpgFilename(fileName));
+                            addMultiPartFile(raw.getOutputStream(), TYPE_JPEG, is, ImageUtils.jpgFilename(fileName));
                         }
                     }
                 }
                 files.addAll(transformedFiles);
-                ServletUtils.multiPartClose(raw.getOutputStream());
+                multiPartClose(raw.getOutputStream());
                 return raw;
             } catch (IOException ex) {
                 return wrapResponse(ex.getMessage());
             } finally {
-                cleanTemp(files);
+                Core.cleanTemp(files);
             }
         } else {
             return NO_SUCH_FILE;
@@ -639,7 +486,9 @@ public class App {
 
     private static List<String> thumbifyFiles(Request request)
             throws IOException, InterruptedException {
-        List<String> files = ServletUtils.parseMultipartRequest(request, FILE_PART, new HashMap<>()).getOrDefault(FILE_PART, new ArrayList<>());
+        List<String> files =
+                parseMultipartRequest(request, FILE_PART, new HashMap<>(), TEMP_FILE_PATH).
+                getOrDefault(FILE_PART, new ArrayList<>());
         String size = request.splat()[0];
         String fit = "";
         if (request.splat().length > 1)
@@ -659,56 +508,10 @@ public class App {
                 ImageUtils.thumbify(scaling, size, TEMP_FILE_PATH + "/" + file);
             }
         } catch (IOException | InterruptedException ex) {
-            cleanTemp(files);
+            Core.cleanTemp(files);
             throw ex;
         }
         return files;
-    }
-
-    private static void cleanTemp(List<String> files) {
-        for (String file : files) {
-            try {
-                Files.delete(Paths.get(TEMP_FILE_PATH + "/" + file));
-            } catch (IOException ex) {
-                if (LOGGER != null) LOGGER.error(ex.getMessage());
-            }
-        }
-    }
-
-    // ToDo: extract setTempPath, cleanup, and releaseTemporaryDir to extra class -- avoid dependency Pipeline -> App
-    public static String setTempPath() {
-        String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
-        synchronized (activeDirectories) {
-            if (activeDirectories.contains(dateString)) {
-                dateString += "__" + Integer.toString(activeDirectories.size());
-            }
-            activeDirectories.add(dateString);
-        }
-        try {
-            IOUtils.safeCreateDirectory(IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString));
-        } catch (IOException ex) {
-            return "";
-        }
-        return dateString;
-    }
-
-    private static void cleanup(String dateString) {
-        try {
-            FileUtils.deleteDirectory(new File(IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString)));
-        } catch (IOException ex) {
-            LOGGER.warn("Error while deleting directory: ", ex);
-        }
-        releaseTemporaryDir(dateString);
-    }
-
-    public static void releaseTemporaryDir(String dateString) {
-        synchronized (activeDirectories) {
-            activeDirectories.remove(dateString);
-        }
-    }
-
-    private static String wrapResponse(String text) {
-        return HTML_OPEN + text + HTML_CLOSE;
     }
 
 }

@@ -1,6 +1,7 @@
 package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.App;
+import de.axxepta.converterservices.Core;
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.tools.ZIPUtils;
 import de.axxepta.converterservices.utils.*;
@@ -86,7 +87,7 @@ public class Pipeline {
 
         if (workPath.equals("")) {
             if (extWorkPath.equals("")) {
-                temporaryWorkPath = App.setTempPath();
+                temporaryWorkPath = Core.setTempPath();
                 dateString = temporaryWorkPath;
                 workPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, temporaryWorkPath);
             } else {
@@ -145,7 +146,7 @@ public class Pipeline {
             }
         } finally {
             if (!temporaryWorkPath.equals("")) {
-                App.releaseTemporaryDir(temporaryWorkPath);
+                Core.releaseTemporaryDir(temporaryWorkPath);
             }
         }
         finishLogging();

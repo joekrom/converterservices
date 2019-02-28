@@ -1,6 +1,6 @@
-package de.axxepta.converterservices.utils;
+package de.axxepta.converterservices.servlet;
 
-import de.axxepta.converterservices.App;
+import de.axxepta.converterservices.utils.IOUtils;
 import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileItemHeaders;
 import org.apache.commons.fileupload.FileUploadException;
@@ -23,6 +23,45 @@ public class ServletUtils {
 
     private static final String MULTI_PART_BOUNDARY     = "MULTI_PART_BOUNDARY";
     private static final String CONTENT_TRANSFER_ENCODING     = "Content-Transfer-Encoding";
+
+    public static final String PARAM_NAME              = ":name";
+    public static final String PARAM_COMPACT           = "compact";
+    public static final String PARAM_AS                = "as";
+    public static final String PARAM_CUSTOM_XML        = "customXMLMapping";
+    public static final String PARAM_SHEET_NAME        = "sheetName";
+    public static final String PARAM_ATT_SHEET_NAME    = "attSheetName";
+    public static final String PARAM_INDENT            = "indent";
+    public static final String PARAM_FIRST_ROW_NAME    = "firstRowName";
+    public static final String PARAM_FIRST_COL_ID      = "firstColId";
+    public static final String PARAM_COLUMN_FIRST      = "columnFirst";
+    public static final String PARAM_SHEET_TAG         = "sheet";
+    public static final String PARAM_ROW_TAG           = "row";
+    public static final String PARAM_COLUMN_TAG        = "column";
+    public static final String PARAM_SEPARATOR         = "separator";
+    public static final String PARAM_PWD               = "pwd";
+    public static final String PARAM_RESPONSE          = "response";
+    public static final String PARAM_VAL_SCALE         = "scale";
+    public static final String PARAM_VAL_CROP          = "crop";
+    public static final String PARAM_VAL_PDF           = "pdf";
+    public static final String PARAM_VAL_PNG           = "png";
+    public static final String PARAM_VAL_SINGLE        = "single";
+    public static final String PARAM_VAL_MULTI         = "multi";
+    public static final String PARAM_CLEANUP           = "cleanup";
+    public static final String PARAM_HOST              = "host";
+    public static final String PARAM_PORT              = "port";
+    public static final String PARAM_SECURE            = "secure";
+    public static final String PARAM_USER              = "user";
+    public static final String PARAM_SENDER            = "sender";
+    public static final String PARAM_RECEIVER          = "receiver";
+    public static final String PARAM_SUBJECT           = "subject";
+    public static final String PARAM_CONTENT           = "content";
+    public static final String PARAM_HTML              = "html";
+    public static final String PARAM_IMAGES            = "img";
+    public static final String PARAM_ATTACHMENTS       = "attachments";
+    public static final String PARAM_BASE              = "base";
+    public static final String FILE_PART               = "FILE";
+    public static final String HTML_OPEN               = "<html><body><h1>";
+    public static final String HTML_CLOSE              = "</h1></body></html>";
 
 
     public static String getQueryParameter(Request request, String key, String ... defaultVal) {
@@ -122,14 +161,13 @@ public class ServletUtils {
      * @param request request of type multipart
      * @param filePart name of parts from which files shall be extracted. If empty string, all file parts will be extracted
      * @param formFields will contain the key-value pairs of all form field request parts
-     * @param storePath optional path for storage (standard is the temporary path)
+     * @param storagePath path for temporary storage of transmitted files
      * @return map of file parts and associated lists of file names,
      *          if parameter filePart is non-empty String only of part with this name
      */
     public static Map<String, List<String>> parseMultipartRequest(Request request, String filePart, Map<String, String> formFields,
-                                                     String... storePath)
+                                                     String storagePath)
     {
-        String storagePath = storePath.length > 0 ? storePath[0] : App.TEMP_FILE_PATH;
         MultipartConfigElement multipartConfigElement = new MultipartConfigElement(storagePath);
         request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
 
@@ -180,5 +218,9 @@ public class ServletUtils {
             }
         });
         return files;
+    }
+
+    public static String wrapResponse(String text) {
+        return HTML_OPEN + text + HTML_CLOSE;
     }
 }

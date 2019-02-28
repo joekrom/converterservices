@@ -18,7 +18,7 @@ abstract class Step {
     String[] params;
     private Object actualOutput;
 
-    Step(String name,  final Object input, final Object output, final Object additional, final boolean stopOnError, final String... params) {
+    Step(final String name,  final Object input, final Object output, final Object additional, final boolean stopOnError, final String... params) {
         this.name = name;
         this.input = input;
         this.output = output;

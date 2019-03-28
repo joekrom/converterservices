@@ -1,6 +1,7 @@
 package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.utils.IOUtils;
+import de.axxepta.converterservices.utils.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -79,7 +80,8 @@ class MD5FilterStep extends Step {
         if (list) {
             processedFiles.add("</files>");
             IOUtils.saveStringArrayToFile(processedFiles,
-                    IOUtils.pathCombine(pipe.getWorkPath(), "md5filter_step" + pipe.getCounter() + ".xml"),
+                    IOUtils.pathCombine(pipe.getWorkPath(),
+                            StringUtils.isNoStringOrEmpty(output) ? "md5filter_step" + pipe.getCounter() + ".xml" : (String) output),
                     false
             );
         }

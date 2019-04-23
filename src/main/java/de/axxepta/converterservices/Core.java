@@ -33,25 +33,31 @@ public class Core {
         }
     }
 
-    public static String setTempPath() {
+    public static String setTempPath(String ... basePath) {
         String dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
         synchronized (activeDirectories) {
             if (activeDirectories.contains(dateString)) {
-                dateString += "__" + Integer.toString(activeDirectories.size());
+                dateString += "__" + activeDirectories.size();
             }
             activeDirectories.add(dateString);
         }
         try {
-            IOUtils.safeCreateDirectory(IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString));
+            IOUtils.safeCreateDirectory(
+                    IOUtils.pathCombine(basePath.length > 0 ? basePath[0] : App.TEMP_FILE_PATH, dateString)
+            );
         } catch (IOException ex) {
             return "";
         }
         return dateString;
     }
 
-    public static void cleanup(String dateString) {
+    public static void cleanup(String dateString, String ... basePath) {
         try {
-            FileUtils.deleteDirectory(new File(IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString)));
+            FileUtils.deleteDirectory(
+                    new File(
+                            IOUtils.pathCombine(basePath.length > 0 ? basePath[0] : App.TEMP_FILE_PATH, dateString)
+                    )
+            );
         } catch (IOException ex) {
             LOGGER.warn("Error while deleting directory: ", ex);
         }

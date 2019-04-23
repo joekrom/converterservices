@@ -49,7 +49,7 @@ public class Core {
         return dateString;
     }
 
-    static void cleanup(String dateString) {
+    public static void cleanup(String dateString) {
         try {
             FileUtils.deleteDirectory(new File(IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString)));
         } catch (IOException ex) {

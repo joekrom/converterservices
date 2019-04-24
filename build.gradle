@@ -88,7 +88,7 @@ task fatJar(type: Jar) {
     with jar
 }
 
-task createPom << {
+task createPom  {
     pom {
         project {
             groupId 'de.axxepta'

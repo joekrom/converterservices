@@ -1,5 +1,6 @@
 package de.axxepta.converterservices;
 
+import de.axxepta.converterservices.security.BasicAuthenticationFilter;
 import de.axxepta.converterservices.security.SSLProvider;
 import de.axxepta.converterservices.servlet.MailHandler;
 import de.axxepta.converterservices.servlet.RequestHandler;
@@ -103,7 +104,7 @@ public class App {
             LOGGER.error("Couldn't create directory for temporary files!");
         }
 
-        //before(new BasicAuthenticationFilter("/*"));
+        before(new BasicAuthenticationFilter("/*"));
 
         get(basePath + PATH_HELLO, (request, response) ->
                 String.format(de.axxepta.converterservices.utils.IOUtils.getResourceAsString(HELLO_PAGE),

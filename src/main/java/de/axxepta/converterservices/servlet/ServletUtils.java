@@ -64,6 +64,15 @@ public class ServletUtils {
     public static final String HTML_CLOSE              = "</h1></body></html>";
 
 
+    /**
+     * Set log level of embedded Jetty. Call prior to start of server.
+     * @param level one of the Jetty log levels DEBUG, INFO, WARN, or OFF
+     */
+    public static void setJettyLogLevel(String level) {
+        System.setProperty("org.eclipse.jetty.util.log.class", "org.eclipse.jetty.util.log.StdErrLog");
+        System.setProperty("org.eclipse.jetty.LEVEL", level);
+    }
+
     public static String getQueryParameter(Request request, String key, String ... defaultVal) {
         Set<String> params = request.queryParams();
         if (params.contains(key))

@@ -30,6 +30,13 @@ Check out the [Wiki](https://github.com/axxepta/converterservices/wiki) to find 
 Some wrapped external tools have to be installed independently and made accessible (ImageMagick, exiftool) if they shall be used,
 but most of the functionality makes use of open source Java libraries which can be bundled in a single JAR (using the Gradle fatJar task).
 
+In order to use the provided `build.gradle` add a `gradle.properties` file to the root directory, containing the following lines:
+
+> mavenUrl=your.maven.repo
+> mavenUser=yourUsername
+> mavenPassword=dummy
+> mavenKeyfile=dummy
+
 **converterservices is a WORK IN PROGRESS!**
 
 **NOTE:** As *converterservices* is a toolbox it heavily makes use of static functions.

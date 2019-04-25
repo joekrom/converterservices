@@ -123,7 +123,7 @@ public class IOUtils {
      */
     public static void copyResources(String path, String resourcePath, Class referenceClass) throws IOException {
         IOUtils.safeCreateDirectory(path);
-        IOUtils.safeCreateDirectory(IOUtils.pathCombine(path, resourcePath));
+        IOUtils.safeCreateDirectory(pathCombine(path, resourcePath));
         File jarFile = new File(referenceClass.getProtectionDomain().getCodeSource().getLocation().getPath());
         JarFile jar = new JarFile(jarFile);
         final Enumeration<JarEntry> entries = jar.entries();
@@ -253,7 +253,7 @@ public class IOUtils {
         }
     }
 
-    public static String pathCombine(String stComp, String ndComp) {
+    public static String pathCombine(String stComp, String ndComp) throws IllegalStateException {
         String[] startDirs = stComp.split("\\\\|/");
         String[] endDirs = ndComp.split("\\\\|/");
         int up = 0;

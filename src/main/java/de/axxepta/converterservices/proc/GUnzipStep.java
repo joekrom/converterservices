@@ -18,7 +18,7 @@ class GUnzipStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         // type gzip (standard) or zLib--zLib has additional headers and is used by PHP's gzcompress function
         // corresponds to Java's GZIPInputStream and InflaterInputStream classes
         String type = "gzip";
@@ -34,7 +34,7 @@ class GUnzipStep extends Step {
 
         int i = 0;
         for (String inFile : inputFiles) {
-            String outputFile = getCurrentOutputFile(providedOutputNames, i, pipe);
+            String outputFile = getCurrentOutputFile(providedOutputNames, i);
             byte[] zippedArray = IOUtils.loadByteArrayFromFile(inFile);
             byte[] unzipped = type.equals("zlib") ?
                     ZIPUtils.zUnzipByteArray(zippedArray) :
@@ -48,7 +48,7 @@ class GUnzipStep extends Step {
         return usedOutputFiles;
     }
 
-    private String getCurrentOutputFile(final List<String> providedOutputNames, final int current, final Pipeline pipe) {
+    private String getCurrentOutputFile(final List<String> providedOutputNames, final int current) {
         return providedOutputNames.size() > current && !providedOutputNames.get(current).equals("") ?
                 IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(current)) :
                 IOUtils.pathCombine(pipe.getWorkPath(),"step_" + pipe.getCounter() + "_" + current + ".unzip");

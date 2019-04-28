@@ -18,13 +18,13 @@ class Base64DecodeStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         List<String> providedOutputNames = listifyOutput(pipe);
         List<String> usedOutputFiles = new ArrayList<>();
 
         int i = 0;
         for (String inFile : inputFiles) {
-            String outputFile = getCurrentOutputFile(providedOutputNames, i, pipe);
+            String outputFile = getCurrentOutputFile(providedOutputNames, i);
             String text = IOUtils.loadStringFromFile(inFile);
             byte[] decoded = Base64.getDecoder().decode(text);
             IOUtils.byteArrayToFile(decoded, outputFile);
@@ -36,7 +36,7 @@ class Base64DecodeStep extends Step {
         return usedOutputFiles;
     }
 
-    private String getCurrentOutputFile(final List<String> providedOutputNames, final int current, final Pipeline pipe) {
+    private String getCurrentOutputFile(final List<String> providedOutputNames, final int current) {
         return providedOutputNames.size() > current && !providedOutputNames.get(current).equals("") ?
                 IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(current)) :
                 IOUtils.pathCombine(pipe.getWorkPath(),"step_" + pipe.getCounter() + "_" + current + ".b64");

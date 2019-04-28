@@ -1,16 +1,12 @@
 package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.utils.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 class ReplaceStep extends Step {
-
-    private static Logger LOGGER = LoggerFactory.getLogger(ReplaceStep.class);
 
     ReplaceStep(String name, Object input, Object output, Object additional, boolean stopOnError, String... params) {
         super(name, input, output, additional, stopOnError, params);
@@ -22,7 +18,7 @@ class ReplaceStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, String... parameters) throws Exception {
+    Object execAction(List<String> inputFiles, String... parameters) throws Exception {
         List<String> replace = new ArrayList<>();
         List<String> with = new ArrayList<>();
         String fileReplace = "";    // don't use replace if not set as parameter
@@ -62,7 +58,7 @@ class ReplaceStep extends Step {
             pipe.log("Unequal number of REPLACE/WITH parameters in replacement step " + pipe.getCounter());
         }
 
-        List<String> outputNames = getOutputNames(inputFiles, fileReplace, fileWith, inPlace, pipe);
+        List<String> outputNames = getOutputNames(inputFiles, fileReplace, fileWith, inPlace);
 
         int i = 0;
         for (String inFile : inputFiles) {
@@ -85,7 +81,7 @@ class ReplaceStep extends Step {
     }
 
     private List<String> getOutputNames(final List<String> inputFiles, final String fileReplace, final String fileWith,
-                                        final boolean inPlace, final Pipeline pipe)
+                                        final boolean inPlace)
     {
         List<String> outputNames = new ArrayList<>();
         if (!fileReplace.equals("")) {

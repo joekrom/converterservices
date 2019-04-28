@@ -5,6 +5,7 @@ import de.axxepta.converterservices.security.SSLProvider;
 import de.axxepta.converterservices.servlet.MailHandler;
 import de.axxepta.converterservices.servlet.RequestHandler;
 import de.axxepta.converterservices.servlet.PipelineHandler;
+import de.axxepta.converterservices.servlet.ServletUtils;
 import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.tools.ImageUtils;
@@ -64,14 +65,6 @@ public class App {
     private static final String MAIL_UPLOAD_FORM        = "static/form_sendmail.html";
     private static final String PIPELINE_UPLOAD_FORM    = "static/form_pipeline.html";
 
-    public static final String TYPE_JPEG                = "image/jpeg";
-    public static final String TYPE_PNG                 = "image/png";
-    public static final String TYPE_PDF                 = "application/pdf";
-    public static final String TYPE_XLSX                = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-    public static final String TYPE_CSV                 = "text/csv";
-    public static final String TYPE_XML                 = "application/xml";
-    public static final String TYPE_OCTET               = "application/octet-stream";
-
     private static final String AS_PNG                  = "AS_PNG";
     private static final String MULTIPART_FORM_DATA     = "multipart/form-data";
     private static final String NO_SUCH_FILE            = "<html><body><h1>File does not exist.</h1></body></html>";
@@ -94,6 +87,8 @@ public class App {
 //########################################################
 
     static void init(String basePath) {
+
+        ServletUtils.setJettyLogLevel("WARN");
 
         SSLProvider.checkSSL();
 
@@ -237,7 +232,7 @@ public class App {
                         if (file.exists()) {
                             files.add(fileName);
                             try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                                addMultiPartFile(raw.getOutputStream(), as_png ? TYPE_PNG : TYPE_PDF, is, fileName);
+                                addMultiPartFile(raw.getOutputStream(), as_png ? Const.TYPE_PNG : Const.TYPE_PDF, is, fileName);
                             }
                         }
                     }
@@ -257,9 +252,9 @@ public class App {
 
         post(basePath + PATH_SEND_MAIL, MULTIPART_FORM_DATA, (request, response) -> handleMultipart(request, response, MailHandler.class));
 
-        post(basePath + PATH_PIPELINE, TYPE_XML, (request, response) -> handleSingle(request, response, false, PipelineHandler.class) );
+        post(basePath + PATH_PIPELINE, Const.TYPE_XML, (request, response) -> handleSingle(request, response, false, PipelineHandler.class) );
 
-        post(basePath + PATH_PIPELINE_ASYNC, TYPE_XML, (request, response) -> handleSingle(request, response, true, PipelineHandler.class) );
+        post(basePath + PATH_PIPELINE_ASYNC, Const.TYPE_XML, (request, response) -> handleSingle(request, response, true, PipelineHandler.class) );
 
         post(basePath + PATH_PIPELINE_MULTI, MULTIPART_FORM_DATA, (request, response) -> handleMultipart(request, response, PipelineHandler.class));
 
@@ -394,11 +389,11 @@ public class App {
                         } else {
                             String outputType;
                             if (de.axxepta.converterservices.utils.IOUtils.isXLSX(fileName))
-                                outputType = TYPE_XLSX;
+                                outputType = Const.TYPE_XLSX;
                             else if (de.axxepta.converterservices.utils.IOUtils.isXML(fileName))
-                                outputType = TYPE_XML;
+                                outputType = Const.TYPE_XML;
                             else
-                                outputType = TYPE_CSV;
+                                outputType = Const.TYPE_CSV;
                             try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
                                 addMultiPartFile(raw.getOutputStream(), outputType, is, fileName);
                             }
@@ -468,7 +463,7 @@ public class App {
                     if (file.exists()) {
                         transformedFiles.add(ImageUtils.jpgFilename(fileName));
                         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
-                            addMultiPartFile(raw.getOutputStream(), TYPE_JPEG, is, ImageUtils.jpgFilename(fileName));
+                            addMultiPartFile(raw.getOutputStream(), Const.TYPE_JPEG, is, ImageUtils.jpgFilename(fileName));
                         }
                     }
                 }

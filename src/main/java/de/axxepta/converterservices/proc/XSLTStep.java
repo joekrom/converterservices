@@ -16,11 +16,11 @@ class XSLTStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         String inputFile = inputFiles.get(0);
         String outputFile = pipe.getWorkPath() + (StringUtils.isNoStringOrEmpty(output) ?
                 Saxon.standardOutputFile((String) additional) : (String) output);
-        pipe.saxonTransform(inputFile, pipedPath(additional, pipe), outputFile, parameters);
+        pipe.saxonTransform(inputFile, pipedPath(additional), outputFile, parameters);
         pipe.logFileAddArray(pipe.getErrFileArray());
         pipe.finalLogFileAdd(inputFile + ": " + pipe.getErrFileArray().getSize() + " messages");
         pipe.incErrorCounter(pipe.getErrFileArray().getSize());

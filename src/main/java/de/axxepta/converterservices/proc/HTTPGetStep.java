@@ -21,7 +21,7 @@ class HTTPGetStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
 
         String server = "";
         String user = "";

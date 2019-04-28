@@ -22,7 +22,7 @@ class CmdStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
+    Object execAction(final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         Map<String, String> env = new HashMap<>();

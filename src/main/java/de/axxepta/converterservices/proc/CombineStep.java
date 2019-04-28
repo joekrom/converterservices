@@ -14,12 +14,12 @@ class CombineStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
+    Object execAction(final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         List<String> outputFiles = new ArrayList<>();
         outputFiles.addAll(inputFiles);
-        outputFiles.addAll(resolveInput(additional, pipe, true));
+        outputFiles.addAll(resolveInput(additional, true));
         return outputFiles;
     }
 

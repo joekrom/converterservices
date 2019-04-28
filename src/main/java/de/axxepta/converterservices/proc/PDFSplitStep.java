@@ -14,7 +14,7 @@ class PDFSplitStep extends Step {
     }
 
     @Override
-    Object execAction(Pipeline pipe, List<String> inputFiles, String... parameters) throws Exception {
+    Object execAction(List<String> inputFiles, String... parameters) throws Exception {
         return null;
     }
 

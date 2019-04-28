@@ -20,7 +20,7 @@ import java.util.List;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-public class Pipeline {
+public class Pipeline implements ILogger<String> {
 
     /**
      * "Protocol" identifier prefix for inputs to be taken from working directory
@@ -38,9 +38,9 @@ public class Pipeline {
     public static final String FILE_INPUT = "file://";
 
     /**
-     * "Protocol" identifier prefix for inputs in the input path to be expanded as glob
+     * "Protocol" identifier prefix for inputs in the input path to be expanded as regular expression
      */
-    public static final String GLOB_INPUT = "glob://";
+    public static final String REGEXP_INPUT = "regexp://";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Pipeline.class);
 
@@ -164,7 +164,8 @@ public class Pipeline {
         return errCode.equals(0) ? lastOutput : errCode;
     }
 
-    void log(String text) {
+    @Override
+    public void log(String text) {
         if (verbose) {
             System.out.println(text);
             logFileFinal.add(text);
@@ -376,7 +377,6 @@ public class Pipeline {
         // logger framework, could be sent to remote server by SocketAppender
         Logging.log(LOGGER, logLevel, String.join("\n", logFileFinal.getContent()) );
     }
-
 
 
     public static class PipelineBuilder {

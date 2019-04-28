@@ -18,7 +18,7 @@ class MD5FilterStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
+    Object execAction(final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String extension = ".md5";

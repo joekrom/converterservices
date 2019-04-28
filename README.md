@@ -33,11 +33,14 @@ but most of the functionality makes use of open source Java libraries which can 
 In order to use the provided `build.gradle` add a `gradle.properties` file to the root directory, containing the following lines:
 
 > mavenUrl=your.maven.repo
+
 > mavenUser=yourUsername
+
 > mavenPassword=dummy
+
 > mavenKeyfile=dummy
 
-**converterservices is a WORK IN PROGRESS!**
+**converterservices is a WORK IN PROGRESS! Functionality, interfaces, and function signatures are subject to change even in minor version steps.**
 
 **NOTE:** As *converterservices* is a toolbox it heavily makes use of static functions.
 Nevertheless, the classes have no private constructors because one of our scenarios of use is calling the functions in a BaseX XQuery

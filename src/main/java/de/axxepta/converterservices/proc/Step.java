@@ -17,8 +17,9 @@ abstract class Step {
     boolean stopOnError;
     String[] params;
     private Object actualOutput;
+    Pipeline pipe = null;
 
-    Step(final String name,  final Object input, final Object output, final Object additional, final boolean stopOnError, final String... params) {
+    Step(final String name, final Object input, final Object output, final Object additional, final boolean stopOnError, final String... params) {
         this.name = name;
         this.input = input;
         this.output = output;
@@ -49,7 +50,9 @@ abstract class Step {
         if (StringUtils.isNoStringOrEmpty(input) && !(input instanceof Integer) && !(pipe.getLastOutput() instanceof List))
             throw new IllegalStateException("Last process step has wrong type!");
 
-        List<String> inputFiles = resolveInput(input, pipe, false);
+        this.pipe = pipe;
+
+        List<String> inputFiles = resolveInput(input,false);
 
         String[] parameters;
 
@@ -61,13 +64,13 @@ abstract class Step {
         pipe.log("##   Additional Input   : " + additional);
         pipe.log("##   Parameters         : " + String.join(" - ", parameters));
 
-        actualOutput = execAction(pipe, inputFiles, parameters);
+        actualOutput = execAction(inputFiles, parameters);
         pipe.log("##   Output             : " + actualOutput);
         pipe.log("");
         return actualOutput;
     }
 
-    abstract Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception;
+    abstract Object execAction(final List<String> inputFiles, final String... parameters) throws Exception;
 
     private static List outputList(Object oldOutput) {
         if (!(oldOutput instanceof List) ||
@@ -76,38 +79,46 @@ abstract class Step {
         return (List) oldOutput;
     }
 
-    static List<String> resolveInput(final Object in, final Pipeline pipe, boolean additional) {
+    List<String> resolveInput(final Object in, boolean additional) {
         List<String> inputFiles;
         if (in == null || (in instanceof String && StringUtils.isEmpty((String) in))  ) {
             inputFiles = additional ? new ArrayList<>() : outputList( pipe.getLastOutput() );
         } else {
-            inputFiles = resolveNotEmptyInput(in, pipe);
+            inputFiles = resolveNotEmptyInput(in);
         }
         return inputFiles;
     }
 
     // use if input object is not empty String or null (asserted or otherwise)
-    static List<String> resolveNotEmptyInput(final Object in, final Pipeline pipe) {
-        List<String> inputFiles;
+    List<String> resolveNotEmptyInput(final Object in) {
+        List<String> inputFiles = new ArrayList<>();
         if (in instanceof Integer) {
             Object oldOutput = pipe.getStepOutput((Integer) in);
-            inputFiles = outputList(oldOutput);
-        } else if (in instanceof String && ((String) in).startsWith(Pipeline.NAMED_STEP)) {
-            inputFiles = outputList( pipe.getStepOutput(((String) in).substring(Pipeline.NAMED_STEP.length())) );
-        } else {
-            inputFiles = new ArrayList<>();
-            if (in instanceof String) {
-                inputFiles.add(pipedPath(in, pipe));
+            inputFiles.addAll(outputList(oldOutput));
+        } else if (in instanceof String) {
+            if (((String) in).startsWith(Pipeline.NAMED_STEP)) {
+                inputFiles.addAll(outputList(pipe.getStepOutput(((String) in).substring(Pipeline.NAMED_STEP.length()))));
             } else {
-                for (Object inFile : (List) in) {
-                    inputFiles.add(pipedPath(inFile, pipe));
+                inputFiles.addAll(resolvePathExpr(pipedPath(in)));
+            }
+        } else if (in instanceof List) {
+            for (Object inFile : (List) in) {
+                if (inFile instanceof Integer) {
+                    Object oldOutput = pipe.getStepOutput((Integer) inFile);
+                    inputFiles.addAll(outputList(oldOutput));
+                } else if (inFile instanceof String) {
+                    if (((String) inFile).startsWith(Pipeline.NAMED_STEP)) {
+                        inputFiles.addAll(outputList(pipe.getStepOutput(((String) inFile).substring(Pipeline.NAMED_STEP.length()))));
+                    } else {
+                        inputFiles.addAll(resolvePathExpr(pipedPath(inFile)));
+                    }
                 }
             }
         }
         return inputFiles;
     }
 
-    static String pipedPath(final Object fileNameObject, final Pipeline pipe) throws IllegalArgumentException {
+    String pipedPath(final Object fileNameObject) throws IllegalArgumentException {
         if (!(fileNameObject instanceof String)) {
             throw new IllegalArgumentException("Object is not a String");
         }
@@ -116,7 +127,25 @@ abstract class Step {
                 fileName.substring(Pipeline.FILE_INPUT.length()) :
                 (fileName.startsWith(Pipeline.WORK_DIR) ?
                     IOUtils.pathCombine(pipe.getWorkPath(), fileName.substring(Pipeline.WORK_DIR.length())) :
-                    IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName) );
+                        (fileName.startsWith(Pipeline.REGEXP_INPUT) ?
+                            fileName :
+                            IOUtils.pathCombine(pipe.getInputPath(), fileName.equals(".") ? "" : fileName) ) );
+    }
+
+    private List<String> resolvePathExpr(String path) {
+        List<String> files = new ArrayList<>();
+        if (path.startsWith(Pipeline.REGEXP_INPUT)) {
+            if (IOUtils.isDirectory(pipe.getInputPath())) {
+                files.addAll( IOUtils.resolvePathRegexp(pipe.getInputPath(), path.substring(Pipeline.REGEXP_INPUT.length()), pipe) );
+            }
+        } else {
+            if (path.contains("*") || path.contains("?")) {
+                files.addAll(IOUtils.resolveBlobExpression(path, pipe));
+            } else {
+                files.add(path);
+            }
+        }
+        return files;
     }
 
     // transform output parameter to List of Strings, if List provided, none-String elements will be converted to empty String

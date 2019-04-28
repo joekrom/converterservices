@@ -11,7 +11,6 @@ import org.xml.sax.SAXException;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.util.List;
-import java.util.MissingResourceException;
 
 class MailStep extends Step {
 
@@ -26,7 +25,7 @@ class MailStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         String host = "";
         String user = "";
         String pwd = "";
@@ -121,7 +120,7 @@ class MailStep extends Step {
                 }
             } else {
                 if (attachments) {
-                    List<String> attachedFiles = resolveInput(additional, pipe, true);
+                    List<String> attachedFiles = resolveInput(additional, true);
                     outputMsg = Mail.sendAttachmentMail(secure, host, port, user, pwd, sender, receiver, subject,
                             content, attachedFiles, true);
                 } else {

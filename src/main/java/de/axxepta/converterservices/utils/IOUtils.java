@@ -1,6 +1,7 @@
 package de.axxepta.converterservices.utils;
 
-import de.axxepta.converterservices.App;
+import de.axxepta.converterservices.Const;
+import org.apache.commons.io.filefilter.RegexFileFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -8,6 +9,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +18,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -229,6 +232,47 @@ public class IOUtils {
         }
     }
 
+    public static List<String> resolveBlobExpression(String path, ILogger<String> logger) {
+        List<String> files = new ArrayList<>();
+        int starPos = path.indexOf("*");
+        int qmPos = path.indexOf("?");
+        int wildcardPos = Math.min(starPos == -1 ? path.length() : starPos, qmPos == -1 ? path.length() : qmPos);
+        int sepPos = path.lastIndexOf(File.separator, wildcardPos);
+        String dir = path.substring(0, sepPos);
+        if (IOUtils.isDirectory(dir)) {
+            try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(dir), path.substring(sepPos + 1))) {
+                for (Path entry : stream) {
+                    if (IOUtils.isFile(entry.toString()))
+                        files.add(entry.toString());
+                }
+            } catch (IOException ex) {
+                logger.log("Error resolving path: " + ex.getMessage());
+            }
+        }
+        return files;
+    }
+
+    public static List<String> resolvePathRegexp(String path, String pattern, ILogger<String> logger) {
+        List<String> files = new ArrayList<>();
+        if (IOUtils.isDirectory(path)) {
+            File[] regexpFilteredList =
+                    new File(path).listFiles((FileFilter) new RegexFileFilter(pattern));
+            if (regexpFilteredList != null)
+                files.addAll(
+                        Arrays.stream(regexpFilteredList).
+                                map(f -> {
+                                    try {
+                                        return f.getCanonicalPath();
+                                    } catch (IOException ex) {
+                                        logger.log("Error resolving path: " + ex.getMessage());
+                                        return "";
+                                    }
+                                }).
+                                filter(f -> !f.equals("")).collect(Collectors.toList()));
+        }
+        return files;
+    }
+
     public static boolean isXLSX(String fileName) {
         return fileName.toLowerCase().endsWith(".xlsx");
     }
@@ -243,13 +287,13 @@ public class IOUtils {
 
     public static String contentTypeByFileName(String fileName) {
         switch (IOUtils.getFileExtension(fileName).toLowerCase()) {
-            case "jpg": return App.TYPE_JPEG;
-            case "png": return App.TYPE_PNG;
-            case "pdf": return App.TYPE_PDF;
-            case "xlsx": return App.TYPE_XLSX;
-            case "csv": return App.TYPE_CSV;
-            case "xml": return App.TYPE_XML;
-            default: return App.TYPE_OCTET;
+            case "jpg": return Const.TYPE_JPEG;
+            case "png": return Const.TYPE_PNG;
+            case "pdf": return Const.TYPE_PDF;
+            case "xlsx": return Const.TYPE_XLSX;
+            case "csv": return Const.TYPE_CSV;
+            case "xml": return Const.TYPE_XML;
+            default: return Const.TYPE_OCTET;
         }
     }
 

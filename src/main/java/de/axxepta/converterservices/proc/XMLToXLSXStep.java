@@ -19,7 +19,7 @@ class XMLToXLSXStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters)
+    Object execAction(final List<String> inputFiles, final String... parameters)
             throws Exception
     {
         String row = Const.ROW_TAG;
@@ -58,7 +58,7 @@ class XMLToXLSXStep extends Step {
         List<String> usedOutputFiles = new ArrayList<>();
         int i = 0;
         for (String inFile : inputFiles) {
-            String outputFile = getCurrentOutputFile(providedOutputNames, i, inFile, pipe);
+            String outputFile = getCurrentOutputFile(providedOutputNames, i, inFile);
             ExcelUtils.XMLToExcel(inFile, sheet, row, column, dataType, cellFormat, separator, outputFile);
             pipe.addGeneratedFile(outputFile);
             usedOutputFiles.add(outputFile);
@@ -67,7 +67,7 @@ class XMLToXLSXStep extends Step {
         return usedOutputFiles;
     }
 
-    private String getCurrentOutputFile(List<String> providedOutputNames, int current, String inputFile, Pipeline pipe) {
+    private String getCurrentOutputFile(List<String> providedOutputNames, int current, String inputFile) {
         return providedOutputNames.size() > current && !providedOutputNames.get(current).equals("") ?
                 IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(current)) :
                 IOUtils.pathCombine(pipe.getWorkPath(),IOUtils.filenameFromPath(inputFile) + ".xlsx");

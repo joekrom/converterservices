@@ -20,7 +20,7 @@ class XLSXToXMLStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         String root = "xml";
         String sheetName = Const.SHEET_NAME;
         boolean firstRowHead = true;
@@ -106,7 +106,7 @@ class XLSXToXMLStep extends Step {
                 }
                 outputFiles.addAll(exportedFiles);
             } else {
-                String mappingFile = resolveNotEmptyInput(additional, pipe).get(0);
+                String mappingFile = resolveNotEmptyInput(additional).get(0);
                 String nlSeparatedMappingList = IOUtils.loadStringFromFile(mappingFile);
 
                 String xmlString = ExcelUtils.excelSheetTransformString(inputFile, sheetName, root, nlSeparatedMappingList,

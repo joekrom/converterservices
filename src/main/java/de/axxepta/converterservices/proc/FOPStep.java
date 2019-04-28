@@ -1,6 +1,5 @@
 package de.axxepta.converterservices.proc;
 
-import de.axxepta.converterservices.utils.StringUtils;
 import org.apache.fop.apps.Fop;
 import org.apache.fop.apps.FopFactory;
 import org.apache.fop.apps.MimeConstants;
@@ -29,12 +28,12 @@ class FOPStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         String inputFile = inputFiles.get(0);
 
         String outputFile = standardOutputFile(pipe, "pdf");
 
-        String configFile = resolveNotEmptyInput(additional, pipe).get(0);
+        String configFile = resolveNotEmptyInput(additional).get(0);
         //String configFile = pipedPath(additional, pipe);
 
         String outputType = MimeConstants.MIME_PDF;

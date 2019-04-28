@@ -17,7 +17,7 @@ class MD5Step extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         String extension = ".md5";
         String relativeMD5Path = "";
         for (String parameter : parameters) {

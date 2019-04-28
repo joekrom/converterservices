@@ -2,7 +2,6 @@ package de.axxepta.converterservices.proc;
 
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.IOUtils;
-import de.axxepta.converterservices.utils.StringUtils;
 import org.w3c.dom.Document;
 
 import java.util.List;
@@ -18,8 +17,8 @@ class XQueryStep extends Step {
     }
 
     @Override
-    Object execAction(final Pipeline pipe, final List<String> inputFiles, final String... parameters) throws Exception {
-        String queryFile = pipedPath(additional, pipe);
+    Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
+        String queryFile = pipedPath(additional);
 
         String query = IOUtils.loadStringFromFile(queryFile);
         Object queryOutput = pipe.saxonXQuery(query,

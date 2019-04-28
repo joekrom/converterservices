@@ -1,9 +1,12 @@
-group 'de.axxepta'
-version '0.8.6'
+plugins {
+    id 'java'
+    id 'maven'
+    id 'maven-publish'
+    id 'com.github.johnrengelman.shadow' version '5.0.0'
+}
 
-apply plugin: 'java'
-apply plugin: 'maven'
-apply plugin: 'maven-publish'
+group 'de.axxepta'
+version '0.9'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -34,6 +37,7 @@ dependencies {
     compile 'org.apache.poi:poi-ooxml:4.0.1'
     compile 'org.apache.httpcomponents:httpclient:4.5.3'
     compile 'commons-net:commons-net:3.6'
+    compile 'commons-io:commons-io:2.6'
     compile 'com.jcraft:jsch:0.1.54'
     compile 'org.json:json:20171018'
     compile 'org.apache.commons:commons-email:1.5'
@@ -56,6 +60,7 @@ dependencies {
     releaseJars 'org.apache.poi:poi-ooxml:4.0.1'
     releaseJars 'org.apache.httpcomponents:httpclient:4.5.3'
     releaseJars 'commons-net:commons-net:3.6'
+    releaseJars 'commons-io:commons-io:2.6'
     releaseJars 'com.jcraft:jsch:0.1.54'
     releaseJars 'org.json:json:20171018'
     releaseJars 'org.apache.commons:commons-email:1.5'
@@ -75,7 +80,6 @@ jar {
     }
 }
 
-
 task fatJar(type: Jar) {
     baseName = project.name + '-all'
     manifest {
@@ -88,7 +92,13 @@ task fatJar(type: Jar) {
     with jar
 }
 
-task createPom {    pom {
+// necessary for FOP with (SVG) images
+shadowJar {
+    mergeServiceFiles()
+}
+
+task createPom {
+    pom {
         project {
             groupId 'de.axxepta'
             artifactId 'converterservices'
@@ -118,7 +128,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            pom.version = '0.8.6'
+            pom.version = '0.9'
             repository(url: mavenUrl) {
                 authentication(userName: mavenUser, privateKey: mavenKeyfile)
             }

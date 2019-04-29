@@ -97,7 +97,7 @@ abstract class Step {
             inputFiles.addAll(outputList(oldOutput));
         } else if (in instanceof String) {
             if (((String) in).startsWith(Pipeline.NAMED_STEP)) {
-                inputFiles.addAll(outputList(pipe.getStepOutput(((String) in).substring(Pipeline.NAMED_STEP.length()))));
+                inputFiles.addAll(outputList(pipe.getStepOutput( ((String) in).substring(Pipeline.NAMED_STEP.length()))));
             } else {
                 inputFiles.addAll(resolvePathExpr(pipedPath(in)));
             }
@@ -108,7 +108,7 @@ abstract class Step {
                     inputFiles.addAll(outputList(oldOutput));
                 } else if (inFile instanceof String) {
                     if (((String) inFile).startsWith(Pipeline.NAMED_STEP)) {
-                        inputFiles.addAll(outputList(pipe.getStepOutput(((String) inFile).substring(Pipeline.NAMED_STEP.length()))));
+                        inputFiles.addAll(outputList(pipe.getStepOutput( ((String) inFile).substring(Pipeline.NAMED_STEP.length()))));
                     } else {
                         inputFiles.addAll(resolvePathExpr(pipedPath(inFile)));
                     }
@@ -136,11 +136,11 @@ abstract class Step {
         List<String> files = new ArrayList<>();
         if (path.startsWith(Pipeline.REGEXP_INPUT)) {
             if (IOUtils.isDirectory(pipe.getInputPath())) {
-                files.addAll( IOUtils.resolvePathRegexp(pipe.getInputPath(), path.substring(Pipeline.REGEXP_INPUT.length()), pipe) );
+                files.addAll( IOUtils.resolvePathRegexp(pipe.getInputPath(), path.substring(Pipeline.REGEXP_INPUT.length()), pipe::log) );
             }
         } else {
             if (path.contains("*") || path.contains("?")) {
-                files.addAll(IOUtils.resolveBlobExpression(path, pipe));
+                files.addAll(IOUtils.resolveBlobExpression(path, pipe::log));
             } else {
                 files.add(path);
             }

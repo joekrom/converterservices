@@ -232,7 +232,7 @@ public class IOUtils {
         }
     }
 
-    public static List<String> resolveBlobExpression(String path, ILogger<String> logger) {
+    public static List<String> resolveBlobExpression(String path, Consumer<String>... logFunction) {
         List<String> files = new ArrayList<>();
         int starPos = path.indexOf("*");
         int qmPos = path.indexOf("?");
@@ -246,13 +246,14 @@ public class IOUtils {
                         files.add(entry.toString());
                 }
             } catch (IOException ex) {
-                logger.log("Error resolving path: " + ex.getMessage());
+                if (logFunction.length > 0)
+                    logFunction[0].accept("Error resolving path: " + ex.getMessage());
             }
         }
         return files;
     }
 
-    public static List<String> resolvePathRegexp(String path, String pattern, ILogger<String> logger) {
+    public static List<String> resolvePathRegexp(String path, String pattern, Consumer<String>... logFunction) {
         List<String> files = new ArrayList<>();
         if (IOUtils.isDirectory(path)) {
             File[] regexpFilteredList =
@@ -264,7 +265,8 @@ public class IOUtils {
                                     try {
                                         return f.getCanonicalPath();
                                     } catch (IOException ex) {
-                                        logger.log("Error resolving path: " + ex.getMessage());
+                                        if (logFunction.length > 0)
+                                            logFunction[0].accept("Error resolving path: " + ex.getMessage());
                                         return "";
                                     }
                                 }).
@@ -379,7 +381,7 @@ public class IOUtils {
     /**
      * Recursively collect all files in a list of files and paths with sub-directories with absolute paths
      * @param input List of file or directory names
-     * @param logFunction optional logging function/lambda (String) -> void
+     * @param logFunction optional logging function/lambda (String) -- void
      * @return All absolute file names including all files in sub-directories
      * @throws IOException if a provided input element corresponds not to an existing directory or file
      */

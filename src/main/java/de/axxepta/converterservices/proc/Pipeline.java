@@ -20,7 +20,7 @@ import java.util.List;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
-public class Pipeline implements ILogger<String> {
+public class Pipeline {
 
     /**
      * "Protocol" identifier prefix for inputs to be taken from working directory
@@ -55,6 +55,8 @@ public class Pipeline implements ILogger<String> {
     private String logFileName;
     private final String logLevel;
     private final List<Step> steps;
+    private final List<Step> errorSteps;
+    private boolean errorPipeRunning;
 
     private String temporaryWorkPath = "";
 
@@ -80,6 +82,8 @@ public class Pipeline implements ILogger<String> {
         this.logFileName = builder.logFileName;
         this.logLevel = builder.logLevel;
         this.steps = builder.steps;
+        this.errorSteps = builder.errorSteps;
+        errorPipeRunning = false;
 
         saxon = new Saxon();
         err = new LoggingErrorListener();
@@ -101,6 +105,7 @@ public class Pipeline implements ILogger<String> {
         if (logFileName.equals("")) {
             logFileName = dateString + ".log";
         }
+
     }
 
     /**
@@ -121,7 +126,7 @@ public class Pipeline implements ILogger<String> {
             IOUtils.safeCreateDirectory(workPath);
             IOUtils.safeCreateDirectory(outputPath);
             for (Step step : steps) {
-                lastOutput = stepExec(step);
+                lastOutput = stepExec(step, false);
             }
             if (!outputPath.equals("") && lastOutput instanceof List && ((List) lastOutput).size() > 0
                     && ((List) lastOutput).get(0) instanceof String) {
@@ -149,7 +154,7 @@ public class Pipeline implements ILogger<String> {
                 Core.releaseTemporaryDir(temporaryWorkPath);
             }
         }
-        finishLogging();
+        String finalLogFile = finishLogging();
         if (archive) {
             try {
                 ZIPUtils.plainZipFiles(IOUtils.pathCombine(outputPath, dateString + "_work.zip"), generatedFiles);
@@ -158,13 +163,28 @@ public class Pipeline implements ILogger<String> {
                     System.out.println(String.format("Exception while zipping work directory %s", ie.getMessage()));
             }
         }
+        if (errCode.equals(-1)) {
+            stepCounter = 0;
+            errorPipeRunning = true;
+            if (errorSteps.size() > 0 && errorSteps.get(0).getInput().equals("")) {
+                errorSteps.get(0).setInput(finalLogFile);
+            }
+            try {
+                for (Step step : errorSteps) {
+                    lastOutput = stepExec(step, true);
+                }
+            } catch (Exception ex) {
+                if (verbose) {
+                    ex.printStackTrace();
+                }
+            }
+        }
         if (cleanup) {
             generatedFiles.forEach(IOUtils::safeDeleteFile);
         }
         return errCode.equals(0) ? lastOutput : errCode;
     }
 
-    @Override
     public void log(String text) {
         if (verbose) {
             System.out.println(text);
@@ -211,12 +231,14 @@ public class Pipeline implements ILogger<String> {
     Object getStepOutput(int step) throws IllegalArgumentException {
         if (step >= stepCounter)
             throw new IllegalArgumentException(String.format("Referenced step %s not defined or not yet executed.", step));
-        return steps.get(step).getActualOutput();
+        return errorPipeRunning ?
+                errorSteps.get(step).getActualOutput() :
+                steps.get(step).getActualOutput();
     }
 
     Object getStepOutput(String stepName) throws IllegalArgumentException {
         for (int i = 0; i < stepCounter; i++) {
-            Step step = steps.get(i);
+            Step step = errorPipeRunning ? errorSteps.get(i) : steps.get(i);
             if (step.getName().equals(stepName)) {
                 return step.getActualOutput();
             }
@@ -333,9 +355,9 @@ public class Pipeline implements ILogger<String> {
         return step;
     }
 
-    private Object stepExec(Step step) throws Exception {
+    private Object stepExec(Step step, boolean error) throws Exception {
         stepCounter += 1;
-        log("## Process Step Number " + stepCounter);
+        log("## " + (error ? "Error" : "Process") + " Step Number " + stepCounter);
         log("##   Type               : " + step.getType());
         return step.exec(this);
     }
@@ -363,7 +385,7 @@ public class Pipeline implements ILogger<String> {
         currentErrLog.clear();
     }
 
-    private void finishLogging() {
+    private String finishLogging() {
         System.out.println("### Finishing Converter #####");
 
         logFileFinal.add("--- Log Summary End ----------------------------------------------------------------------");
@@ -376,6 +398,7 @@ public class Pipeline implements ILogger<String> {
         logFileFinal.saveFileArray(workPath + "/" + finalLogFileName);
         // logger framework, could be sent to remote server by SocketAppender
         Logging.log(LOGGER, logLevel, String.join("\n", logFileFinal.getContent()) );
+        return finalLogFileName;
     }
 
 
@@ -391,6 +414,7 @@ public class Pipeline implements ILogger<String> {
         private String logFileName = "";
         private String logLevel = Logging.NONE;
         private List<Step> steps = new ArrayList<>();
+        private List<Step> errorSteps = new ArrayList<>();
 
         public PipelineBuilder setWorkPath(String workPath) {
             this.workPath = workPath;
@@ -425,15 +449,17 @@ public class Pipeline implements ILogger<String> {
          *             of inputs or additional inputs with a prepended <i>step://</i> to the parameters to feed the output
          *             of this step at the corresponding later point.
          * @param input Input file(s) as String or List of Strings, relative to the input path of the pipe, can be null
-         *             or empty String if the output of the previous step shall be used.
+         *             or empty String if the output of the previous step shall be used. Using a prefix <i>regexp://</i>
+         *             will filter the input path for a regular expression provided as rest of the input.
          *             An Integer with value <i>n</i> will reference the output files of the <i>n</i>th step in the pipe.
          *             A prepended <i>pipe://</i> will reference file names relative to the work path of the pipe, a
-         *             prepended <i>step://</i> will reference all output files of a previous named step.
+         *             prepended <i>step://</i> will reference all output files of a previous named step. A prepended
+         *             <i>file://</i> will result in interpretation of the name as absolute. Glob syntax can be used.
          * @param output String or List of String, optional output file name(s), can be null or empty String
          *              (standard values will be generated).
          *              Provided file names have to be relative to the working path.
-         * @param additional Possible additional file names which can be relative to the input path, output path (if
-         *                   prepended with <i>step://</i>, <i>pipe://</i> or provided as Integer (see input) or relative
+         * @param additional Possible additional file names which can be relative to the input path, work path (if
+         *                   prepended with <i>step://</i>, <i>pipe://</i> or provided as Integer, see input) or relative
          *                   to other references (e.g. path on FTP server or in ZIP file). See in the Wiki for more details.
          * @param stopOnError Defines whether pipeline execution should be stopped after an error in this step
          * @param params (Optional) parameters, see in the Wiki for possible values for different StepTypes
@@ -459,6 +485,40 @@ public class Pipeline implements ILogger<String> {
                 }
             }
             steps.add(Pipeline.createStep(type, name, steps.size(), input, output, additional, stopOnError, params));
+            return this;
+        }
+
+        /**
+         * Defines error steps to be executed if the processing pipeline failed to succeed, will add the step to a list
+         * to be executed, but does not actually perform the processing.
+         * @param type Type of transformation or processing
+         * @param name Optional name, can be null or empty String. Can be referenced from later steps in the definition
+         *             of inputs or additional inputs with a prepended <i>step://</i> to the parameters to feed the output
+         *             of this step at the corresponding later point.
+         * @param input Input file(s) as String or List of Strings, relative to the input path of the pipe, can be null
+         *             or empty String if the output of the previous step shall be used. Using a prefix <i>regexp://</i>
+         *             will filter the input path for a regular expression provided as rest of the input.
+         *             An Integer with value <i>n</i> will reference the output files of the <i>n</i>th step in the error pipe.
+         *             A prepended <i>pipe://</i> will reference file names relative to the work path of the pipe, a
+         *             prepended <i>step://</i> will reference all output files of a previous named error step. A prepended
+         *             <i>file://</i> will result in interpretation of the name as absolute. Glob syntax can be used.
+         * @param output String or List of String, optional output file name(s), can be null or empty String
+         *              (standard values will be generated).
+         *              Provided file names have to be relative to the working path.
+         * @param additional Possible additional file names which can be relative to the input path, work path (if
+         *                   prepended with <i>step://</i>, <i>pipe://</i> or provided as Integer, see input) or relative
+         *                   to other references (e.g. path on FTP server or in ZIP file). See in the Wiki for more details.
+         * @param stopOnError Defines whether error pipeline execution should be stopped after an error in this step
+         * @param params (Optional) parameters, see in the Wiki for possible values for different StepTypes
+         * @return Pipeline builder with current step appended to error step list
+         * @throws IllegalArgumentException If one of the provided arguments does not fit the expected type. This prevents
+         *          the pipe from being executed with false parameters.
+         */
+        public PipelineBuilder errorStep(StepType type, String name, Object input, Object output, Object additional,
+                                    boolean stopOnError, String... params)
+                throws IllegalArgumentException
+        {
+            errorSteps.add(Pipeline.createStep(type, name, errorSteps.size(), input, output, additional, stopOnError, params));
             return this;
         }
 

@@ -32,6 +32,7 @@ public class PipeExec {
 
     private final static String PIPE_ELEMENT = "pipeline";
     private final static String STEP_ELEMENT = "step";
+    private final static String ERROR_STEP_ELEMENT = "error";
     private final static String NAME_ELEMENT = "name";
     private final static String INPUT_ELEMENT = "input";
     private final static String OUTPUT_ELEMENT = "output";
@@ -143,7 +144,11 @@ public class PipeExec {
             pipelineBuilder = evalSettings(pipelineBuilder, pipeAttributes);
             NodeList steps = (NodeList) xPath.compile("./" + STEP_ELEMENT).evaluate(pipeNode, XPathConstants.NODESET);
             for (int s = 0; s < steps.getLength(); s++) {
-                pipelineBuilder = evalSteps(pipelineBuilder, steps.item(s), xPath);
+                pipelineBuilder = evalSteps(pipelineBuilder, steps.item(s), xPath, false);
+            }
+            NodeList errorSteps = (NodeList) xPath.compile("./" + ERROR_STEP_ELEMENT).evaluate(pipeNode, XPathConstants.NODESET);
+            for (int s = 0; s < errorSteps.getLength(); s++) {
+                pipelineBuilder = evalSteps(pipelineBuilder, errorSteps.item(s), xPath, true);
             }
             return pipelineBuilder.exec(externalWorkPath);
         } else {
@@ -208,7 +213,7 @@ public class PipeExec {
         return builder;
     }
 
-    private static Pipeline.PipelineBuilder evalSteps(Pipeline.PipelineBuilder builder, Node step, XPath xPath)
+    private static Pipeline.PipelineBuilder evalSteps(Pipeline.PipelineBuilder builder, Node step, XPath xPath, boolean error)
             throws XPathExpressionException, NullPointerException, IllegalArgumentException
     {
         Pipeline.StepType type = evalStepType(step.getAttributes().getNamedItem(TYPE));
@@ -227,7 +232,9 @@ public class PipeExec {
         boolean stopOnError = (Boolean) assignParameter(step, xPath, STOP_ELEMENT);
         String[] param = (String[]) assignParameter(step, xPath, PARAM_ELEMENT);
 
-        return builder.step(type, stepName, input, output, additional, stopOnError, param);
+        return error ?
+                builder.errorStep(type, stepName, input, output, additional, stopOnError, param) :
+                builder.step(type, stepName, input, output, additional, stopOnError, param);
     }
 
     private static Object assignParameter(Node step, XPath xPath, String path)

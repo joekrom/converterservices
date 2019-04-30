@@ -21,11 +21,11 @@ class FTPDownStep extends Step {
 
     @Override
     Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
-        String server = "";
-        String user = "";
-        String pwd = "";
-        String port = "";
-        boolean secure = false;
+        String server = pipe.getFtpHost();
+        String user = pipe.getFtpUser();
+        String pwd = pipe.getFtpPwd();
+        int port = pipe.getFtpPort();
+        boolean secure = pipe.isFtpSecure();
         boolean recursive = false;
         boolean single = false;
 
@@ -43,16 +43,16 @@ class FTPDownStep extends Step {
                         pwd = parts[1];
                         break;
                     case "secure": case "ssl":
-                        if (parts[1].toLowerCase().equals("true")) {
-                            secure = true;
-                            if (port.equals("")) {
-                                port = "22";
+                        if (parts[1].toLowerCase().equals("false")) {
+                            secure = false;
+                            if (port == 0) {
+                                port = 21;
                             }
                         }
                         break;
                     case "port":
                         if (StringUtils.isInt(parts[1])) {
-                            port = parts[1];
+                            port = Integer.valueOf(parts[1]);
                         }
                         break;
                     case "recursive":
@@ -67,6 +67,9 @@ class FTPDownStep extends Step {
                         break;
                 }
             }
+        }
+        if (port == 0) {
+            port = 22;
         }
 
         List<String> outputFiles = new ArrayList<>();

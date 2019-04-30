@@ -49,6 +49,26 @@ public class PipeExec {
     private final static String LOG_FILE = "logFile";
     private final static String LOG_LEVEL = "logLevel";
 
+
+    private final static String FTP_HOST = "ftpHost";
+    private final static String FTP_USER = "ftpUser";
+    private final static String FTP_PWD = "ftpPwd";
+    private final static String FTP_PORT = "ftpPort";
+    private final static String FTP_SECURE = "ftpSecure";
+
+    private final static String HTTP_HOST = "httpHost";
+    private final static String HTTP_USER = "httpUser";
+    private final static String HTTP_PWD = "httpPwd";
+    private final static String HTTP_PORT = "httpPort";
+    private final static String HTTP_SECURE = "httpSecure";
+
+    private final static String MAIL_HOST = "mailHost";
+    private final static String MAIL_USER = "mailUser";
+    private final static String MAIL_PWD = "mailPwd";
+    private final static String MAIL_PORT = "mailPort";
+    private final static String MAIL_SECURE = "mailSecure";
+    private final static String MAIL_SENDER = "mailSender";
+
     private final static String CLASS_ATT = "class";
 
     /**
@@ -207,6 +227,61 @@ public class PipeExec {
                     break;
                 case LOG_LEVEL:
                     builder = builder.setLogLevel(att.getNodeValue().toUpperCase());
+                    break;
+
+                case FTP_HOST:
+                    builder = builder.setFtpHost(att.getNodeValue());
+                    break;
+                case FTP_USER:
+                    builder = builder.setFtpUser(att.getNodeValue());
+                    break;
+                case FTP_PWD:
+                    builder = builder.setFtpPwd(att.getNodeValue());
+                    break;
+                case FTP_PORT:
+                    if (StringUtils.isInt(att.getNodeValue()))
+                        builder = builder.setFtpPort(Integer.valueOf(att.getNodeValue()));
+                    break;
+                case FTP_SECURE:
+                    if (StringUtils.isBool(att.getNodeValue()))
+                        builder = builder.setFtpSecure(Boolean.parseBoolean(att.getNodeValue()));
+                    break;
+                case HTTP_HOST:
+                    builder = builder.setHttpHost(att.getNodeValue());
+                    break;
+                case HTTP_USER:
+                    builder = builder.setHttpUser(att.getNodeValue());
+                    break;
+                case HTTP_PWD:
+                    builder = builder.setHttpPwd(att.getNodeValue());
+                    break;
+                case HTTP_PORT:
+                    if (StringUtils.isInt(att.getNodeValue()))
+                        builder = builder.setHttpPort(Integer.valueOf(att.getNodeValue()));
+                    break;
+                case HTTP_SECURE:
+                    if (StringUtils.isBool(att.getNodeValue()))
+                        builder = builder.setHttpSecure(Boolean.parseBoolean(att.getNodeValue()));
+                    break;
+                case MAIL_HOST:
+                    builder = builder.setMailHost(att.getNodeValue());
+                    break;
+                case MAIL_USER:
+                    builder = builder.setMailUser(att.getNodeValue());
+                    break;
+                case MAIL_PWD:
+                    builder = builder.setMailPwd(att.getNodeValue());
+                    break;
+                case MAIL_PORT:
+                    if (StringUtils.isInt(att.getNodeValue()))
+                        builder = builder.setMailPort(Integer.valueOf(att.getNodeValue()));
+                    break;
+                case MAIL_SECURE:
+                    if (StringUtils.isBool(att.getNodeValue()))
+                        builder = builder.setMailSecure(Boolean.parseBoolean(att.getNodeValue()));
+                    break;
+                case MAIL_SENDER:
+                    builder = builder.setMailSender(att.getNodeValue());
                     break;
             }
         }

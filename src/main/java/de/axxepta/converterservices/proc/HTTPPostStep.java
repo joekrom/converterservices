@@ -24,13 +24,14 @@ class HTTPPostStep extends Step {
     Object execAction(final List<String> inputFiles, final String... parameters)
             throws Exception
     {
-        String server = "";
-        String user = "";
-        String pwd = "";
-        int port = 80;
+        String server = pipe.getHttpHost();
+        String user = pipe.getHttpUser();
+        String pwd = pipe.getHttpPwd();
+        int port = pipe.getHttpPort();
         String path = "";
-        boolean secure = false;
+        boolean secure = pipe.isHttpSecure();
         String contentTypeString = "";
+        String method = "POST";
         int timeout = 1200;
 
         for (String parameter : parameters) {
@@ -47,10 +48,10 @@ class HTTPPostStep extends Step {
                         pwd = parts[1];
                         break;
                     case "secure": case "ssl":
-                        if (parts[1].toLowerCase().equals("true")) {
-                            secure = true;
-                            if (port == 80) {
-                                port = 443;
+                        if (parts[1].toLowerCase().equals("false")) {
+                            secure = false;
+                            if (port == 0) {
+                                port = 80;
                             }
                         }
                         break;
@@ -58,6 +59,14 @@ class HTTPPostStep extends Step {
                         if (StringUtils.isInt(parts[1])) {
                             port = Integer.valueOf(parts[1]);
                         }
+                        break;
+                    case "method":
+                        if (parts[1].toLowerCase().equals("PUT"))
+                            method = "PUT";
+                        break;
+                    case "put":
+                        if (parts[1].toLowerCase().equals("true"))
+                            method = "PUT";
                         break;
                     case "timeout":
                         if (StringUtils.isInt(parts[1])) {
@@ -73,6 +82,9 @@ class HTTPPostStep extends Step {
                 }
             }
         }
+        if (port == 0) {
+            port = 443;
+        }
 
         List<String> uploadFiles = IOUtils.collectFiles(inputFiles);
         List<String> uploadedFiles = new ArrayList<>();
@@ -82,7 +94,12 @@ class HTTPPostStep extends Step {
                 if (HTTPUtils.contentTypeIsTextType(contentTypeString) ||
                         HTTPUtils.fileTypeIsTextType(IOUtils.getFileExtension(file))) {
                     ContentType currentContent = determineContentType(contentTypeString, IOUtils.getFileExtension(file));
-                    HTTPUtils.postTextTypeFile(secure ? "https" : "http", server, port, path, user, pwd, timeout, file, currentContent);
+
+                    if (method.equals("POST")) {
+                        HTTPUtils.postTextTypeFile(secure ? "https" : "http", server, port, path, user, pwd, timeout, file, currentContent);
+                    } else {
+                        HTTPUtils.putTextTypeFile(secure ? "https" : "http", server, port, path, user, pwd, timeout, file, currentContent);
+                    }
                     uploadedFiles.add(file);
                 }
             } catch (IOException ex) {

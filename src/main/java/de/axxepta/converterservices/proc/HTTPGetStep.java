@@ -23,11 +23,11 @@ class HTTPGetStep extends Step {
     @Override
     Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
 
-        String server = "";
-        String user = "";
-        String pwd = "";
-        int port = 80;
-        boolean secure = false;
+        String server = pipe.getHttpHost();
+        String user = pipe.getHttpUser();
+        String pwd = pipe.getHttpPwd();
+        int port = pipe.getHttpPort();
+        boolean secure = pipe.isHttpSecure();
         String contentTypeString = "";
         int timeout = 1200;
 
@@ -45,10 +45,10 @@ class HTTPGetStep extends Step {
                         pwd = parts[1];
                         break;
                     case "secure": case "ssl":
-                        if (parts[1].toLowerCase().equals("true")) {
-                            secure = true;
-                            if (port == 80) {
-                                port = 443;
+                        if (parts[1].toLowerCase().equals("false")) {
+                            secure = false;
+                            if (port == 0) {
+                                port = 80;
                             }
                         }
                         break;
@@ -67,6 +67,9 @@ class HTTPGetStep extends Step {
                         break;
                 }
             }
+        }
+        if (port == 0) {
+            port = 443;
         }
 
         List<String> downloadedFiles = new ArrayList<>();

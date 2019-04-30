@@ -28,7 +28,7 @@ public class HTTPUtils {
                                  int timeout, String... accept) throws IOException
     {
         try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
-            HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + Integer.toString(port) + path);
+            HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + port + path);
             if (accept.length > 0) {
                 httpget.setHeader("Accept", accept[0]);
             }
@@ -45,7 +45,7 @@ public class HTTPUtils {
         List<String> responseFile = new ArrayList<>();
         //ToDo: Multipart
         try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
-            HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + Integer.toString(port) + path);
+            HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + port + path);
             if (accept.length > 0) {
                 httpget.setHeader("Accept", accept[0]);
             }
@@ -91,7 +91,7 @@ public class HTTPUtils {
     public static String post(String protocol, String host, int port, String path, String user, String password,
                                   int timeout, String content, ContentType... contentType) throws IOException {
         try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
-            HttpPost httpPost = new HttpPost(protocol + "://" + host + ":" + Integer.toString(port) + path);
+            HttpPost httpPost = new HttpPost(protocol + "://" + host + ":" + port + path);
             HttpEntity stringEntity;
             if (contentType.length > 0) {
                 stringEntity = new StringEntity(content, contentType[0]);
@@ -143,7 +143,7 @@ public class HTTPUtils {
                                    int timeout, String content, ContentType... contentType) throws IOException
     {
         try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout)) {
-            HttpPut httpPut = new HttpPut(protocol + "://" + host + ":" + Integer.toString(port) + path);
+            HttpPut httpPut = new HttpPut(protocol + "://" + host + ":" + port + path);
             HttpEntity stringEntity;
             if (contentType.length > 0) {
                 stringEntity = new StringEntity(content, contentType[0]);
@@ -156,6 +156,13 @@ public class HTTPUtils {
                 return EntityUtils.toString(response.getEntity());
             }
         }
+    }
+
+    public static String putTextTypeFile(String protocol, String host, int port, String path, String user, String password,
+                                          int timeout, String file, ContentType contentType) throws IOException
+    {
+        String content = IOUtils.loadStringFromFile(file);
+        return putString(protocol, host, port, path, user, password, timeout, content, contentType);
     }
 
     public static String putJSON(String protocol, String host, int port, String path, String user, String password,

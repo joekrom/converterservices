@@ -54,6 +54,26 @@ public class Pipeline {
     private final String inputFile;
     private String logFileName;
     private final String logLevel;
+
+    private final String ftpHost;
+    private final String ftpUser;
+    private final String ftpPwd;
+    private final int ftpPort;
+    private final boolean ftpSecure;
+
+    private final String httpHost;
+    private final String httpUser;
+    private final String httpPwd;
+    private final int httpPort;
+    private final boolean httpSecure;
+
+    private final String mailHost;
+    private final String mailUser;
+    private final String mailPwd;
+    private final int mailPort;
+    private final boolean mailSecure;
+    private final String mailSender;
+
     private final List<Step> steps;
     private final List<Step> errorSteps;
     private boolean errorPipeRunning;
@@ -81,6 +101,26 @@ public class Pipeline {
         this.inputFile = builder.inputFile;
         this.logFileName = builder.logFileName;
         this.logLevel = builder.logLevel;
+
+        this.ftpHost = builder.ftpHost;
+        this.ftpUser = builder.ftpUser;
+        this.ftpPwd = builder.ftpPwd;
+        this.ftpPort = builder.ftpPort;
+        this.ftpSecure = builder.ftpSecure;
+
+        this.httpHost = builder.httpHost;
+        this.httpUser = builder.httpUser;
+        this.httpPwd = builder.httpPwd;
+        this.httpPort = builder.httpPort;
+        this.httpSecure = builder.httpSecure;
+
+        this.mailHost = builder.mailHost;
+        this.mailUser = builder.mailUser;
+        this.mailPwd = builder.mailPwd;
+        this.mailPort = builder.mailPort;
+        this.mailSecure = builder.mailSecure;
+        this.mailSender = builder.mailSender;
+
         this.steps = builder.steps;
         this.errorSteps = builder.errorSteps;
         errorPipeRunning = false;
@@ -214,6 +254,70 @@ public class Pipeline {
 
     String getWorkPath() {
         return workPath;
+    }
+
+    String getFtpHost() {
+        return ftpHost;
+    }
+
+    String getFtpUser() {
+        return ftpUser;
+    }
+
+    String getFtpPwd() {
+        return ftpPwd;
+    }
+
+    int getFtpPort() {
+        return ftpPort;
+    }
+
+    boolean isFtpSecure() {
+        return ftpSecure;
+    }
+
+    String getHttpHost() {
+        return httpHost;
+    }
+
+    String getHttpUser() {
+        return httpUser;
+    }
+
+    String getHttpPwd() {
+        return httpPwd;
+    }
+
+    int getHttpPort() {
+        return httpPort;
+    }
+
+    boolean isHttpSecure() {
+        return httpSecure;
+    }
+
+    String getMailHost() {
+        return mailHost;
+    }
+
+    String getMailUser() {
+        return mailUser;
+    }
+
+    String getMailPwd() {
+        return mailPwd;
+    }
+
+    int getMailPort() {
+        return mailPort;
+    }
+
+    boolean isMailSecure() {
+        return mailSecure;
+    }
+
+    String getMailSender() {
+        return mailSender;
     }
 
     void incErrorCounter(int add) {
@@ -413,6 +517,26 @@ public class Pipeline {
         private String inputFile = "";
         private String logFileName = "";
         private String logLevel = Logging.NONE;
+
+        private String ftpHost = "";
+        private String ftpUser = "";
+        private String ftpPwd = "";
+        private int ftpPort = 0;
+        private boolean ftpSecure = true;
+
+        private String httpHost = "";
+        private String httpUser = "";
+        private String httpPwd = "";
+        private int httpPort = 0;
+        private boolean httpSecure = true;
+
+        private String mailHost = "";
+        private String mailUser = "";
+        private String mailPwd = "";
+        private int mailPort = 0;
+        private boolean mailSecure = true;
+        private String mailSender = "";
+
         private List<Step> steps = new ArrayList<>();
         private List<Step> errorSteps = new ArrayList<>();
 
@@ -438,6 +562,86 @@ public class Pipeline {
 
         public PipelineBuilder setLogLevel(String logLevel) {
             this.logLevel = logLevel;
+            return this;
+        }
+
+        public PipelineBuilder setFtpHost(String ftpHost) {
+            this.ftpHost = ftpHost;
+            return this;
+        }
+
+        public PipelineBuilder setFtpUser(String ftpUser) {
+            this.ftpUser = ftpUser;
+            return this;
+        }
+
+        public PipelineBuilder setFtpPwd(String ftpPwd) {
+            this.ftpPwd = ftpPwd;
+            return this;
+        }
+
+        public PipelineBuilder setFtpPort(int ftpPort) {
+            this.ftpPort = ftpPort;
+            return this;
+        }
+
+        public PipelineBuilder setFtpSecure(boolean ftpSecure) {
+            this.ftpSecure = ftpSecure;
+            return this;
+        }
+
+        public PipelineBuilder setHttpHost(String httpHost) {
+            this.httpHost = httpHost;
+            return this;
+        }
+
+        public PipelineBuilder setHttpUser(String httpUser) {
+            this.httpUser = httpUser;
+            return this;
+        }
+
+        public PipelineBuilder setHttpPwd(String httpPwd) {
+            this.httpPwd = httpPwd;
+            return this;
+        }
+
+        public PipelineBuilder setHttpPort(int httpPort) {
+            this.httpPort = httpPort;
+            return this;
+        }
+
+        public PipelineBuilder setHttpSecure(boolean httpSecure) {
+            this.httpSecure = httpSecure;
+            return this;
+        }
+
+        public PipelineBuilder setMailHost(String mailHost) {
+            this.mailHost = mailHost;
+            return this;
+        }
+
+        public PipelineBuilder setMailUser(String mailUser) {
+            this.mailUser = mailUser;
+            return this;
+        }
+
+        public PipelineBuilder setMailPwd(String mailPwd) {
+            this.mailPwd = mailPwd;
+            return this;
+        }
+
+        public PipelineBuilder setMailPort(int mailPort) {
+            this.mailPort = mailPort;
+            return this;
+        }
+
+        public PipelineBuilder setMailSecure(boolean mailSecure) {
+            this.mailSecure = mailSecure;
+            return this;
+        }
+
+        public PipelineBuilder setMailSender(String mailSender) {
+            this.mailSender = mailSender;
             return this;
         }
 

@@ -26,6 +26,10 @@ public class StringUtils {
         return true;
     }
 
+    public static boolean isBool(String str) {
+        return str.toLowerCase().equals("true") || str.toLowerCase().equals("false");
+    }
+
     public static String decodeBase64(String input) {
         byte[] decoded = Base64.getDecoder().decode(input);
         return new String(decoded);

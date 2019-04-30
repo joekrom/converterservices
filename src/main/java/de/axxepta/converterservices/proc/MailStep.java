@@ -26,15 +26,15 @@ class MailStep extends Step {
 
     @Override
     Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
-        String host = "";
-        String user = "";
-        String pwd = "";
-        int port = 587;
-        String sender = "";
+        String host = pipe.getMailHost();
+        String user = pipe.getMailUser();
+        String pwd = pipe.getMailPwd();
+        int port = pipe.getMailPort() == 0 ? 587 : pipe.getMailPort();
+        String sender = pipe.getMailSender();
         String receiver = "";
         String subject = "";
-        String content = "";
-        boolean secure = true;
+        String content;
+        boolean secure = pipe.isMailSecure();
         boolean htmlMail = false;
         boolean embeddedImages = false;
         boolean attachments = false;
@@ -55,7 +55,7 @@ class MailStep extends Step {
                         break;
                     case "secure": case "ssltls": case "ssl":
                         if (parts[1].toLowerCase().equals("false")) {
-                            secure = true;
+                            secure = false;
                         }
                         break;
                     case "port":

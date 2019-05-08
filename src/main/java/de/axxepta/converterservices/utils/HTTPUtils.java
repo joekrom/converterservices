@@ -49,8 +49,7 @@ public class HTTPUtils {
             if (accept.length > 0) {
                 httpget.setHeader("Accept", accept[0]);
             }
-            try (CloseableHttpResponse response = httpClient.execute(httpget))
-            {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 HttpEntity entity = response.getEntity();
                 Header responseContentHeader = entity.getContentType();
                 IOUtils.byteArrayToFile(EntityUtils.toByteArray(entity), file);
@@ -99,8 +98,7 @@ public class HTTPUtils {
                 stringEntity = new StringEntity(content);
             }
             httpPost.setEntity(stringEntity);
-            try (CloseableHttpResponse response = httpClient.execute(httpPost))
-            {
+            try (CloseableHttpResponse response = httpClient.execute(httpPost)) {
                 return EntityUtils.toString(response.getEntity());
             }
         }
@@ -151,8 +149,7 @@ public class HTTPUtils {
                 stringEntity = new StringEntity(content);
             }
             httpPut.setEntity(stringEntity);
-            try (CloseableHttpResponse response = httpClient.execute(httpPut))
-            {
+            try (CloseableHttpResponse response = httpClient.execute(httpPut)) {
                 return EntityUtils.toString(response.getEntity());
             }
         }

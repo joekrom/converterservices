@@ -5,6 +5,9 @@ import de.axxepta.converterservices.utils.StringUtils;
 import net.sf.saxon.lib.FeatureKeys;
 import net.sf.saxon.s9api.*;
 import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import javax.xml.XMLConstants;
@@ -130,6 +133,45 @@ public class Saxon {
         File xmlFile = new File(file);
         DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
         return builder.parse(xmlFile);
+    }
+
+    public static Document stringToDOM(String xml) throws ParserConfigurationException, SAXException, IOException {
+        DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+        return builder.parse(new InputSource(new ByteArrayInputStream(xml.getBytes("utf-8"))));
+    }
+
+    /**
+     * Transform a Node to it's String representation
+     * @param node XML node
+     * @param omitXmlDeclaration omit XML declaration in String, set to "yes|no" or "true|false" or "1|0"
+     * @param indent indent, set to "yes" or "no"
+     * @return
+     */
+    public static String nodeToString(Node node, String omitXmlDeclaration, String indent) throws TransformerException {
+        StringWriter sw = new StringWriter();
+        Transformer t = TransformerFactory.newInstance().newTransformer();
+        t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, omitXmlDeclaration);
+        t.setOutputProperty(OutputKeys.INDENT, indent);
+        t.transform(new DOMSource(node), new StreamResult(sw));
+        return sw.toString();
+    }
+
+    /**
+     * Transform a Node to it's String representation
+     * @param nodeList XML node
+     * @param omitXmlDeclaration omit XML declaration in String, set to "yes|no" or "true|false" or "1|0"
+     * @param indent indent, set to "yes" or "no"
+     * @return
+     */
+    public static String nodeListToString(NodeList nodeList, String omitXmlDeclaration, String indent) throws TransformerException {
+        StringWriter sw = new StringWriter();
+        Transformer t = TransformerFactory.newInstance().newTransformer();
+        t.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, omitXmlDeclaration);
+        t.setOutputProperty(OutputKeys.INDENT, indent);
+        for (int i = 0, len = nodeList.getLength(); i < len; i++) {
+            t.transform(new DOMSource(nodeList.item(i)), new StreamResult(sw));
+        }
+        return sw.toString();
     }
 
     private static List xqueryListOutput(XdmValue result, String type) throws SaxonApiException {

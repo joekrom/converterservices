@@ -137,21 +137,31 @@ public class IOUtils {
                 if (entry.isDirectory()) {
                     IOUtils.safeCreateDirectory(pathCombine(path, name));
                 } else {
-                    copyResource(name, path, referenceClass);
+                    copyResource(name, path, true, referenceClass);
                 }
             }
         }
         jar.close();
     }
 
-    private static void copyResource(final String fileName, final String target, Class referenceClass) throws IOException {
-        String path = target + IOUtils.dirFromPath(fileName);
+    /**
+     * Copy a resource from a JAR to
+     * @param fileName Path of the resource in the JAR
+     * @param target Target directory
+     * @param withResourcePath Set to true if relative path of resource in JAR should be added to the target path, otherwise only the file name will be added
+     * @param referenceClass Calling class
+     * @throws IOException
+     */
+    public static void copyResource(final String fileName, final String target, boolean withResourcePath, Class referenceClass) throws IOException {
+        String path = pathCombine(target, dirFromPath(fileName));
         if (!Files.exists(Paths.get(path)))
             new File(path).mkdirs();
         InputStream is = referenceClass.getResourceAsStream("/" + fileName);
         if(is == null) throw new IOException("Resource not found: " + fileName);
         Files.copy(is,
-                Paths.get(target + (target.endsWith("/") || target.endsWith("\\") ? "" : "/") + fileName),
+                Paths.get(target +
+                        (target.endsWith("/") || target.endsWith("\\") ? "" : "/") +
+                        (withResourcePath ? fileName : filenameFromPath(fileName))),
                 REPLACE_EXISTING );
         is.close();
     }

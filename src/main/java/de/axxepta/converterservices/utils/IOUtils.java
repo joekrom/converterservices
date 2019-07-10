@@ -8,7 +8,9 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -127,7 +129,9 @@ public class IOUtils {
     public static void copyResources(String path, String resourcePath, Class referenceClass) throws IOException {
         IOUtils.safeCreateDirectory(path);
         IOUtils.safeCreateDirectory(pathCombine(path, resourcePath));
-        File jarFile = new File(referenceClass.getProtectionDomain().getCodeSource().getLocation().getPath());
+        String jarPath = URLDecoder.decode(referenceClass.getProtectionDomain().getCodeSource().getLocation().getPath(), "UTF-8");//.replaceAll("%20", " ");
+        System.out.println("JARPATH   --    " + jarPath);
+        File jarFile = new File(jarPath);
         JarFile jar = new JarFile(jarFile);
         final Enumeration<JarEntry> entries = jar.entries();
         while(entries.hasMoreElements()) {
@@ -153,9 +157,10 @@ public class IOUtils {
      * @throws IOException
      */
     public static void copyResource(final String fileName, final String target, boolean withResourcePath, Class referenceClass) throws IOException {
-        String path = pathCombine(target, dirFromPath(fileName));
-        if (!Files.exists(Paths.get(path)))
-            new File(path).mkdirs();
+        if (withResourcePath) {
+            String path = pathCombine(target, dirFromPath(fileName));
+            safeCreateDirectory(path);
+        }
         InputStream is = referenceClass.getResourceAsStream("/" + fileName);
         if(is == null) throw new IOException("Resource not found: " + fileName);
         Files.copy(is,
@@ -168,7 +173,7 @@ public class IOUtils {
 
     public static void safeCreateDirectory(String path) throws IOException {
         if (!Files.exists(Paths.get(path)))
-            Files.createDirectory(Paths.get(path));
+            Files.createDirectories(Paths.get(path));
     }
 
     public static void safeDeleteFile(String path) {

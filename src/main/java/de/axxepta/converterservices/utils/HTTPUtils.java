@@ -17,6 +17,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.json.JSONException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -51,7 +52,6 @@ public class HTTPUtils {
             }
             try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 HttpEntity entity = response.getEntity();
-                Header responseContentHeader = entity.getContentType();
                 IOUtils.byteArrayToFile(EntityUtils.toByteArray(entity), file);
                 responseFile.add(file);
                 return responseFile;
@@ -72,7 +72,7 @@ public class HTTPUtils {
     }
 
     public static String getXmlFromJSON(String protocol, String host, int port, String path, String user, String password, int timeout)
-            throws IOException
+            throws IOException, JSONException
     {
         String str = getJSON(protocol, host, port, path, user, password, timeout);
         return "<response>" + JSONUtils.JsonToXmlString(str) + "</response>";

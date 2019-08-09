@@ -10,7 +10,6 @@ import java.net.InetAddress;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -104,6 +103,15 @@ public class IOUtils {
     public static String loadStringFromFile(String fileName, String... charset) throws IOException {
         String encoding = charset.length > 0 ? charset[0] : "UTF-8";
         return new String(Files.readAllBytes(Paths.get(fileName)), encoding);
+    }
+
+    public static List<String> loadStringsFromFile(String fileName) throws IOException {
+        Scanner scanner = new Scanner(new File(fileName));
+        List<String> lines = new ArrayList<>();
+        while (scanner.hasNextLine()) {
+            lines.add(scanner.nextLine());
+        }
+        return lines;
     }
 
     public static String getResourceAsString(String name) throws IOException {

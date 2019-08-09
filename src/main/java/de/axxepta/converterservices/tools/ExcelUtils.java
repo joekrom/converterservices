@@ -1,6 +1,5 @@
 package de.axxepta.converterservices.tools;
 
-import de.axxepta.converterservices.App;
 import de.axxepta.converterservices.Const;
 import de.axxepta.converterservices.utils.IOUtils;
 import org.apache.poi.hssf.util.CellReference;
@@ -52,8 +51,8 @@ public class ExcelUtils {
                                              String colEl, String attSheetName)
     {
         List<String> outputFiles = new ArrayList<>();
-        try (FileInputStream file = new FileInputStream(App.TEMP_FILE_PATH + "/" + fileName)) {
-            exportExcel(file, App.TEMP_FILE_PATH, fileName, type, customXMLMapping, sheetName, separator, indent,
+        try (FileInputStream file = new FileInputStream(Const.TEMP_FILE_PATH + "/" + fileName)) {
+            exportExcel(file, Const.TEMP_FILE_PATH, fileName, type, customXMLMapping, sheetName, separator, indent,
                     true, true, columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName);
         } catch (IOException ie) {
             LOGGER.error("Exception reading Excel file: " + ie.getMessage());
@@ -104,7 +103,7 @@ public class ExcelUtils {
         DataFormatter formatter = new DataFormatter(true);
         for (Sheet sheet : sheets) {
             String convertedFileName = CSVFileName(fileName, sheet.getSheetName());
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter(App.TEMP_FILE_PATH + "/" + convertedFileName))) {
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(Const.TEMP_FILE_PATH + "/" + convertedFileName))) {
                 int firstRow = sheet.getFirstRowNum();
                 int lastRow = sheet.getLastRowNum();
                 int firstColumn = Math.min(sheet.getRow(firstRow).getFirstCellNum(), sheet.getRow(firstRow + 1).getFirstCellNum());
@@ -193,9 +192,9 @@ public class ExcelUtils {
         String outputFile = XLSXFileName(fileName);
         XSSFWorkbook workbook = new XSSFWorkbook();
         try {
-            FileOutputStream out = new FileOutputStream(new File(App.TEMP_FILE_PATH + "/" + outputFile));
+            FileOutputStream out = new FileOutputStream(new File(Const.TEMP_FILE_PATH + "/" + outputFile));
             XSSFSheet sheet = workbook.createSheet(sheetName);
-            try (FileInputStream fis = new FileInputStream(App.TEMP_FILE_PATH + "/" + fileName)) {
+            try (FileInputStream fis = new FileInputStream(Const.TEMP_FILE_PATH + "/" + fileName)) {
                 Scanner scanner = new Scanner(fis);
                 int rowId = 0;
                 while (scanner.hasNext()) {
@@ -219,7 +218,7 @@ public class ExcelUtils {
     }
 
     public static String serviceXMLToExcel(String fileName, String sheetName, String row, String col, String separator, String... outputFileName) {
-        String outputFile = App.TEMP_FILE_PATH + "/" + (outputFileName.length > 0 ? outputFileName[0]: XLSXFileName(fileName));
+        String outputFile = Const.TEMP_FILE_PATH + "/" + (outputFileName.length > 0 ? outputFileName[0]: XLSXFileName(fileName));
         String type = Const.DATA_TYPE_ATT;
         boolean cellFormat = true;
         return XMLToExcel(fileName, sheetName, row, col, type, cellFormat, separator, outputFile);

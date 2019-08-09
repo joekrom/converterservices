@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static de.axxepta.converterservices.App.TEMP_FILE_PATH;
+import static de.axxepta.converterservices.Const.TEMP_FILE_PATH;
 
 public class CmdUtils {
 

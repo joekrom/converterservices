@@ -1,6 +1,6 @@
 package de.axxepta.converterservices.proc;
 
-import de.axxepta.converterservices.App;
+import de.axxepta.converterservices.Const;
 import de.axxepta.converterservices.Core;
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.tools.ZIPUtils;
@@ -47,6 +47,7 @@ public class Pipeline {
     private final boolean verbose;
     private final boolean archive;
     private final boolean cleanup;
+    private final boolean useExceptionHandler;
     private final String dateString;
     private String workPath;
     private final String inputPath;
@@ -95,6 +96,7 @@ public class Pipeline {
         this.verbose = builder.verbose;
         this.archive = builder.archive;
         this.cleanup = builder.cleanup;
+        this.useExceptionHandler = builder.useExceptionHandler;
         this.workPath = builder.workPath;
         this.inputPath = builder.inputPath;
         this.outputPath = builder.outputPath;
@@ -133,7 +135,7 @@ public class Pipeline {
             if (extWorkPath.equals("")) {
                 temporaryWorkPath = Core.setTempPath();
                 dateString = temporaryWorkPath;
-                workPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, temporaryWorkPath);
+                workPath = IOUtils.pathCombine(Const.TEMP_FILE_PATH, temporaryWorkPath);
             } else {
                 workPath = extWorkPath;
                 dateString = new SimpleDateFormat("yyyy-MM-dd_HH-mm-ss").format(new Date());
@@ -188,6 +190,9 @@ public class Pipeline {
             log("#--# Step " + stepCounter + " # Exception: " + ex.getMessage());
             if (verbose) {
                 ex.printStackTrace();
+            }
+            if (useExceptionHandler) {
+                ExceptionHandler.handle(ExceptionHandler.getStackTrace(ex));
             }
         } finally {
             if (!temporaryWorkPath.equals("")) {
@@ -452,6 +457,9 @@ public class Pipeline {
             case MAIL:
                 step = new MailStep(name, input, output, additional, stopOnError, params);
                 break;
+            case OUTPUT_CONTENT:
+                step = new OutputContentStep(name, input, output, additional, stopOnError, params);
+                break;
             default:
                 step = new EmptyStep(name, input, output, additional, stopOnError, params);
         }
@@ -511,6 +519,7 @@ public class Pipeline {
         private boolean verbose = false;
         private boolean archive = false;
         private boolean cleanup = false;
+        private boolean useExceptionHandler = false;
         private String workPath = "";
         private String inputPath = workPath;
         private String outputPath = "";
@@ -541,17 +550,17 @@ public class Pipeline {
         private List<Step> errorSteps = new ArrayList<>();
 
         public PipelineBuilder setWorkPath(String workPath) {
-            this.workPath = workPath;
+            this.workPath = absolutePath(workPath);
             return this;
         }
 
         public PipelineBuilder setInputPath(String inputPath) {
-            this.inputPath = inputPath;
+            this.inputPath = absolutePath(inputPath);
             return this;
         }
 
         public PipelineBuilder setOutputPath(String outputPath) {
-            this.outputPath = outputPath;
+            this.outputPath = absolutePath(outputPath);
             return this;
         }
 
@@ -756,6 +765,22 @@ public class Pipeline {
             return this;
         }
 
+        public PipelineBuilder useExceptionHandler(boolean useExceptionHandler) {
+            this.useExceptionHandler = useExceptionHandler;
+            return this;
+        }
+
+        /**
+         * Setting this attribute for a pipeline will activate exception reporting implemented in
+         * the {@link de.axxepta.converterservices.utils.ExceptionHandler#handle(String) ExceptionHandler class}
+         * if a stopping exception occurs during pipeline execution.
+         * @return Pipeline builder with activated exception handling
+         */
+        public PipelineBuilder useExceptionHandler() {
+            useExceptionHandler = true;
+            return this;
+        }
+
         //ToDo: build?
 
         /**
@@ -769,13 +794,17 @@ public class Pipeline {
         public Object exec(String... externalWorkPath) {
             return new Pipeline(this, externalWorkPath.length > 0 ? externalWorkPath[0] : "").exec();
         }
+
+        private String absolutePath(String path) {
+            return (path.startsWith("/") || path.indexOf(":") == 1) ? path : IOUtils.pathCombine(IOUtils.jarPath(), path);
+        }
     }
 
 
     public enum StepType {
         XSLT, XSL_FO, XQUERY, XML_CSV, XML_XLSX, ZIP, UNZIP, FT, GZIP, GUNZIP, EXIF, PDF_SPLIT, PDF_MERGE, THUMB, MD5, MD5_FILTER,
         COMBINE, CMD, JSON_XML, FILTER, HTTP_POST, HTTP_GET, FTP_UP, FTP_DOWN, FTP_GRAB, LIST, REPLACE, MAIL,
-        BASE64_ENC, BASE64_DEC, XLSX_XML, NONE
+        BASE64_ENC, BASE64_DEC, XLSX_XML, OUTPUT_CONTENT, NONE
     }
 
 }

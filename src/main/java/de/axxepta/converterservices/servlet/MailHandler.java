@@ -69,7 +69,7 @@ public class MailHandler extends RequestHandler {
     }
 
     @Override
-    public Object processSingle(boolean async) throws Exception {
+    public Object processSingle(boolean async) {
         response.status(400);
         return "Not implemented";
     }

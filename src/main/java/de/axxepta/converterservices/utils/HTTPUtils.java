@@ -1,6 +1,5 @@
 package de.axxepta.converterservices.utils;
 
-import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -10,18 +9,27 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.DefaultHttpRequestRetryHandler;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.client.*;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.ssl.SSLContextBuilder;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.json.JSONException;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class HTTPUtils {
 
@@ -33,8 +41,7 @@ public class HTTPUtils {
             if (accept.length > 0) {
                 httpget.setHeader("Accept", accept[0]);
             }
-            try (CloseableHttpResponse response = httpClient.execute(httpget))
-            {
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 return EntityUtils.toString(response.getEntity());
             }
         }
@@ -49,6 +56,25 @@ public class HTTPUtils {
             HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + port + path);
             if (accept.length > 0) {
                 httpget.setHeader("Accept", accept[0]);
+            }
+            try (CloseableHttpResponse response = httpClient.execute(httpget)) {
+                HttpEntity entity = response.getEntity();
+                IOUtils.byteArrayToFile(EntityUtils.toByteArray(entity), file);
+                responseFile.add(file);
+                return responseFile;
+            }
+        }
+    }
+
+    public static List<String> get(String protocol, String host, int port, String path, String user, String password,
+                                   int timeout, String file, boolean gullible, Map<String, String> headers) throws IOException
+    {
+        List<String> responseFile = new ArrayList<>();
+        //ToDo: Multipart
+        try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout, gullible)) {
+            HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + port + path);
+            for (String key : headers.keySet()) {
+                httpget.setHeader(key, headers.get(key));
             }
             try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 HttpEntity entity = response.getEntity();
@@ -188,29 +214,6 @@ public class HTTPUtils {
         return putString(protocol, host, port, path, user, password, timeout, content, ContentType.APPLICATION_XML);
     }
 
-    private static CloseableHttpClient getClient(String host, int port, String user, String password, int timeout) {
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(timeout * 1000)
-                .setConnectionRequestTimeout(timeout * 1000)
-                .setSocketTimeout(timeout * 1000).build();
-        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-        credentialsProvider.setCredentials(
-                new AuthScope(host, port),
-                new UsernamePasswordCredentials(user, password));
-        return HttpClients.custom()
-                .setDefaultCredentialsProvider(credentialsProvider)
-                .setDefaultRequestConfig(config)
-
-                //HACK:
-                // true if it's OK to retry non-idempotent requests that have been sent
-                // and then fail with network issues (not HTTP failures).
-                //
-                // "true" here will retry POST requests which have been sent but where
-                // the response was not received. This arguably is a bit risky.
-                .setRetryHandler(new DefaultHttpRequestRetryHandler(3, true))
-                .build();
-    }
-
     public static boolean contentTypeIsTextType(String contentType) {
         return contentType.toLowerCase().contains("xml") ||
                 contentType.toLowerCase().contains("javascript") ||
@@ -227,6 +230,55 @@ public class HTTPUtils {
                 fileType.toLowerCase().equals("rdf") ||
                 fileType.toLowerCase().equals("md5") ||
                 fileType.toLowerCase().equals("json");
+    }
+
+    private static CloseableHttpClient getClient(String host, int port, String user, String password, int timeout, boolean... gullible) {
+        RequestConfig config = RequestConfig.custom()
+                .setConnectTimeout(timeout * 1000)
+                .setConnectionRequestTimeout(timeout * 1000)
+                .setSocketTimeout(timeout * 1000).build();
+        HttpClientBuilder builder = HttpClients.custom()
+                .setDefaultRequestConfig(config)
+                //HACK:
+                // true if it's OK to retry non-idempotent requests that have been sent
+                // and then fail with network issues (not HTTP failures).
+                //
+                // "true" here will retry POST requests which have been sent but where
+                // the response was not received. This arguably is a bit risky.
+                .setRetryHandler(new DefaultHttpRequestRetryHandler(3, true));
+
+        // configure client to ignore server's certificate chain, use only for https
+        if (gullible.length > 0 && gullible[0]) {
+            try {
+                SSLContextBuilder contextBuilder = SSLContexts.custom();
+                SSLContext sslContext = contextBuilder.
+                        loadTrustMaterial(null, (X509Certificate[] chain, String authType) -> true).build();
+
+                HostnameVerifier hostnameVerifier = NoopHostnameVerifier.INSTANCE;
+                SSLConnectionSocketFactory sslsf = new SSLConnectionSocketFactory(sslContext, hostnameVerifier);
+
+                Registry<ConnectionSocketFactory> socketFactoryRegistry = RegistryBuilder
+                        .<ConnectionSocketFactory>create().register("https", sslsf)
+                        .build();
+
+                PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(
+                        socketFactoryRegistry);
+                builder = builder.setConnectionManager(cm);
+            } catch (Exception ex) {
+                System.out.println("Ignoring overcredulous connection try...");
+                ex.printStackTrace();
+            }
+        }
+
+        if (!user.equals("")) {
+            CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+            credentialsProvider.setCredentials(
+                    new AuthScope(host, port),
+                    new UsernamePasswordCredentials(user, password));
+
+            builder = builder.setDefaultCredentialsProvider(credentialsProvider);
+        }
+        return builder.build();
     }
 
 }

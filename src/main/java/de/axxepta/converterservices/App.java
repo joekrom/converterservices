@@ -10,6 +10,7 @@ import de.axxepta.converterservices.tools.CmdUtils;
 import de.axxepta.converterservices.tools.ExcelUtils;
 import de.axxepta.converterservices.tools.ImageUtils;
 import de.axxepta.converterservices.tools.PDFUtils;
+import de.axxepta.converterservices.utils.ExceptionHandler;
 import de.axxepta.converterservices.utils.IOUtils;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
 import org.slf4j.Logger;
@@ -31,9 +32,6 @@ import static spark.Spark.*;
 public class App {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(App.class);
-
-    public static final String STATIC_FILE_PATH = System.getProperty("user.home") + "/.converterservices";
-    public static final String TEMP_FILE_PATH = STATIC_FILE_PATH + "/temp";
 
     private static final String PATH_HELLO              = "/hello";
     private static final String PATH_STOP               = "/stop";
@@ -88,13 +86,17 @@ public class App {
 
     static void init(String basePath) {
 
+        System.out.println("EXECUTION CONTEXT PATH: " + IOUtils.jarPath());
+
+        ExceptionHandler.initDefaultExceptionHandler();
+
         ServletUtils.setJettyLogLevel("WARN");
 
         SSLProvider.checkSSL();
 
         try {
-            de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(STATIC_FILE_PATH);
-            de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(TEMP_FILE_PATH);
+            de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(Const.STATIC_FILE_PATH);
+            de.axxepta.converterservices.utils.IOUtils.safeCreateDirectory(Const.TEMP_FILE_PATH);
         } catch (IOException ie) {
             LOGGER.error("Couldn't create directory for temporary files!");
         }
@@ -112,7 +114,7 @@ public class App {
 
         get(basePath + PATH_DOWNLOAD + "/" + PARAM_NAME, (request, response) -> {
             HttpServletResponse raw = singleFileResponse(response, request.params(PARAM_NAME));
-            File file = new File(STATIC_FILE_PATH + "/" + request.params(PARAM_NAME));
+            File file = new File(Const.STATIC_FILE_PATH + "/" + request.params(PARAM_NAME));
             if (file.exists()) {
                 try (InputStream is = new FileInputStream(file)) {
                     de.axxepta.converterservices.utils.IOUtils.copyStreams(is, raw.getOutputStream());
@@ -170,7 +172,7 @@ public class App {
         post(basePath + PATH_THUMBS + "/*", MULTIPART_FORM_DATA, App::imageHandling);
 
         post(basePath + PATH_UPLOAD, MULTIPART_FORM_DATA, (request, response) -> {
-            MultipartConfigElement multipartConfigElement = new MultipartConfigElement(STATIC_FILE_PATH);
+            MultipartConfigElement multipartConfigElement = new MultipartConfigElement(Const.STATIC_FILE_PATH);
             request.raw().setAttribute("org.eclipse.jetty.multipartConfig", multipartConfigElement);
 
             Collection<Part> parts = null;
@@ -194,11 +196,11 @@ public class App {
         post(basePath + PATH_META, (request, response) -> {
             boolean compact = checkQueryParameter(request, PARAM_COMPACT, false, "true", true);
             List<String> files =
-                    parseMultipartRequest(request, FILE_PART, new HashMap<>(), TEMP_FILE_PATH).
+                    parseMultipartRequest(request, FILE_PART, new HashMap<>(), Const.TEMP_FILE_PATH).
                     getOrDefault(FILE_PART, new ArrayList<>());
             try {
                 if (files.size() > 0) {
-                    try (ByteArrayOutputStream out = CmdUtils.exif(compact, "-json", TEMP_FILE_PATH + "/" + files.get(0))) {
+                    try (ByteArrayOutputStream out = CmdUtils.exif(compact, "-json", Const.TEMP_FILE_PATH + "/" + files.get(0))) {
                         Core.cleanTemp(files);
                         return new String(out.toByteArray(), "UTF-8");
                     }
@@ -215,11 +217,11 @@ public class App {
             List<String> outputFiles;
             try {
                 Map<String, String> formFields = new HashMap<>();
-                files = parseMultipartRequest(request, FILE_PART, formFields, TEMP_FILE_PATH).
+                files = parseMultipartRequest(request, FILE_PART, formFields, Const.TEMP_FILE_PATH).
                         getOrDefault(FILE_PART, new ArrayList<>());
                 /*if (partNames.contains(AS_PNG))
                     as_png = true;*/
-                outputFiles = PDFUtils.splitPDF(files.get(0), as_png, TEMP_FILE_PATH);
+                outputFiles = PDFUtils.splitPDF(files.get(0), as_png, Const.TEMP_FILE_PATH);
             } catch (IOException | InterruptedException ex) {
                 return wrapResponse(ex.getMessage());
             }
@@ -228,7 +230,7 @@ public class App {
                 try {
                     HttpServletResponse raw = multiPartResponse(response);
                     for (String fileName : outputFiles) {
-                        File file = new File(TEMP_FILE_PATH + "/" + fileName);
+                        File file = new File(Const.TEMP_FILE_PATH + "/" + fileName);
                         if (file.exists()) {
                             files.add(fileName);
                             try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
@@ -275,7 +277,7 @@ public class App {
     private static Object handleMultipart(Request request, Response response, Class<? extends RequestHandler> clazz) {
         boolean cleanup = true;
         String dateString = Core.setTempPath();
-        String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
+        String tempPath = IOUtils.pathCombine(Const.TEMP_FILE_PATH, dateString);
         try {
             if (!ServletFileUpload.isMultipartContent(request.raw())) {
                 response.status(400);
@@ -309,13 +311,19 @@ public class App {
 
     private static Object handleSingle(Request request, Response response, boolean async, Class<? extends RequestHandler> clazz) {
         boolean cleanup = true;
+        boolean gcAfter = false;
         String dateString = Core.setTempPath();
-        String tempPath = IOUtils.pathCombine(App.TEMP_FILE_PATH, dateString);
+        String tempPath = IOUtils.pathCombine(Const.TEMP_FILE_PATH, dateString);
         try {
             Map<String, String> parameters = request.params();
-            if (parameters.containsKey(PARAM_CLEANUP)) {
-                if (parameters.get(PARAM_CLEANUP).equals("false"))
-                    cleanup = false;
+            if (parameters.getOrDefault(PARAM_CLEANUP, "true").equals("false")) {
+                cleanup = false;
+            }
+            if (parameters.getOrDefault(PARAM_GC_AFTER, "false").equals("true")) {
+                gcAfter = true;
+            }
+            if (parameters.getOrDefault(PARAM_GC_BEFORE, "false").equals("true")) {
+                System.gc();
             }
 
             Constructor<?> constructor = clazz.getConstructor(Request.class, Response.class, String.class);
@@ -329,6 +337,9 @@ public class App {
                 Core.cleanup(dateString);
             } else {
                 Core.releaseTemporaryDir(dateString);
+            }
+            if (gcAfter) {
+                System.gc();
             }
         }
     }
@@ -350,7 +361,7 @@ public class App {
         String separator = getQueryParameter(request, PARAM_SEPARATOR, ExcelUtils.DEF_SEPARATOR);
 
         List<String> files =
-                parseMultipartRequest(request, FILE_PART, new HashMap<>(), TEMP_FILE_PATH).
+                parseMultipartRequest(request, FILE_PART, new HashMap<>(), Const.TEMP_FILE_PATH).
                 getOrDefault(FILE_PART, new ArrayList<>());
         List<String> convertedFiles = new ArrayList<>();
         for (String file : files) {
@@ -376,7 +387,7 @@ public class App {
                         multiPartResponse(response);
                 int fileCounter = 0;
                 for (String fileName : convertedFiles) {
-                    File file = new File(TEMP_FILE_PATH + "/" + fileName);
+                    File file = new File(Const.TEMP_FILE_PATH + "/" + fileName);
                     if (file.exists()) {
                         files.add(fileName);
                         if (responseType.toLowerCase().equals(PARAM_VAL_SINGLE)) {
@@ -425,7 +436,7 @@ public class App {
 
         if (files.size() > 0) {
             HttpServletResponse raw = singleFileResponse(response, "thumb_" + ImageUtils.jpgFilename(files.get(0)));
-            File file = new File(TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(files.get(0)));
+            File file = new File(Const.TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(files.get(0)));
             if (file.exists()) {
                 files.add(ImageUtils.jpgFilename(files.get(0)));
                 try (InputStream is = new FileInputStream(file)) {
@@ -459,7 +470,7 @@ public class App {
                 List<String> transformedFiles = new ArrayList<>();
                 HttpServletResponse raw = multiPartResponse(response);
                 for (String fileName : files) {
-                    File file = new File(TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(fileName));
+                    File file = new File(Const.TEMP_FILE_PATH + "/" + ImageUtils.jpgFilename(fileName));
                     if (file.exists()) {
                         transformedFiles.add(ImageUtils.jpgFilename(fileName));
                         try (InputStream is = new BufferedInputStream(new FileInputStream(file))) {
@@ -483,7 +494,7 @@ public class App {
     private static List<String> thumbifyFiles(Request request)
             throws IOException, InterruptedException {
         List<String> files =
-                parseMultipartRequest(request, FILE_PART, new HashMap<>(), TEMP_FILE_PATH).
+                parseMultipartRequest(request, FILE_PART, new HashMap<>(), Const.TEMP_FILE_PATH).
                 getOrDefault(FILE_PART, new ArrayList<>());
         String size = request.splat()[0];
         String fit = "";
@@ -501,7 +512,7 @@ public class App {
         }
         try {
             for (String file : files) {
-                ImageUtils.thumbify(scaling, size, TEMP_FILE_PATH + "/" + file);
+                ImageUtils.thumbify(scaling, size, Const.TEMP_FILE_PATH + "/" + file);
             }
         } catch (IOException | InterruptedException ex) {
             Core.cleanTemp(files);

@@ -15,7 +15,7 @@ import java.util.Map;
 
 public class PipelineHandler extends RequestHandler {
 
-    PipelineHandler(Request request, Response response, String path, Map<String, String> formFields, Map<String, List<String>> files) {
+    public PipelineHandler(Request request, Response response, String path, Map<String, String> formFields, Map<String, List<String>> files) {
         super(request, response, path, formFields, files);
     }
 
@@ -24,11 +24,11 @@ public class PipelineHandler extends RequestHandler {
         List<String> submittedFiles = this.files.getOrDefault(ServletUtils.FILE_PART, new ArrayList<>());
         String pipelineString = IOUtils.loadStringFromFile(IOUtils.pathCombine(path, submittedFiles.get(0)));
 
-        return processPipeline(response, pipelineString, path);
+        return PipelineHandler.processPipeline(response, pipelineString, path);
     }
 
 
-    public static Object processPipeline(Response response, String pipelineString, String tempPath) throws Exception {
+    private static Object processPipeline(Response response, String pipelineString, String tempPath) throws Exception {
         Object result = PipeExec.execProcessString(pipelineString, tempPath);
         if (result instanceof Integer && result.equals(-1)) {
             response.status(500);

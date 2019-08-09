@@ -43,6 +43,7 @@ public class PipeExec {
     private final static String VERBOSE = "verbose";
     private final static String ARCHIVE = "archive";
     private final static String CLEANUP = "cleanup";
+    private final static String EXCEPTION_HANDLER = "useExceptionHandler";
     private final static String WORK_PATH = "workPath";
     private final static String INPUT_PATH = "inputPath";
     private final static String OUTPUT_PATH = "outputPath";
@@ -80,6 +81,7 @@ public class PipeExec {
 
 
     public static void main(String[] args) {
+        System.out.println("EXECUTION CONTEXT PATH: " + IOUtils.jarPath());
         if (args.length != 0) {
             try {
                 Object result = execProcessFile(args[0]);
@@ -212,6 +214,10 @@ public class PipeExec {
                 case CLEANUP:
                     if (att.getNodeValue().toLowerCase().equals("true"))
                         builder = builder.cleanup();
+                    break;
+                case EXCEPTION_HANDLER:
+                    if (att.getNodeValue().toLowerCase().equals("true"))
+                        builder = builder.useExceptionHandler();
                     break;
                 case WORK_PATH:
                     builder = builder.setWorkPath(att.getNodeValue());

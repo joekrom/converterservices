@@ -7,7 +7,9 @@ import de.axxepta.converterservices.utils.StringUtils;
 import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class HTTPGetStep extends Step {
 
@@ -28,8 +30,9 @@ class HTTPGetStep extends Step {
         String pwd = pipe.getHttpPwd();
         int port = pipe.getHttpPort();
         boolean secure = pipe.isHttpSecure();
-        String contentTypeString = "";
         int timeout = 1200;
+        boolean gullible = false;
+        Map<String, String> headers = new HashMap<>();
 
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
@@ -62,9 +65,13 @@ class HTTPGetStep extends Step {
                             timeout = Integer.valueOf(parts[1]);
                         }
                         break;
-                    case "content": case "contenttype": case "accept":
-                        contentTypeString = parts[1];
+                    case "gullible":
+                        if (parts[1].toLowerCase().equals("true")) {
+                            gullible = true;
+                        }
                         break;
+                    default:
+                        headers.put(parts[0], parameter.substring(parameter.indexOf(parts[1])));
                 }
             }
         }
@@ -79,11 +86,7 @@ class HTTPGetStep extends Step {
             // ToDo: handle multipart responses, eventually multiple get requests/inputs
             String outputFile = standardOutputFile(pipe);
             List<String> responseFiles;
-            if (contentTypeString.equals("")) {
-                responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, timeout, outputFile);
-            } else {
-                responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, timeout, outputFile, contentTypeString);
-            }
+            responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, timeout, outputFile, gullible, headers);
             downloadedFiles.addAll(responseFiles);
         } catch (SocketTimeoutException ex) {
             pipe.log(String.format("Timeout during HTTP GET to %s", (secure ? "https" : "http" + server + port + inputPath) ));

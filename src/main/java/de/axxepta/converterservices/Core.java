@@ -26,7 +26,7 @@ public class Core {
     static void cleanTemp(List<String> files) {
         for (String file : files) {
             try {
-                Files.delete(Paths.get(App.TEMP_FILE_PATH + "/" + file));
+                Files.delete(Paths.get(Const.TEMP_FILE_PATH + "/" + file));
             } catch (IOException ex) {
                 if (LOGGER != null) LOGGER.error(ex.getMessage());
             }
@@ -43,7 +43,7 @@ public class Core {
         }
         try {
             IOUtils.safeCreateDirectory(
-                    IOUtils.pathCombine(basePath.length > 0 ? basePath[0] : App.TEMP_FILE_PATH, dateString)
+                    IOUtils.pathCombine(basePath.length > 0 ? basePath[0] : Const.TEMP_FILE_PATH, dateString)
             );
         } catch (IOException ex) {
             return "";
@@ -55,7 +55,7 @@ public class Core {
         try {
             FileUtils.deleteDirectory(
                     new File(
-                            IOUtils.pathCombine(basePath.length > 0 ? basePath[0] : App.TEMP_FILE_PATH, dateString)
+                            IOUtils.pathCombine(basePath.length > 0 ? basePath[0] : Const.TEMP_FILE_PATH, dateString)
                     )
             );
         } catch (IOException ex) {

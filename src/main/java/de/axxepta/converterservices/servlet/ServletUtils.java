@@ -47,6 +47,8 @@ public class ServletUtils {
     public static final String PARAM_VAL_SINGLE        = "single";
     public static final String PARAM_VAL_MULTI         = "multi";
     public static final String PARAM_CLEANUP           = "cleanup";
+    public static final String PARAM_GC_BEFORE         = "gcb";
+    public static final String PARAM_GC_AFTER          = "gca";
     public static final String PARAM_HOST              = "host";
     public static final String PARAM_PORT              = "port";
     public static final String PARAM_SECURE            = "secure";

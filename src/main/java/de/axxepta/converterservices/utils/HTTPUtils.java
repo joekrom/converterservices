@@ -72,9 +72,9 @@ public class HTTPUtils {
         List<String> responseFile = new ArrayList<>();
         //ToDo: Multipart
         try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout, gullible)) {
-            HttpGet httpget = new HttpGet(protocol + "://" + host + ":" + port + path);
+            HttpGet httpget = new HttpGet(protocol + "://" + host + (port < 0 ? "" : ":" + port) + path);
             for (String key : headers.keySet()) {
-                httpget.setHeader(key, headers.get(key));
+                httpget.addHeader(key, headers.get(key));
             }
             try (CloseableHttpResponse response = httpClient.execute(httpget)) {
                 HttpEntity entity = response.getEntity();
@@ -233,19 +233,22 @@ public class HTTPUtils {
     }
 
     private static CloseableHttpClient getClient(String host, int port, String user, String password, int timeout, boolean... gullible) {
-        RequestConfig config = RequestConfig.custom()
-                .setConnectTimeout(timeout * 1000)
-                .setConnectionRequestTimeout(timeout * 1000)
-                .setSocketTimeout(timeout * 1000).build();
-        HttpClientBuilder builder = HttpClients.custom()
-                .setDefaultRequestConfig(config)
-                //HACK:
-                // true if it's OK to retry non-idempotent requests that have been sent
-                // and then fail with network issues (not HTTP failures).
-                //
-                // "true" here will retry POST requests which have been sent but where
-                // the response was not received. This arguably is a bit risky.
-                .setRetryHandler(new DefaultHttpRequestRetryHandler(3, true));
+        HttpClientBuilder builder = HttpClients.custom();
+
+        if (timeout != -1) {
+            RequestConfig config = RequestConfig.custom()
+                    .setConnectTimeout(timeout * 1000)
+                    .setConnectionRequestTimeout(timeout * 1000)
+                    .setSocketTimeout(timeout * 1000).build();
+
+            builder = builder.setDefaultRequestConfig(config)
+                    //HACK:
+                    // true if it's OK to retry non-idempotent requests that have been sent
+                    // and then fail with network issues (not HTTP failures).
+                    //  "true" here will retry POST requests which have been sent but where
+                    // the response was not received. This arguably is a bit risky.
+                    .setRetryHandler(new DefaultHttpRequestRetryHandler(3, true));
+        }
 
         // configure client to ignore server's certificate chain, use only for https
         if (gullible.length > 0 && gullible[0]) {

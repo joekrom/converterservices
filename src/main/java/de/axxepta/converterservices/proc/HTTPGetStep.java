@@ -80,7 +80,9 @@ class HTTPGetStep extends Step {
         }
 
         List<String> downloadedFiles = new ArrayList<>();
-        String inputPath = IOUtils.relativePath(inputFiles.get(0), pipe.getInputPath());
+        String inputPath = StringUtils.isNoStringOrEmpty(input) ?
+                inputFiles.get(0) :
+                IOUtils.relativePath(inputFiles.get(0), pipe.getInputPath());
 
         try {
             // ToDo: handle multipart responses, eventually multiple get requests/inputs

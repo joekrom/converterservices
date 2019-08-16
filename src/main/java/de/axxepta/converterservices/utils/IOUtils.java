@@ -106,12 +106,13 @@ public class IOUtils {
     }
 
     public static List<String> loadStringsFromFile(String fileName) throws IOException {
-        Scanner scanner = new Scanner(new File(fileName));
-        List<String> lines = new ArrayList<>();
-        while (scanner.hasNextLine()) {
-            lines.add(scanner.nextLine());
+        try (Scanner scanner = new Scanner(new File(fileName))) {
+            List<String> lines = new ArrayList<>();
+            while (scanner.hasNextLine()) {
+                lines.add(scanner.nextLine());
+            }
+            return lines;
         }
-        return lines;
     }
 
     public static String getResourceAsString(String name) throws IOException {

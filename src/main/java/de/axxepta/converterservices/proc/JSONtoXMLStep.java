@@ -24,8 +24,15 @@ class JSONtoXMLStep extends Step {
         String array = "array";
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
-            if (parts.length > 1 && parts[0].toLowerCase().contains("root")) {
-                rootElement = parts[1];
+            if (parts.length > 1) {
+                switch (parts[0].toLowerCase()) {
+                    case "root":
+                        rootElement = parts[1];
+                        break;
+                    case "array":
+                        array = parts[1];
+                        break;
+                }
             }
         }
 

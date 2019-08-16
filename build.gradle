@@ -6,7 +6,7 @@ plugins {
 }
 
 group 'de.axxepta'
-version '0.13.0'
+version '0.13.1'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'
@@ -128,7 +128,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            pom.version = '0.13.0'
+            pom.version = '0.13.1'
             repository(url: mavenUrl) {
                 authentication(userName: mavenUser, privateKey: mavenKeyfile)
             }

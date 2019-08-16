@@ -98,7 +98,9 @@ class HTTPGetStep extends Step {
         } catch (IOException ex) {
             pipe.log(String.format("Error during HTTP GET to %s: %s",
                     (secure ? "https" : "http" + server + port + inputPath), ex.getMessage()));
-            throw ex;
+            if (stopOnError) {
+                throw ex;
+            }
         }
 
         return downloadedFiles;

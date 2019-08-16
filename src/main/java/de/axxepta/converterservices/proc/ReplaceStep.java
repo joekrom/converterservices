@@ -21,6 +21,7 @@ class ReplaceStep extends Step {
     Object execAction(List<String> inputFiles, String... parameters) throws Exception {
         List<String> replace = new ArrayList<>();
         List<String> with = new ArrayList<>();
+        List<Boolean> firstOnly = new ArrayList<>();
         String fileReplace = "";    // don't use replace if not set as parameter
         String fileWith = "";
         String charset = "UTF-8";
@@ -32,6 +33,11 @@ class ReplaceStep extends Step {
                 switch (parts[0].toLowerCase()) {
                     case "replace":
                         replace.add(regExp);
+                        firstOnly.add(false);
+                        break;
+                    case "replacefirst":
+                        replace.add(regExp);
+                        firstOnly.add(true);
                         break;
                     case "with":
                         with.add(regExp);
@@ -65,14 +71,21 @@ class ReplaceStep extends Step {
             try {
                 String text = IOUtils.loadStringFromFile(inFile, charset);
                 for (int r = 0; r < nReplaceDefs; r++) {
-                    text = text.replace(replace.get(r), with.get(r));
+                    if (firstOnly.get(r)) {
+                        text = text.replaceFirst(replace.get(r), with.get(r));
+                    } else {
+                        text = text.replace(replace.get(r), with.get(r));
+                    }
                 }
                 IOUtils.saveStringToFile(text, outputNames.get(i), charset);
                 if (!inPlace) {
                     pipe.addGeneratedFile(outputNames.get(i));
                 }
             } catch (IOException ex) {
-                pipe.log("Text replacement or file operation failed at file " + inFile);
+                pipe.log(String.format("Text replacement or file operation failed at file %s. Reason: %s", inFile, ex.getMessage()));
+                if (stopOnError) {
+                    throw ex;
+                }
             }
             i++;
         }
@@ -93,8 +106,9 @@ class ReplaceStep extends Step {
             }
         } else if (inputFiles.size() == 1 && output instanceof String) {
             outputNames.add(
-                    IOUtils.pathCombine(inPlace ? IOUtils.dirFromPath(inputFiles.get(0)) : pipe.getWorkPath(),
-                            (String) output)
+                    output.equals("") ? inputFiles.get(0) :
+                        IOUtils.pathCombine(inPlace ? IOUtils.dirFromPath(inputFiles.get(0)) : pipe.getWorkPath(),
+                                (String) output)
             );
         } else if (output instanceof List && ((List) output).size() == inputFiles.size()) {
             int i = 0;

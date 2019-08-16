@@ -1,6 +1,7 @@
 package de.axxepta.converterservices.utils;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.StatusLine;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
@@ -72,11 +73,16 @@ public class HTTPUtils {
         List<String> responseFile = new ArrayList<>();
         //ToDo: Multipart
         try (CloseableHttpClient httpClient = getClient(host, port, user, password, timeout, gullible)) {
-            HttpGet httpget = new HttpGet(protocol + "://" + host + (port < 0 ? "" : ":" + port) + path);
+            String uriString = protocol + "://" + host + (port < 0 ? "" : ":" + port) + path;
+            HttpGet httpget = new HttpGet(uriString);
             for (String key : headers.keySet()) {
                 httpget.addHeader(key, headers.get(key));
             }
             try (CloseableHttpResponse response = httpClient.execute(httpget)) {
+                StatusLine responseStatus = response.getStatusLine();
+                if (responseStatus.getStatusCode() > 399) {
+                    throw new IOException(responseStatus.getStatusCode() + " --- " + responseStatus.getReasonPhrase());
+                }
                 HttpEntity entity = response.getEntity();
                 IOUtils.byteArrayToFile(EntityUtils.toByteArray(entity), file);
                 responseFile.add(file);

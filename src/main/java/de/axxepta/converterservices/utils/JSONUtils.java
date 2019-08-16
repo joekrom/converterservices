@@ -16,7 +16,16 @@ public class JSONUtils {
         String tagName = rootElementName.length > 0 ? rootElementName[0] : "JSON";
         JSONObject json = new JSONObject(str);
         return XML.toString(json, tagName);
+    }
 
+    public static String JsonArrayToXmlString(String str, String rootArrayName, String... rootElementName) {
+        String tagName = rootElementName.length > 0 ? rootElementName[0] : "JSON";
+        JSONObject json = new JSONObject(
+                str.startsWith("[") ?
+                        "{ \"" + (rootArrayName.equals("") ? "array" : rootArrayName) + "\" : " + str + "}" :
+                        str
+        );
+        return XML.toString(json, tagName);
     }
 
     public static String XmlToJsonString(String str) {

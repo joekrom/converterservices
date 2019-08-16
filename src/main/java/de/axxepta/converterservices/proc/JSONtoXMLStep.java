@@ -21,6 +21,7 @@ class JSONtoXMLStep extends Step {
     @Override
     Object execAction(final List<String> inputFiles, final String... parameters) throws Exception {
         String rootElement = "JSON";
+        String array = "array";
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
             if (parts.length > 1 && parts[0].toLowerCase().contains("root")) {
@@ -32,7 +33,7 @@ class JSONtoXMLStep extends Step {
         List<String> usedOutputFiles = new ArrayList<>();
         int i = 0;
         for (String inFile : inputFiles) {
-            String xml = JSONUtils.JsonToXmlString(IOUtils.loadStringFromFile(inFile), rootElement);
+            String xml = JSONUtils.JsonArrayToXmlString(IOUtils.loadStringFromFile(inFile), array, rootElement);
             String outputFile = providedOutputNames.size() > i && !providedOutputNames.get(i).equals("") ?
                     IOUtils.pathCombine(pipe.getWorkPath(), providedOutputNames.get(i)) :
                     IOUtils.pathCombine(pipe.getWorkPath(), IOUtils.strippedFilename(inFile) + ".xml");

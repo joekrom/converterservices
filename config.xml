@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+  <exceptionHandler>
+    <mail>
+      <host>smtphost.com</host>
+      <user>smtpuser@smtphost.com</user>
+      <pwd>12345</pwd>
+      <port>587</port>
+      <sender>sender@mail.com</sender>
+      <receiver>receiver@mail.com</receiver>
+      <secure>true</secure>
+      <subject>converterservice exception occurred</subject>
+    </mail>
+  </exceptionHandler>
+</configuration>

@@ -21,7 +21,7 @@ class ReplaceStep extends Step {
     Object execAction(List<String> inputFiles, String... parameters) throws Exception {
         List<String> replace = new ArrayList<>();
         List<String> with = new ArrayList<>();
-        List<Boolean> firstOnly = new ArrayList<>();
+        List<Replace> firstOrAll = new ArrayList<>();
         String fileReplace = "";    // don't use replace if not set as parameter
         String fileWith = "";
         String charset = "UTF-8";
@@ -33,11 +33,11 @@ class ReplaceStep extends Step {
                 switch (parts[0].toLowerCase()) {
                     case "replace":
                         replace.add(regExp);
-                        firstOnly.add(false);
+                        firstOrAll.add(Replace.ALL);
                         break;
                     case "replacefirst":
                         replace.add(regExp);
-                        firstOnly.add(true);
+                        firstOrAll.add(Replace.FIRST);
                         break;
                     case "with":
                         with.add(regExp);
@@ -71,10 +71,12 @@ class ReplaceStep extends Step {
             try {
                 String text = IOUtils.loadStringFromFile(inFile, charset);
                 for (int r = 0; r < nReplaceDefs; r++) {
-                    if (firstOnly.get(r)) {
-                        text = text.replaceFirst(replace.get(r), with.get(r));
-                    } else {
-                        text = text.replace(replace.get(r), with.get(r));
+                    switch (firstOrAll.get(r)) {
+                        case FIRST:
+                            text = text.replaceFirst(replace.get(r), with.get(r));
+                            break;
+                        case ALL:
+                            text = text.replace(replace.get(r), with.get(r));
                     }
                 }
                 IOUtils.saveStringToFile(text, outputNames.get(i), charset);
@@ -132,5 +134,9 @@ class ReplaceStep extends Step {
     @Override
     boolean assertParameter(final Parameter paramType, final Object param) {
         return true;
+    }
+
+    enum Replace {
+        FIRST, ALL
     }
 }

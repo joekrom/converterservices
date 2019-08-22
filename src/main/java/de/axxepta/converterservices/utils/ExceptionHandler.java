@@ -81,9 +81,13 @@ public final class ExceptionHandler implements Thread.UncaughtExceptionHandler {
         exceptionObservers.forEach(e-> e.update(null, arg));
     }
 
-    public static void initDefaultExceptionHandler() {
-        String path = IOUtils.pathCombine(IOUtils.jarPath(), CONFIG_FILE);
-        if (IOUtils.pathExists(path)) {
+    public static void initDefaultExceptionHandler(String... configPath) {
+        String path = IOUtils.firstExistingPath(
+                configPath.length > 0 && IOUtils.pathExists(configPath[0]) ? configPath[0] : "",
+                IOUtils.pathCombine(IOUtils.jarPath(), CONFIG_FILE),
+                IOUtils.pathCombine(IOUtils.executionContextPath(), CONFIG_FILE)
+        );
+        if (!path.equals("")) {
             try {
                 loadExceptionHandlerConfig(path);
             } catch (Exception ex) {

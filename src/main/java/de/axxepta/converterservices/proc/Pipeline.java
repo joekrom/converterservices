@@ -796,7 +796,7 @@ public class Pipeline {
         }
 
         private String absolutePath(String path) {
-            return (path.startsWith("/") || path.indexOf(":") == 1) ? path : IOUtils.pathCombine(IOUtils.jarPath(), path);
+            return (path.startsWith("/") || path.indexOf(":") == 1) ? path : IOUtils.pathCombine(IOUtils.executionContextPath(), path);
         }
     }
 

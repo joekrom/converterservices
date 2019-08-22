@@ -81,7 +81,8 @@ public class PipeExec {
 
 
     public static void main(String[] args) {
-        System.out.println("EXECUTION CONTEXT PATH: " + IOUtils.jarPath());
+        System.out.println("JAR PATH: " + IOUtils.jarPath());
+        System.out.println("EXECUTION CONTEXT PATH: " + IOUtils.executionContextPath());
         if (args.length != 0) {
             try {
                 Object result = execProcessFile(args[0]);

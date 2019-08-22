@@ -32,10 +32,13 @@ class CredentialsProvider {
 
     static  List<AuthenticationDetails> getCredentials() {
         final List<AuthenticationDetails> credentialsList = new ArrayList<>();
-        String path = IOUtils.jarPath();
-        if (IOUtils.pathExists(IOUtils.pathCombine(path, AUTH_FILE))) {
+        String path = IOUtils.firstExistingPath(
+                IOUtils.pathCombine(IOUtils.jarPath(), AUTH_FILE),
+                IOUtils.pathCombine(IOUtils.executionContextPath(), AUTH_FILE)
+        );
+        if (!path.equals("")) {
             try {
-                loadCredentialFile(credentialsList, IOUtils.pathCombine(path, AUTH_FILE));
+                loadCredentialFile(credentialsList, path);
             } catch (Exception ex) {
                 LOGGER.error("Error while loading Basic Auth credentials file: " + ex.getMessage());
             }

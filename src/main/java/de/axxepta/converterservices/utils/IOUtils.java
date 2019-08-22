@@ -34,6 +34,16 @@ public class IOUtils {
         return f.exists();
     }
 
+    public static String firstExistingPath(String... paths) {
+        for (String path : paths) {
+            File f = new File(path);
+            if (f.exists()) {
+                return path;
+            }
+        }
+        return "";
+    }
+
     public static boolean isFile(String path) {
         File f = new File(path);
         return (f.exists() && f.isFile());
@@ -346,6 +356,10 @@ public class IOUtils {
             path = IOUtils.class.getProtectionDomain().getCodeSource().getLocation().getPath();
         }
         return dirFromPath(path);
+    }
+
+    public static String executionContextPath() {
+        return System.getProperty("user.dir");
     }
 
     public static boolean isWin() {

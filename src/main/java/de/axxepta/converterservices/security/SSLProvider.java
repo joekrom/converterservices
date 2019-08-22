@@ -37,10 +37,13 @@ public class SSLProvider {
      * <a href="https://docs.oracle.com/cd/E19509-01/820-3503/ggfen/index.html">Java keytool</a>.
      */
     public static void checkSSL() {
-        String path = IOUtils.jarPath();
-        if (IOUtils.pathExists(IOUtils.pathCombine(path, SSL_FILE))) {
+        String path = IOUtils.firstExistingPath(
+                IOUtils.pathCombine(IOUtils.jarPath(), SSL_FILE),
+                IOUtils.pathCombine(IOUtils.executionContextPath(), SSL_FILE)
+        );
+        if (!path.equals("")) {
             try {
-                loadSecureFile(IOUtils.pathCombine(path, SSL_FILE));
+                loadSecureFile(path);
                 Spark.secure(keystoreLocation, keystorePassword, truststoreLocation, truststorePassword);
             } catch (Exception ex) {
                 LOGGER.warn("Error while loading file secure.xml, no secure connection enabled. ", ex);

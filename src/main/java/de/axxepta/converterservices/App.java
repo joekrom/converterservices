@@ -86,7 +86,8 @@ public class App {
 
     static void init(String basePath) {
 
-        System.out.println("EXECUTION CONTEXT PATH: " + IOUtils.jarPath());
+        System.out.println("JAR PATH: " + IOUtils.jarPath());
+        System.out.println("EXECUTION CONTEXT PATH: " + IOUtils.executionContextPath());
 
         ExceptionHandler.initDefaultExceptionHandler();
 

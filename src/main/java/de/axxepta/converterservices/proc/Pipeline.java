@@ -192,7 +192,8 @@ public class Pipeline {
                 ex.printStackTrace();
             }
             if (useExceptionHandler) {
-                ExceptionHandler.handle(ExceptionHandler.getStackTrace(ex));
+                ExceptionHandler.handle(String.join(System.lineSeparator(), logFileFinal.getContent()) +
+                        System.lineSeparator() + System.lineSeparator() + ExceptionHandler.getStackTrace(ex));
             }
         } finally {
             if (!temporaryWorkPath.equals("")) {

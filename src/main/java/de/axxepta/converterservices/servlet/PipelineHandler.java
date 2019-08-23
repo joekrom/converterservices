@@ -19,6 +19,10 @@ public class PipelineHandler extends RequestHandler {
         super(request, response, path, formFields, files);
     }
 
+    public PipelineHandler(Request request, Response response, String path) {
+        super(request, response, path);
+    }
+
     @Override
     public Object processMulti() throws Exception {
         List<String> submittedFiles = this.files.getOrDefault(ServletUtils.FILE_PART, new ArrayList<>());

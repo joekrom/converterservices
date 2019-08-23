@@ -331,6 +331,7 @@ public class App {
             RequestHandler object = (RequestHandler) constructor.newInstance(request, response, tempPath);
             return object.processSingle(async);
         } catch (Exception ex) {
+            ex.printStackTrace();
             response.status(500);
             return wrapResponse(ex.getMessage());
         } finally {

@@ -19,6 +19,10 @@ public class MailHandler extends RequestHandler {
         super(request, response, path, formFields, files);
     }
 
+    public MailHandler(Request request, Response response, String path) {
+        super(request, response, path);
+    }
+
     @Override
     public Object processMulti() {
         List<String> files = this.files.getOrDefault(FILE_PART, new ArrayList<>());

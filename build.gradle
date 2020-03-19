@@ -3,13 +3,16 @@ plugins {
     id 'maven'
     id 'maven-publish'
     id 'com.github.johnrengelman.shadow' version '5.0.0'
+    id 'org.beryx.runtime' version '1.8.0'
 }
 
 group 'de.axxepta'
-version '0.13.4'
+version '1.0-SNAPSHOT'
 
-sourceCompatibility = '1.8'
-targetCompatibility = '1.8'
+mainClassName = 'de.axxepta.converterservices.App'
+
+sourceCompatibility = 12
+targetCompatibility = 12
 
 repositories {
     mavenCentral()
@@ -23,46 +26,46 @@ configurations {
 dependencies {
     testCompile group: 'junit', name: 'junit', version: '4.11'
 
-    compile 'com.sparkjava:spark-core:2.8.0'
-    compile 'org.slf4j:slf4j-api:1.7.25'
+    compile 'com.sparkjava:spark-core:2.9.1'
+    compile 'org.slf4j:slf4j-api:1.7.30'
     compile 'ch.qos.logback:logback-classic:1.2.3'
     compile 'ch.qos.logback:logback-core:1.2.3'
-    compile 'net.sf.saxon:Saxon-HE:9.9.1-1'
+    compile 'net.sf.saxon:Saxon-HE:10.0'
     compile 'org.apache.xmlgraphics:xmlgraphics-commons:2.3'
     compile 'org.apache.xmlgraphics:fop:2.3'
-    compile 'org.apache.pdfbox:pdfbox:2.0.15'
-    compile 'org.apache.pdfbox:pdfbox-tools:2.0.15'
+    compile 'org.apache.pdfbox:pdfbox:2.0.19'
+    compile 'org.apache.pdfbox:pdfbox-tools:2.0.19'
     compile 'commons-fileupload:commons-fileupload:1.4'
-    compile 'commons-codec:commons-codec:1.10'
-    compile 'org.apache.poi:poi-ooxml:4.0.1'
-    compile 'org.apache.httpcomponents:httpclient:4.5.8'
+    compile 'commons-codec:commons-codec:1.14'
+    compile 'org.apache.poi:poi-ooxml:4.1.2'
+    compile 'org.apache.httpcomponents:httpclient:4.5.12'
     compile 'commons-net:commons-net:3.6'
     compile 'commons-io:commons-io:2.6'
-    compile 'com.jcraft:jsch:0.1.54'
-    compile 'org.json:json:20171018'
+    compile 'com.jcraft:jsch:0.1.55'
+    compile 'org.json:json:20190722'
     compile 'org.apache.commons:commons-email:1.5'
 
-    releaseJars 'com.sparkjava:spark-core:2.8.0'
-    releaseJars 'org.slf4j:slf4j-api:1.7.25'
+    releaseJars 'com.sparkjava:spark-core:2.9.1'
+    releaseJars 'org.slf4j:slf4j-api:1.7.30'
     releaseJars 'ch.qos.logback:logback-classic:1.2.3'
     releaseJars 'ch.qos.logback:logback-core:1.2.3'
     releaseJars 'com.fasterxml.jackson.core:jackson-core:2.9.5'
     releaseJars 'com.fasterxml.jackson.core:jackson-databind:2.9.5'
     releaseJars 'javax.servlet:javax.servlet-api:3.1.0'
-    releaseJars 'net.sf.saxon:Saxon-HE:9.9.1-1'
+    releaseJars 'net.sf.saxon:Saxon-HE:10.0'
     releaseJars 'org.apache.xmlgraphics:xmlgraphics-commons:2.3'  // explicitly list before fop to handle image loader issue
     // https://stackoverflow.com/questions/26139301/apache-fop-in-a-java-applet-no-imagepreloader-found-for-data
     releaseJars 'org.apache.xmlgraphics:fop:2.3'
-    releaseJars 'org.apache.pdfbox:pdfbox:2.0.15'
-    releaseJars 'org.apache.pdfbox:pdfbox-tools:2.0.15'
+    releaseJars 'org.apache.pdfbox:pdfbox:2.0.19'
+    releaseJars 'org.apache.pdfbox:pdfbox-tools:2.0.19'
     releaseJars 'commons-fileupload:commons-fileupload:1.4'
-    releaseJars 'commons-codec:commons-codec:1.10'
-    releaseJars 'org.apache.poi:poi-ooxml:4.0.1'
-    releaseJars 'org.apache.httpcomponents:httpclient:4.5.8'
+    releaseJars 'commons-codec:commons-codec:1.14'
+    releaseJars 'org.apache.poi:poi-ooxml:4.1.2'
+    releaseJars 'org.apache.httpcomponents:httpclient:4.5.12'
     releaseJars 'commons-net:commons-net:3.6'
     releaseJars 'commons-io:commons-io:2.6'
-    releaseJars 'com.jcraft:jsch:0.1.54'
-    releaseJars 'org.json:json:20171018'
+    releaseJars 'com.jcraft:jsch:0.1.55'
+    releaseJars 'org.json:json:20190722'
     releaseJars 'org.apache.commons:commons-email:1.5'
 
     deployerJars 'org.apache.maven.wagon:wagon-ssh:3.1.0'
@@ -134,4 +137,9 @@ uploadArchives {
             }
         }
     }
+}
+
+runtime {
+    options = ['--strip-debug', '--compress', '2', '--no-header-files', '--no-man-pages']
+    modules = ['java.naming', 'java.xml']
 }

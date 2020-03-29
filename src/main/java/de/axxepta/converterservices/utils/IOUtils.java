@@ -207,8 +207,12 @@ public class IOUtils {
     public static boolean renameFile(String oldName, String newName) throws IOException {
         File fileOld = new File(oldName);
         File fileNew = new File(newName);
-        if (fileNew.exists())
-            throw new java.io.IOException(String.format("File %s already exists", newName));
+        if (fileNew.exists()) {
+            boolean deleted = fileNew.delete();
+            if (!deleted) {
+                throw new java.io.IOException(String.format("File %s could not be removed", newName));
+            }
+        }
         return fileOld.renameTo(fileNew);
     }
 

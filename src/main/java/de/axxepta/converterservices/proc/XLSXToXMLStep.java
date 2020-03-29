@@ -102,7 +102,6 @@ class XLSXToXMLStep extends Step {
 
                 // transformation method has its own name pattern, rename if output name set
                 if (!StringUtils.isNoStringOrEmpty(output) && exportedFiles.size() > 0) {
-                    System.out.println("RENAME " + exportedFiles.get(0) + " -> " + IOUtils.pathCombine(pipe.getWorkPath(), (String) output));
                     String outputFile = IOUtils.pathCombine(pipe.getWorkPath(), (String) output);
                     IOUtils.renameFile(exportedFiles.get(0), outputFile);
                     exportedFiles.set(0, outputFile);

@@ -91,13 +91,13 @@ class HTTPGetStep extends Step {
             responseFiles = HTTPUtils.get(secure ? "https" : "http", server, port, inputPath, user, pwd, timeout, outputFile, gullible, headers);
             downloadedFiles.addAll(responseFiles);
         } catch (SocketTimeoutException ex) {
-            pipe.log(String.format("Timeout during HTTP GET to %s", (secure ? "https" : "http" + server + port + inputPath) ));
+            pipe.log(String.format("Timeout during HTTP GET to %s", (secure ? "https://" : "http://" + server + ":" + port + inputPath) ));
             if (stopOnError) {
                 throw ex;
             }
         } catch (IOException ex) {
             pipe.log(String.format("Error during HTTP GET to %s: %s",
-                    (secure ? "https" : "http" + server + port + inputPath), ex.getMessage()));
+                    (secure ? "https://" : "http://" + server + ":" + port + inputPath), ex.getMessage()));
             if (stopOnError) {
                 throw ex;
             }

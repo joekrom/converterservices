@@ -6,7 +6,7 @@ plugins {
 }
 
 group 'de.axxepta'
-version '0.13.4'
+version '1.0-SNAPSHOT'
 
 sourceCompatibility = '1.8'
 targetCompatibility = '1.8'

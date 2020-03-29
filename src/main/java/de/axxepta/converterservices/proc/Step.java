@@ -139,7 +139,9 @@ abstract class Step {
                 files.addAll( IOUtils.resolvePathRegexp(pipe.getInputPath(), path.substring(Pipeline.REGEXP_INPUT.length()), pipe::log) );
             }
         } else {
-            if ((path.contains("*") || path.contains("?")) && !path.contains("=")) {
+            if ((path.contains("*") || path.contains("?")) &&
+                    !path.contains("="))    // don't resolve HTTP paths with parameters!
+            {
                 files.addAll(IOUtils.resolveBlobExpression(path, pipe::log));
             } else {
                 files.add(path);

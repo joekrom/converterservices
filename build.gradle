@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'de.axxepta'
-version '1.0-SNAPSHOT'
+version '0.13.5'
 
 mainClassName = 'de.axxepta.converterservices.App'
 
@@ -131,7 +131,7 @@ uploadArchives {
     repositories {
         mavenDeployer {
             configuration = configurations.deployerJars
-            pom.version = '0.13.4'
+            pom.version = '0.13.5'
             repository(url: mavenUrl) {
                 authentication(userName: mavenUser, privateKey: mavenKeyfile)
             }

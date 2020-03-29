@@ -22,6 +22,7 @@ import javax.xml.transform.TransformerException;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class ExcelUtils {
 
@@ -52,8 +53,10 @@ public class ExcelUtils {
     {
         List<String> outputFiles = new ArrayList<>();
         try (FileInputStream file = new FileInputStream(Const.TEMP_FILE_PATH + "/" + fileName)) {
-            exportExcel(file, Const.TEMP_FILE_PATH, fileName, type, customXMLMapping, sheetName, separator, indent,
-                    true, true, columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName);
+            outputFiles.addAll(
+                    exportExcel(file, Const.TEMP_FILE_PATH, fileName, type, customXMLMapping, sheetName, separator, indent,
+                    true, true, columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName)
+            );
         } catch (IOException ie) {
             LOGGER.error("Exception reading Excel file: " + ie.getMessage());
         }
@@ -66,10 +69,11 @@ public class ExcelUtils {
                                              String colEl, String attSheetName)
             throws IOException
     {
-        List<String> outputFiles = new ArrayList<>();
+        List<String> outputFiles;
         try (FileInputStream file = new FileInputStream(inputFile)) {
-            exportExcel(file, workPath, IOUtils.filenameFromPath(inputFile), type, customXMLMapping, sheetName, separator,
-                    indent, wrapValue, wrapSheet, columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName);
+            outputFiles = exportExcel(file, workPath, IOUtils.filenameFromPath(inputFile), type, customXMLMapping, sheetName, separator,
+                    indent, wrapValue, wrapSheet, columnFirst, firstColName, firstRowName, fileEl, sheetEl, rowEl, colEl, attSheetName).
+                    stream().map(s -> IOUtils.pathCombine(workPath, s)).collect(Collectors.toList());
         }
         return outputFiles;
     }
@@ -268,6 +272,8 @@ public class ExcelUtils {
 
         String outputFile = XMLFileName(fileName);
         String file_indent = "";
+        String columnElement = colEl.equals("") ? COL_EL : colEl;
+        String rowElement = rowEl.equals("") ? ROW_EL : rowEl;
         try (BufferedWriter writer =
                      new BufferedWriter(new OutputStreamWriter(new FileOutputStream(path + "/" + outputFile), StandardCharsets.UTF_8)))
         {
@@ -292,7 +298,7 @@ public class ExcelUtils {
                 } else {
                     for (int rowNumber = firstRow; rowNumber < lastRow + 1; rowNumber++) {
                         Row row = sheet.getRow(rowNumber);
-                        writeTag(writer, TagType.open, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT + file_indent,
+                        writeTag(writer, TagType.open, rowElement, indent, false, ROW_INDENT + file_indent,
                                 "RowNumber", Integer.toString(row.getRowNum()));
                         for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {
                             Cell cell = row.getCell(colNumber);
@@ -301,23 +307,23 @@ public class ExcelUtils {
                                     ((XSSFCell) cell).getRichStringCellValue().toString() :
                                     formatter.formatCellValue(cell, evaluator) );
                             if (wrapValue) {
-                                writeTag(writer, TagType.open, colEl.equals("") ? COL_EL : colEl, indent, false,
+                                writeTag(writer, TagType.open, columnElement, indent, false,
                                         COL_INDENT + file_indent,
                                         "ref", (cell != null) ? cell.getAddress().toString() : "_",
                                         "column-number", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_",
                                         "data-type", cellType);
                                 writeElement(writer, VALUE_EL,
                                         cellValue, indent, VALUE_INDENT + file_indent);
-                                writeTag(writer, TagType.close, colEl.equals("") ? COL_EL : colEl, indent, false, COL_INDENT + file_indent);
+                                writeTag(writer, TagType.close, columnElement, indent, false, COL_INDENT + file_indent);
                             } else {
-                                writeElement(writer, COL_EL,
+                                writeElement(writer, columnElement,
                                         cellValue, indent, COL_INDENT + file_indent,
                                         "ref", (cell != null) ? cell.getAddress().toString() : "_",
                                         "column-number", (cell != null) ? Integer.toString(cell.getColumnIndex()) : "_",
                                         Const.DATA_TYPE_ATT, cellType);
                             }
                         }
-                        writeTag(writer, TagType.close, rowEl.equals("") ? ROW_EL : rowEl, indent, false, ROW_INDENT + file_indent);
+                        writeTag(writer, TagType.close, rowElement, indent, false, ROW_INDENT + file_indent);
                     }
                 }
                 writeTag(writer, TagType.close, sheetEl.equals("") ? SHEET_EL : sheetEl, indent, false, SHEET_INDENT + file_indent);

@@ -298,6 +298,10 @@ public class ExcelUtils {
                 } else {
                     for (int rowNumber = firstRow; rowNumber < lastRow + 1; rowNumber++) {
                         Row row = sheet.getRow(rowNumber);
+                        if (row == null) {
+                            LOGGER.warn("EXCEL CONVERSION ERROR - ROW NULL IN ROW " + rowNumber);
+                            continue;
+                        }
                         writeTag(writer, TagType.open, rowElement, indent, false, ROW_INDENT + file_indent,
                                 "RowNumber", Integer.toString(row.getRowNum()));
                         for (int colNumber = firstColumn; colNumber < lastColumn; colNumber++) {

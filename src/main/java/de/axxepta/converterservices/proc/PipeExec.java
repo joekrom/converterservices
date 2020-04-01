@@ -43,6 +43,7 @@ public class PipeExec {
     private final static String VERBOSE = "verbose";
     private final static String ARCHIVE = "archive";
     private final static String CLEANUP = "cleanup";
+    private final static String COPY_LOG = "copyLog";
     private final static String EXCEPTION_HANDLER = "useExceptionHandler";
     private final static String WORK_PATH = "workPath";
     private final static String INPUT_PATH = "inputPath";
@@ -215,6 +216,10 @@ public class PipeExec {
                 case CLEANUP:
                     if (att.getNodeValue().toLowerCase().equals("true"))
                         builder = builder.cleanup();
+                    break;
+                case COPY_LOG:
+                    if (att.getNodeValue().toLowerCase().equals("true"))
+                        builder = builder.copyLog();
                     break;
                 case EXCEPTION_HANDLER:
                     if (att.getNodeValue().toLowerCase().equals("true"))

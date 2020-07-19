@@ -47,6 +47,7 @@ public class Pipeline {
     private final boolean verbose;
     private final boolean archive;
     private final boolean cleanup;
+    private final boolean copyLog;
     private final boolean useExceptionHandler;
     private final String dateString;
     private String workPath;
@@ -96,6 +97,7 @@ public class Pipeline {
         this.verbose = builder.verbose;
         this.archive = builder.archive;
         this.cleanup = builder.cleanup;
+        this.copyLog = builder.copyLog;
         this.useExceptionHandler = builder.useExceptionHandler;
         this.workPath = builder.workPath;
         this.inputPath = builder.inputPath;
@@ -223,6 +225,15 @@ public class Pipeline {
                 if (verbose) {
                     ex.printStackTrace();
                 }
+            }
+        }
+        if (copyLog) {
+            try {
+                Files.copy(Paths.get(IOUtils.pathCombine(workPath, finalLogFile)),
+                        Paths.get(IOUtils.pathCombine(outputPath, finalLogFile)),
+                        REPLACE_EXISTING);
+            } catch (IOException ie) {
+                log("Could not copy log file " + finalLogFile);
             }
         }
         if (cleanup) {
@@ -520,6 +531,7 @@ public class Pipeline {
         private boolean verbose = false;
         private boolean archive = false;
         private boolean cleanup = false;
+        private boolean copyLog = false;
         private boolean useExceptionHandler = false;
         private String workPath = "";
         private String inputPath = workPath;
@@ -763,6 +775,16 @@ public class Pipeline {
 
         public PipelineBuilder cleanup(boolean cleanup) {
             this.cleanup = cleanup;
+            return this;
+        }
+
+        public PipelineBuilder copyLog() {
+            copyLog = true;
+            return this;
+        }
+
+        public PipelineBuilder copyLog(boolean copyLog) {
+            this.copyLog = copyLog;
             return this;
         }
 

@@ -27,6 +27,7 @@ class XMLToXLSXStep extends Step {
         String sheet = Const.SHEET_NAME;
         String dataType = Const.DATA_TYPE_ATT;
         String separator = ExcelUtils.XML_SEPARATOR;
+        boolean multiSheet = false;
         boolean cellFormat = true;
 
         for (String line : parameters) {
@@ -45,6 +46,11 @@ class XMLToXLSXStep extends Step {
                     case "data": case "type": case "data-type": case "datatype":
                         dataType = parts[1];
                         break;
+                    case "multi": case "multisheet": case "multi-sheet":
+                        if (parts[1].toLowerCase().equals("true")) {
+                            multiSheet = true;
+                        }
+                        break;
                     case "cellformat": case "format": case "cell-format":
                         if (parts[1].toLowerCase().equals("false")) {
                             cellFormat = false;
@@ -59,7 +65,7 @@ class XMLToXLSXStep extends Step {
         int i = 0;
         for (String inFile : inputFiles) {
             String outputFile = getCurrentOutputFile(providedOutputNames, i, inFile);
-            ExcelUtils.XMLToExcel(inFile, sheet, row, column, dataType, cellFormat, separator, outputFile);
+            ExcelUtils.XMLToExcel(inFile, multiSheet, sheet, row, column, dataType, cellFormat, separator, outputFile);
             pipe.addGeneratedFile(outputFile);
             usedOutputFiles.add(outputFile);
             i++;

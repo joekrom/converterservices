@@ -13,24 +13,29 @@ import static org.apache.poi.ss.usermodel.Font.U_SINGLE;
 
 public class ExcelContentHandler extends DefaultHandler {
 
-    private static Logger LOGGER = LoggerFactory.getLogger(ExcelContentHandler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExcelContentHandler.class);
 
     private static final String TEXT_CELL_TYPE = "text";
     private static final String DATE_CELL_TYPE = "date";
     private static final String NUM_CELL_TYPE = "number";
+    private static final String SHEET_ATTR = "sheet";
 
+    private final boolean multiSheet;
+    private final Workbook workbook;
     private Sheet sheet;
-    private CellStyle wrapStyle;
+    private final CellStyle wrapStyle;
     private Row row;
     private Cell cell;
     private String currentType = TEXT_CELL_TYPE;
     private StringBuilder cellContent = new StringBuilder();
 
-    private boolean cellFormat;
-    private String separator;
-    private String rowTagName;
-    private String colTagName;
+    private final boolean cellFormat;
+    private final String sheetTagName;
+    private final String separator;
+    private final String rowTagName;
+    private final String colTagName;
     private final String typeAttName;
+    private int sheetCount = 0;
     private int rowCount = 0;
     private int colCount = 0;
     private boolean inCell = false;
@@ -39,15 +44,20 @@ public class ExcelContentHandler extends DefaultHandler {
     private static final Map<String, Integer> formatCodes = new HashMap<>();
     private final Map<Object, Object> formatAssignments = new HashMap<>();
 
-    ExcelContentHandler(Workbook workbook, String sheetName, String rowTagName, String colTagName, String typeAttName,
+    ExcelContentHandler(Workbook workbook, boolean multiSheet, String sheetName, String rowTagName, String colTagName, String typeAttName,
                         boolean cellFormat, String separator) {
+        this.workbook = workbook;
+        this.multiSheet = multiSheet;
+        this.sheetTagName = sheetName;
         this.rowTagName = rowTagName;
         this.colTagName = colTagName;
         this.typeAttName = typeAttName;
         this.cellFormat = cellFormat;
         this.separator = separator;
 
-        sheet = workbook.createSheet(sheetName);
+        if (!multiSheet) {
+            sheet = workbook.createSheet(sheetName);
+        }
 
         wrapStyle = workbook.createCellStyle();
         wrapStyle.setWrapText(true);
@@ -93,7 +103,14 @@ public class ExcelContentHandler extends DefaultHandler {
 
     @Override
     public void startElement(String uri, String localName, String qName, Attributes attributes) {
-        if (qName.equals(rowTagName)) {
+        if (multiSheet && qName.equals(sheetTagName)) {
+            String sheetName = attributes.getValue(SHEET_ATTR);
+            if (sheetName == null) {
+                sheetName = sheetTagName + sheetCount++;
+            }
+            sheet = workbook.createSheet(sheetName);
+            rowCount = 0;
+        } else if (qName.equals(rowTagName)) {
             row = sheet.createRow(rowCount++);
             colCount = 0;
         } else if (qName.equals(colTagName)) {

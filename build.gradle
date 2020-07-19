@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'de.axxepta'
-version '0.13.7'
+version '0.13.8'
 
 mainClassName = 'de.axxepta.converterservices.App'
 

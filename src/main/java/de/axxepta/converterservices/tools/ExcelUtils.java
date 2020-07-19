@@ -23,6 +23,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class ExcelUtils {
 
@@ -225,29 +226,25 @@ public class ExcelUtils {
         String outputFile = Const.TEMP_FILE_PATH + "/" + (outputFileName.length > 0 ? outputFileName[0]: XLSXFileName(fileName));
         String type = Const.DATA_TYPE_ATT;
         boolean cellFormat = true;
-        return XMLToExcel(fileName, sheetName, row, col, type, cellFormat, separator, outputFile);
+        return XMLToExcel(fileName, false, sheetName, row, col, type, cellFormat, separator, outputFile);
     }
 
-    public static String XMLToExcel(String fileName, String sheetName, String row, String col, String type,
+    public static String XMLToExcel(String fileName, boolean multiSheet, String sheetName, String row, String col, String type,
                                     boolean cellFormat, String separator, String outputFile) {
         XSSFWorkbook workbook = new XSSFWorkbook();
         try {
 
-            ExcelContentHandler handler = new ExcelContentHandler(workbook, sheetName, row, col, type, cellFormat, separator);
+            ExcelContentHandler handler = new ExcelContentHandler(workbook, multiSheet, sheetName, row, col, type, cellFormat, separator);
             File file = new File(fileName);
             SAXParserFactory factory = SAXParserFactory.newInstance();
             SAXParser parser = factory.newSAXParser();
             parser.parse(file, handler);
 
             // auto-adjust columns widths
-            Sheet sheet = workbook.getSheet(sheetName);
-            int lastRow = sheet.getLastRowNum();
-            int lastColumn = 0;
-            for (int r = 0; r <= lastRow; r++) {
-                lastColumn = Math.max(lastColumn, sheet.getRow(r).getLastCellNum());
-            }
-            for (int c = 0; c <= lastColumn; c++) {
-                sheet.autoSizeColumn((short) c);
+            if (multiSheet) {
+                IntStream.range(0, workbook.getNumberOfSheets()).forEach(workbook::getSheetAt);
+            } else {
+                adjustColumns(workbook.getSheet(sheetName));
             }
 
             try (FileOutputStream out = new FileOutputStream(new File(outputFile))) {
@@ -260,6 +257,17 @@ public class ExcelUtils {
             LOGGER.error("Exception writing to XLSX file: " + ie.getMessage());
         }
         return outputFile;
+    }
+
+    private static void adjustColumns(Sheet sheet) {
+        int lastRow = sheet.getLastRowNum();
+        int lastColumn = 0;
+        for (int r = 0; r <= lastRow; r++) {
+            lastColumn = Math.max(lastColumn, sheet.getRow(r).getLastCellNum());
+        }
+        for (int c = 0; c <= lastColumn; c++) {
+            sheet.autoSizeColumn((short) c);
+        }
     }
 
     private static String excelToXML(String path, String fileName, Workbook workbook, String sheetName, boolean columnFirst,

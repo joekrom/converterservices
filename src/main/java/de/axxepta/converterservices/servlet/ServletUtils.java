@@ -136,8 +136,8 @@ public class ServletUtils {
 
     public static HttpServletResponse singleFileResponse(Response response, String fileName) {
         HttpServletResponse raw = response.raw();
-        response.header("Content-Disposition", "attachment; filename=" + fileName);
-        response.type("application/force-download");
+        response.header("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+        response.type("application/force-download"); //?
         return raw;
     }
 

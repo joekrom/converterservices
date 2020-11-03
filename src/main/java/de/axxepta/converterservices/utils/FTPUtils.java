@@ -113,13 +113,7 @@ public class FTPUtils {
 
     private static void save(URL url, String fileName) throws IOException {
         try (InputStream is = url.openStream()) {
-            try (OutputStream os = new FileOutputStream(new File(fileName)) ) {
-                int read;
-                byte[] bytes = new byte[BUFFER_SIZE];
-                while ((read = is.read(bytes)) != -1) {
-                    os.write(bytes, 0, read);
-                }
-            }
+            IOUtils.copyStreamToFile(is, fileName);
         }
     }
 

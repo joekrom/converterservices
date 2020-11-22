@@ -30,6 +30,7 @@ class FTPUpStep extends Step {
         String base = pipe.getWorkPath();
         String path = "";
         boolean secure = pipe.isFtpSecure();
+        int timeout = -1;
 
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
@@ -54,7 +55,7 @@ class FTPUpStep extends Step {
                         break;
                     case "port":
                         if (StringUtils.isInt(parts[1])) {
-                            port = Integer.valueOf(parts[1]);
+                            port = Integer.parseInt(parts[1]);
                         }
                         break;
                     case "base": case "basepath":
@@ -66,6 +67,11 @@ class FTPUpStep extends Step {
                         break;
                     case "path":
                         path = parts[1];
+                        break;
+                    case "timeout":
+                        if (StringUtils.isInt(parts[1])) {
+                            timeout = Integer.parseInt(parts[1]);
+                        }
                         break;
                 }
             }
@@ -79,7 +85,11 @@ class FTPUpStep extends Step {
 
         for (String file : uploadFiles) {
             try {
-                FTPUtils.upload(secure, user, pwd, server, port, path, base, file);
+                if (timeout > 0) {
+                    FTPUtils.upload(secure, user, pwd, server, port, path, base, file, timeout);
+                } else {
+                    FTPUtils.upload(secure, user, pwd, server, port, path, base, file);
+                }
                 uploadedFiles.add(file);
             } catch (IOException ex) {
                 pipe.log(String.format("Error during FTP file transfer of file %s: %s", file, ex.getMessage()));

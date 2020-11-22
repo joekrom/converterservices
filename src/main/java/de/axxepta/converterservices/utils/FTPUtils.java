@@ -17,7 +17,7 @@ public class FTPUtils {
 
     private static final int BUFFER_SIZE = 4096;
 
-    public static String list(boolean secure, String user, String pwd, String server, int port, String path) throws Exception {
+    public static String list(boolean secure, String user, String pwd, String server, int port, String path, int... timeout) throws Exception {
         StringBuilder builder = new StringBuilder();
 
         // ToDo: same format for sftp and ftp
@@ -25,6 +25,9 @@ public class FTPUtils {
             String relPath = path.startsWith("/") ? path.substring(1) : path;
             JSch jsch = new JSch();
             Session session = jsch.getSession(user, server, port);
+            if (timeout.length > 0) {
+                session.setTimeout(timeout[0] * 1000);
+            }
             try {
                 ChannelSftp channel = getSftpChannel(session, pwd);
                 channel.connect();
@@ -48,6 +51,9 @@ public class FTPUtils {
             session.disconnect();
         } else {
             FTPClient ftpClient = new FTPClient();
+            if (timeout.length > 0) {
+                ftpClient.setConnectTimeout(timeout[0] * 1000);
+            }
             IOException ex = null;
             try {
                 ftpClient.enterLocalPassiveMode();
@@ -69,7 +75,8 @@ public class FTPUtils {
         return builder.toString();
     }
 
-    public static String download(boolean secure, String user, String pwd, String server, int port, String path, String storePath)
+    public static String download(boolean secure, String user, String pwd, String server, int port, String path,
+                                  String storePath, int... timeout)
             throws Exception
     {
         if (secure) {
@@ -77,6 +84,9 @@ public class FTPUtils {
 
             JSch jsch = new JSch();
             Session session = jsch.getSession(user, server, port);
+            if (timeout.length > 0) {
+                session.setTimeout(timeout[0] * 1000);
+            }
             try {
                 ChannelSftp channel = getSftpChannel(session, pwd);
                 channel.connect();
@@ -134,7 +144,7 @@ public class FTPUtils {
 
 
     public static String upload(boolean secure, String user, String pwd, String server, int port, String serverBase,
-                                String localBase, String sourcePath)
+                                String localBase, String sourcePath, int... timeout)
             throws IOException, JSchException, SftpException
     {
         String relPath = IOUtils.pathCombine(serverBase, IOUtils.relativePath(sourcePath, localBase));
@@ -145,6 +155,9 @@ public class FTPUtils {
             String path = relPath.startsWith("/") ? relPath.substring(1) : relPath;
             JSch jsch = new JSch();
             Session session = jsch.getSession(user, server, port);
+            if (timeout.length > 0) {
+                session.setTimeout(timeout[0] * 1000);
+            }
             try {
                 ChannelSftp channel = getSftpChannel(session, pwd);
                 channel.connect();
@@ -167,6 +180,9 @@ public class FTPUtils {
             String path = (relPath.startsWith("/") ? "" : "/") + relPath;
             URL url = new URL("ftp://" + user + ":" + pwd + "@" + server + path);
             URLConnection conn = url.openConnection();
+            if (timeout.length > 0) {
+                conn.setConnectTimeout(timeout[0] * 1000);
+            }
             transmit(conn, sourcePath);
         }
         return "<success>Uploaded " + sourcePath + " to " + (secure ? "sftp://" : "ftp://") + server +

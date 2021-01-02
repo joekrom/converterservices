@@ -1,8 +1,8 @@
 package de.axxepta.converterservices.utils;
 
 import com.jcraft.jsch.*;
-import org.apache.commons.net.ftp.FTPClient;
-import org.apache.commons.net.ftp.FTPFile;
+import org.apache.commons.net.ftp.*;
+import org.apache.commons.net.util.TrustManagerUtils;
 
 import java.io.*;
 import java.net.URL;
@@ -17,44 +17,82 @@ public class FTPUtils {
 
     private static final int BUFFER_SIZE = 4096;
 
-    public static String list(boolean secure, String user, String pwd, String server, int port, String path, int... timeout) throws Exception {
+    public enum Protocol {
+        FTP,
+        SFTP,
+        FTPS
+    }
+
+    public static String list(boolean secure, String user, String pwd, String server, int port, String path, Protocol protocol, int... timeout) throws Exception {
         StringBuilder builder = new StringBuilder();
 
         // ToDo: same format for sftp and ftp
         if (secure) {
-            String relPath = path.startsWith("/") ? path.substring(1) : path;
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(user, server, port);
-            if (timeout.length > 0) {
-                session.setTimeout(timeout[0] * 1000);
-            }
-            try {
-                ChannelSftp channel = getSftpChannel(session, pwd);
-                channel.connect();
-                try {
-                    Vector<ChannelSftp.LsEntry> fileList = channel.ls(relPath);
-                    Arrays.stream(fileList.toArray())
-                            .filter(e -> ((ChannelSftp.LsEntry) e).getAttrs().isDir())
-                            .forEach(e -> builder.append(DIR_ENTRY).append(((ChannelSftp.LsEntry) e).getFilename()).append("\n"));
-                    Arrays.stream(fileList.toArray())
-                            .filter(e -> !((ChannelSftp.LsEntry) e).getAttrs().isDir())
-                            .forEach(e -> builder.append(FILE_ENTRY).append(((ChannelSftp.LsEntry) e).getFilename()).append("\n"));
-                } catch (SftpException se) {
-                    channel.exit();
-                    throw se;
+            if (protocol.equals(Protocol.SFTP)) {
+                String relPath = path.startsWith("/") ? path.substring(1) : path;
+                JSch jsch = new JSch();
+                Session session = jsch.getSession(user, server, port);
+                if (timeout.length > 0) {
+                    session.setTimeout(timeout[0] * 1000);
                 }
-                channel.exit();
-            } catch (JSchException | SftpException js) {
+                try {
+                    ChannelSftp channel = getSftpChannel(session, pwd);
+                    channel.connect();
+                    try {
+                        Vector<ChannelSftp.LsEntry> fileList = channel.ls(relPath);
+                        Arrays.stream(fileList.toArray())
+                                .filter(e -> ((ChannelSftp.LsEntry) e).getAttrs().isDir())
+                                .forEach(e -> builder.append(DIR_ENTRY).append(((ChannelSftp.LsEntry) e).getFilename()).append("\n"));
+                        Arrays.stream(fileList.toArray())
+                                .filter(e -> !((ChannelSftp.LsEntry) e).getAttrs().isDir())
+                                .forEach(e -> builder.append(FILE_ENTRY).append(((ChannelSftp.LsEntry) e).getFilename()).append("\n"));
+                    } catch (SftpException se) {
+                        channel.exit();
+                        throw se;
+                    }
+                    channel.exit();
+                } catch (JSchException | SftpException js) {
+                    session.disconnect();
+                    throw js;
+                }
                 session.disconnect();
-                throw js;
+            } else {
+                FTPSClient ftpClient = new FTPSClient();
+                if (timeout.length > 0) {
+                    ftpClient.setConnectTimeout(timeout[0] * 1000);
+                }
+
+                try {
+                    ftpClient.setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
+                    ftpClient.setControlKeepAliveTimeout(300);
+                    ftpClient.connect(server);
+                    int reply = ftpClient.getReplyCode();
+                    if(!FTPReply.isPositiveCompletion(reply)) {
+                        ftpClient.disconnect();
+                        throw new IOException("FTP server refused connection.");
+                    }
+                    if (ftpClient.login(user, pwd)) {
+                        ftpClient.execPBSZ(0);
+                        ftpClient.execPROT("P");
+                        ftpClient.enterLocalPassiveMode();
+
+                        FTPFile[] dirs = ftpClient.listDirectories(path);
+                        FTPFile[] files = ftpClient.listFiles(path);
+                        Arrays.stream(dirs).forEach(e -> builder.append(DIR_ENTRY).append(e.getName()).append("\n"));
+                        Arrays.stream(files).forEach(e -> builder.append(FILE_ENTRY).append(e.getName()).append("\n"));
+                        ftpClient.logout();
+                    }
+                } finally {
+                    if(ftpClient.isConnected()) {
+                        ftpClient.disconnect();
+                    }
+                }
             }
-            session.disconnect();
         } else {
             FTPClient ftpClient = new FTPClient();
             if (timeout.length > 0) {
                 ftpClient.setConnectTimeout(timeout[0] * 1000);
             }
-            IOException ex = null;
             try {
                 ftpClient.enterLocalPassiveMode();
                 ftpClient.connect(server, port);
@@ -63,48 +101,75 @@ public class FTPUtils {
                 FTPFile[] files = ftpClient.listFiles(path);
                 Arrays.stream(dirs).forEach(e -> builder.append(DIR_ENTRY).append(e.getName()).append("\n"));
                 Arrays.stream(files).forEach(e -> builder.append(FILE_ENTRY).append(e.getName()).append("\n"));
-            } catch (IOException e) {
-                ex = e;
             } finally {
                 ftpClient.logout();
                 ftpClient.disconnect();
             }
-            if (ex != null)
-                throw ex;
         }
         return builder.toString();
     }
 
     public static String download(boolean secure, String user, String pwd, String server, int port, String path,
-                                  String storePath, int... timeout)
+                                  String storePath, Protocol protocol, int... timeout)
             throws Exception
     {
         if (secure) {
             String relPath = path.startsWith("/") ? path.substring(1) : path;
+            if (protocol.equals(Protocol.SFTP)) {
 
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(user, server, port);
-            if (timeout.length > 0) {
-                session.setTimeout(timeout[0] * 1000);
-            }
-            try {
-                ChannelSftp channel = getSftpChannel(session, pwd);
-                channel.connect();
-                try {
-                    channel.cd(IOUtils.dirFromPath(relPath));
-                    try (BufferedInputStream is = new BufferedInputStream(channel.get(IOUtils.filenameFromPath(path)))) {
-                        IOUtils.copyStreamToFile(is, storePath);
-                    }
-                } catch (SftpException se) {
-                    channel.exit();
-                    throw se;
+                JSch jsch = new JSch();
+                Session session = jsch.getSession(user, server, port);
+                if (timeout.length > 0) {
+                    session.setTimeout(timeout[0] * 1000);
                 }
-                channel.exit();
-            } catch (JSchException | SftpException | IOException js) {
+                try {
+                    ChannelSftp channel = getSftpChannel(session, pwd);
+                    channel.connect();
+                    try {
+                        channel.cd(IOUtils.dirFromPath(relPath));
+                        try (BufferedInputStream is = new BufferedInputStream(channel.get(IOUtils.filenameFromPath(path)))) {
+                            IOUtils.copyStreamToFile(is, storePath);
+                        }
+                    } catch (SftpException se) {
+                        channel.exit();
+                        throw se;
+                    }
+                    channel.exit();
+                } catch (JSchException | SftpException | IOException js) {
+                    session.disconnect();
+                    throw js;
+                }
                 session.disconnect();
-                throw js;
+            } else {
+                FTPSClient ftpClient = new FTPSClient();
+                try {
+                    ftpClient.setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
+                    ftpClient.setControlKeepAliveTimeout(300);
+                    ftpClient.connect(server);
+                    int reply = ftpClient.getReplyCode();
+                    if(!FTPReply.isPositiveCompletion(reply)) {
+                        ftpClient.disconnect();
+                        throw new IOException("FTP server refused connection.");
+                    }
+                    if (ftpClient.login(user, pwd)) {
+                        ftpClient.execPBSZ(0);
+                        ftpClient.execPROT("P");
+                        ftpClient.changeWorkingDirectory(IOUtils.dirFromPath(relPath));
+                        if (ftpClient.getReplyString().contains("250")) {
+                            ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+                            ftpClient.enterLocalPassiveMode();
+                            try (OutputStream output = new FileOutputStream(storePath)) {
+                                ftpClient.retrieveFile(IOUtils.filenameFromPath(path), output);
+                            }
+                        }
+                        ftpClient.logout();
+                    }
+                } finally {
+                    if(ftpClient.isConnected()) {
+                        ftpClient.disconnect();
+                    }
+                }
             }
-            session.disconnect();
         } else {
             URL url = new URL(("ftp://") + user + ":" + pwd + "@" + server + (path.startsWith("/") ? "" : "/") + path);
             save(url, storePath);
@@ -142,9 +207,8 @@ public class FTPUtils {
         return os;
     }
 
-
     public static String upload(boolean secure, String user, String pwd, String server, int port, String serverBase,
-                                String localBase, String sourcePath, int... timeout)
+                                String localBase, String sourcePath, Protocol protocol, int... timeout)
             throws IOException, JSchException, SftpException
     {
         String relPath = IOUtils.pathCombine(serverBase, IOUtils.relativePath(sourcePath, localBase));
@@ -153,28 +217,60 @@ public class FTPUtils {
         if (secure) {
             relPath = IOUtils.dirFromPath(relPath).replaceAll("\\\\", "/");
             String path = relPath.startsWith("/") ? relPath.substring(1) : relPath;
-            JSch jsch = new JSch();
-            Session session = jsch.getSession(user, server, port);
-            if (timeout.length > 0) {
-                session.setTimeout(timeout[0] * 1000);
-            }
-            try {
-                ChannelSftp channel = getSftpChannel(session, pwd);
-                channel.connect();
-                try {
-                    channel.cd(path);
-                    // ToDo: check whether non-existent directories will be created
-                    channel.put(new FileInputStream(file), IOUtils.filenameFromPath(sourcePath), ChannelSftp.OVERWRITE);
-                } catch (SftpException se) {
-                    channel.exit();
-                    throw se;
+            if (protocol.equals(Protocol.SFTP)) {
+                JSch jsch = new JSch();
+                Session session = jsch.getSession(user, server, port);
+                if (timeout.length > 0) {
+                    session.setTimeout(timeout[0] * 1000);
                 }
-                channel.exit();
-            } catch (JSchException | SftpException js) {
+                try {
+                    ChannelSftp channel = getSftpChannel(session, pwd);
+                    channel.connect();
+                    try {
+                        channel.cd(path);
+                        // ToDo: check whether non-existent directories will be created
+                        channel.put(new FileInputStream(file), IOUtils.filenameFromPath(sourcePath), ChannelSftp.OVERWRITE);
+                    } catch (SftpException se) {
+                        channel.exit();
+                        throw se;
+                    }
+                    channel.exit();
+                } catch (JSchException | SftpException js) {
+                    session.disconnect();
+                    throw js;
+                }
                 session.disconnect();
-                throw js;
+            } else {
+
+                FTPSClient ftpClient = new FTPSClient();
+                try {
+                    ftpClient.setTrustManager(TrustManagerUtils.getAcceptAllTrustManager());
+                    ftpClient.setControlKeepAliveTimeout(300);
+                    ftpClient.connect(server);
+                    int reply = ftpClient.getReplyCode();
+                    if(!FTPReply.isPositiveCompletion(reply)) {
+                        ftpClient.disconnect();
+                        throw new IOException("FTP server refused connection.");
+                    }
+                    if (ftpClient.login(user, pwd)) {
+                        ftpClient.execPBSZ(0);
+                        ftpClient.execPROT("P");
+                        ftpClient.changeWorkingDirectory(path);
+                        if (ftpClient.getReplyString().contains("250")) {
+                            ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+                            ftpClient.enterLocalPassiveMode();
+                            try (FileInputStream is = new FileInputStream(sourcePath)) {
+                                ftpClient.storeFile(IOUtils.filenameFromPath(sourcePath), is);
+                            }
+                        }
+                        ftpClient.logout();
+                    }
+                } finally {
+                    if(ftpClient.isConnected()) {
+                        ftpClient.disconnect();
+                    }
+                }
             }
-            session.disconnect();
         } else {
             relPath = relPath.replaceAll("\\\\", "/");
             String path = (relPath.startsWith("/") ? "" : "/") + relPath;

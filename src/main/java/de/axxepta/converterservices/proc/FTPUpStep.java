@@ -30,11 +30,13 @@ class FTPUpStep extends Step {
         String base = pipe.getWorkPath();
         String path = "";
         boolean secure = pipe.isFtpSecure();
+        FTPUtils.Protocol protocol = FTPUtils.Protocol.SFTP;
         int timeout = -1;
 
         for (String parameter : parameters) {
             String[] parts = parameter.split(" *= *");
             if (parts.length > 1) {
+                String val = parts[1].toLowerCase();
                 switch (parts[0].toLowerCase()) {
                     case "server": case "host":
                         server = parts[1];
@@ -45,11 +47,58 @@ class FTPUpStep extends Step {
                     case "pwd": case "password":
                         pwd = parts[1];
                         break;
-                    case "secure": case "ssl":
-                        if (parts[1].toLowerCase().equals("false")) {
+                    case "secure":
+                        if (val.equals("false")) {
                             secure = false;
                             if (port == 0) {
                                 port = 21;
+                            }
+                            protocol = FTPUtils.Protocol.FTP;
+                        } else {
+                            secure = true;
+                            if (port == 0) {
+                                port = 22;
+                            }
+                            protocol = FTPUtils.Protocol.SFTP;
+                        }
+                        break;
+                    case "sftp":
+                        if (val.equals("true")) {
+                            protocol = FTPUtils.Protocol.SFTP;
+                            if (port == 0) {
+                                port = 22;
+                            }
+                        }
+                        break;
+                    case "ftps":
+                        if (val.equals("true")) {
+                            secure = true;
+                            if (port == 0) {
+                                port = 21;
+                            }
+                            protocol = FTPUtils.Protocol.FTPS;
+                        }
+                        break;
+                    case "protocol":
+                        if (val.equals("ftp")) {
+                            secure = false;
+                            protocol = FTPUtils.Protocol.FTP;
+                            if (port == 0) {
+                                port = 21;
+                            }
+                            break;
+                        }
+                        secure = true;
+                        if (val.equals("ftps") || val.contains("ssl") || val.contains("tls")) {
+                            protocol = FTPUtils.Protocol.FTPS;
+                            if (port == 0) {
+                                port = 21;
+                            }
+                        }
+                        if (val.equals("sftp") || val.contains("ssh")) {
+                            protocol = FTPUtils.Protocol.SFTP;
+                            if (port == 0) {
+                                port = 22;
                             }
                         }
                         break;
@@ -59,9 +108,9 @@ class FTPUpStep extends Step {
                         }
                         break;
                     case "base": case "basepath":
-                        if (parts[1].toLowerCase().equals("input")) {
+                        if (val.equals("input")) {
                             base = pipe.getInputPath();
-                        } else if (!parts[1].toLowerCase().equals("work")) {
+                        } else if (!val.equals("work")) {
                             base = parts[1];
                         }
                         break;
@@ -86,9 +135,9 @@ class FTPUpStep extends Step {
         for (String file : uploadFiles) {
             try {
                 if (timeout > 0) {
-                    FTPUtils.upload(secure, user, pwd, server, port, path, base, file, timeout);
+                    FTPUtils.upload(secure, user, pwd, server, port, path, base, file, protocol, timeout);
                 } else {
-                    FTPUtils.upload(secure, user, pwd, server, port, path, base, file);
+                    FTPUtils.upload(secure, user, pwd, server, port, path, base, file, protocol);
                 }
                 uploadedFiles.add(file);
             } catch (IOException ex) {

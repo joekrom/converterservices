@@ -193,7 +193,7 @@ public class FTPUtils {
     }
 
     private static ByteArrayOutputStream download(boolean secure, String user, String pwd, String server, int port, String path)
-            throws IOException
+            throws Exception
     {
         URL url = new URL((secure ? "sftp://" : "ftp://") + user + ":" + pwd + "@" + server + path);
         ByteArrayOutputStream os = new ByteArrayOutputStream();
@@ -209,7 +209,7 @@ public class FTPUtils {
 
     public static String upload(boolean secure, String user, String pwd, String server, int port, String serverBase,
                                 String localBase, String sourcePath, Protocol protocol, int... timeout)
-            throws IOException, JSchException, SftpException
+            throws Exception
     {
         String relPath = IOUtils.pathCombine(serverBase, IOUtils.relativePath(sourcePath, localBase));
         String relativePath = relPath.replaceAll("\\\\", "/");

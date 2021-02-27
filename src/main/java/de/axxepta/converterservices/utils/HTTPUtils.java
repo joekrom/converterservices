@@ -238,7 +238,9 @@ public class HTTPUtils {
                 fileType.toLowerCase().equals("json");
     }
 
-    private static CloseableHttpClient getClient(String host, int port, String user, String password, int timeout, boolean... gullible) {
+    private static CloseableHttpClient getClient(String host, int port, String user, String password, int timeout, boolean... gullible)
+            throws IOException
+    {
         HttpClientBuilder builder = HttpClients.custom();
 
         if (timeout != -1) {

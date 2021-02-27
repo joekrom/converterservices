@@ -4,7 +4,6 @@ import org.apache.commons.mail.*;
 import org.apache.commons.mail.resolver.DataSourceUrlResolver;
 
 import javax.activation.FileDataSource;
-import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;

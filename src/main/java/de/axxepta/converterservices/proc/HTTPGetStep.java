@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.security.RSACryptor;
 import de.axxepta.converterservices.utils.HTTPUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
@@ -75,8 +76,13 @@ class HTTPGetStep extends Step {
                 }
             }
         }
+
         if (port == 0) {
             port = 443;
+        }
+
+        if (!StringUtils.isNoStringOrEmpty(pwd)) {
+            pwd = RSACryptor.decrypt(pwd);
         }
 
         List<String> downloadedFiles = new ArrayList<>();

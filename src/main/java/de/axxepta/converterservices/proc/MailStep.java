@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.security.RSACryptor;
 import de.axxepta.converterservices.tools.Saxon;
 import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
@@ -103,6 +104,9 @@ class MailStep extends Step {
             if (host.equals("") || user.equals("") || pwd.equals("") || sender.equals("") || receiver.equals("")) {
                 throw new IllegalArgumentException("Missing parameter (HOST|USER|PWD|SENDER|RECEIVER)");
             }
+
+            String password = RSACryptor.decrypt(pwd);
+
             if (htmlMail) {
                 String textContent;
                 try {
@@ -112,19 +116,19 @@ class MailStep extends Step {
                     textContent = content;
                 }
                 if (embeddedImages) {
-                    outputMsg = Mail.sendImageHTMLMail(secure, host, port, user, pwd, sender, receiver, subject,
+                    outputMsg = Mail.sendImageHTMLMail(secure, host, port, user, password, sender, receiver, subject,
                             content, textContent, imgBaseURL, true);
                 } else {
-                    outputMsg = Mail.sendHTMLMail(secure, host, port, user, pwd, sender, receiver, subject,
+                    outputMsg = Mail.sendHTMLMail(secure, host, port, user, password, sender, receiver, subject,
                             content, content, true);
                 }
             } else {
                 if (attachments) {
                     List<String> attachedFiles = resolveInput(additional, true);
-                    outputMsg = Mail.sendAttachmentMail(secure, host, port, user, pwd, sender, receiver, subject,
+                    outputMsg = Mail.sendAttachmentMail(secure, host, port, user, password, sender, receiver, subject,
                             content, attachedFiles, true);
                 } else {
-                    outputMsg = Mail.sendMail(secure, host, port, user, pwd, sender, receiver, subject,
+                    outputMsg = Mail.sendMail(secure, host, port, user, password, sender, receiver, subject,
                             content, true);
                 }
             }

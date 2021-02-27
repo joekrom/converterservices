@@ -131,10 +131,27 @@ public class IOUtils {
 
     public static String getResourceAsString(String name, Class referenceClass) throws IOException {
         final String resource = "/" + name;
-        final InputStream is = referenceClass.getResourceAsStream(resource);
-        if(is == null) throw new IOException("Resource not found: " + resource);
-        java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
-        return s.hasNext() ? s.next() : "";
+        String output;
+        try (final InputStream is = referenceClass.getResourceAsStream(resource)) {
+            if (is == null) throw new IOException("Resource not found: " + resource);
+            java.util.Scanner s = new java.util.Scanner(is).useDelimiter("\\A");
+            output = s.hasNext() ? s.next() : "";
+        }
+        return output;
+    }
+
+    public static byte[] getResourceAsBytes(String name, Class referenceClass) throws IOException {
+        final String resource = "/" + name;
+        byte[] output;
+        try (final InputStream is = referenceClass.getResourceAsStream(resource)) {
+            ByteArrayOutputStream os = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            for (int len = is.read(buffer); len != -1; len = is.read(buffer)) {
+                os.write(buffer, 0, len);
+            }
+            output = os.toByteArray();
+        }
+        return output;
     }
 
     /**

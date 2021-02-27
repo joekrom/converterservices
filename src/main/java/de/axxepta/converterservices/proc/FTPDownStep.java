@@ -1,5 +1,6 @@
 package de.axxepta.converterservices.proc;
 
+import de.axxepta.converterservices.security.RSACryptor;
 import de.axxepta.converterservices.utils.FTPUtils;
 import de.axxepta.converterservices.utils.IOUtils;
 import de.axxepta.converterservices.utils.StringUtils;
@@ -125,6 +126,10 @@ class FTPDownStep extends Step {
         }
         if (port == 0) {
             port = 22;
+        }
+
+        if (!StringUtils.isNoStringOrEmpty(pwd)) {
+            pwd = RSACryptor.decrypt(pwd);
         }
 
         List<String> outputFiles = new ArrayList<>();
